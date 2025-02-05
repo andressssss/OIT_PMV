@@ -84,8 +84,21 @@
                     </div>
                     <div class="col-md-6">
                         {% if grupo.esta == 'En radicacion' %}
-                        <a class="btn btn-danger float-end" href="{% url 'descargar_documentos_grupo_zip' grupo.id %}" data-toggle="tooltip" data-placement="top" title="Descargar documentos grupo">{% icon 'download' %}</a>
+                        <a class="btn btn-danger float-end mx-2 descargar-zip" 
+                        href="{% url 'descargar_documentos_grupo_zip' grupo.id %}" 
+                        data-toggle="tooltip" 
+                        data-placement="top" 
+                        title="Descargar documentos grupo">
+                        {% icon 'download' %}
+                        </a>
                         {% endif %}
+                        <a class="btn btn-danger float-end descargar-agrupados" 
+                        href="{% url 'descargar_documentos_grupo' grupo.id 'Carta Intención' %}" 
+                        data-toggle="tooltip" 
+                        data-placement="top" 
+                        title="Descargar documentos agrupados">
+                        {% icon 'download' %}
+                    </a>
                     </div>
                 </div>
                 
@@ -94,11 +107,11 @@
             <thead class="table-secondary text-center">
             <tr>
                 {% if documentos_por_aprendiz %}
-                <th>Nombre</th>
-                <th>Resumen</th>
+                    <th style="width: 15%;">Nombre</th>  <!-- Reducido al 25% -->
+                    <th style="width: 85%;">Resumen</th> <!-- Ampliado al 75% -->
                 {% else %}
-                <th>Resumen</th>
-                {% endif%}
+                    <th style="width: 100%;">Resumen</th> 
+                {% endif %}
 
             </tr>
         </thead>
@@ -106,84 +119,111 @@
             {% for aprendiz, documentos in documentos_por_aprendiz.items %}
                 <tr>
                     <td>{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}<!-- Botón para descargar ZIP -->
-                        <br><a href="{% url 'descargar_documentos_zip' aprendiz.id %}" class="btn btn-success btn-sm" data-toggle="tooltip" data-placement="top" title="Descargar documento aprendiz">
+                        <br>
+                        <a href="{% url 'descargar_documentos_zip' aprendiz.id %}" class="btn btn-success btn-sm" data-toggle="tooltip" data-placement="top" title="Descargar documento aprendiz">
                             {% icon 'download' %}
-                        </a></td>
-                    <td colspan="3">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre del Documento</th>
-                                    <th>Estado</th>
-                                    <th>Archivo</th>
-                                    {% if grupo.esta == 'Pre matricula' or grupo.esta == 'Validacion matriculas' %}
-                                        {% if rol == 'lider' %}
-                                            <th>Aprobacion</th>
-                                        {% else %}
-                                        <th>Cargar</th>
-                                        {% endif %}
-                                    {% endif %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for documento in documentos %}
-                                    <tr>
-                                        <td>{{ documento.nom }}</td>
-                                        <td>
-                                            {% if documento.vali == '0' %}
-                                            Pendiente
-                                            {% else %}
-                                            Aprobado
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if documento.docu.archi %}
-                                                <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn" data-toggle="tooltip" data-placement="top" title="Ver archivo">
-                                                    {% icon 'search' %}
-                                                </a>
-                                                {% if grupo.esta == 'Pre matricula' or grupo.esta == 'Validacion matriculas' %}
-                                                {% if documento.vali == '0' and rol == 'gestor' %}
-                                                <a href="{% url 'eliminar_documento_pre' documento.docu.id %}" class="btn" data-toggle="tooltip" data-placement="top" title="Eliminar archivo">
-                                                    {% icon 'delete' %}
-                                                </a>
-                                               {% endif %}
-                                                {% endif %}
-                                            {% else %}
-                                                No cargado
-                                            {% endif %}
-                                        </td>
-                                        {% if grupo.esta == 'Pre matricula' or grupo.esta == 'Validacion matriculas' %}
-                                        {% if rol == 'lider' %}
-                                        <td>
-                                            {% if documento.docu.archi %}
-                                                {% if documento.vali == '0' %}
-                                                    <a href="{% url 'confirmar_documento' documento.id grupo.id %}" class="btn btn-success btn-sm">Aprobar</a>
-                                                {% else %}
-                                                    <button type="button" class="btn btn-success btn-sm" disabled>Aprobado</button> 
-                                                {% endif %}
-
-                                            {% endif %}
-                                        </td>
-                                        {% else %}
-                                        <td>
-                                            {% if documento.esta == "Pendiente" %}
-                                                <form method="post" action="{% url 'subir_documento_prematricula' documento.id aprendiz.id grupo.id %}" enctype="multipart/form-data">
-                                                    {% csrf_token %}
-                                                    <input type="file" name="archivo" class="form-control mb-2" required>
-                                                    <button type="submit" class="btn btn-primary">Cargar</button>
-                                                </form>
-                                                {% else %}
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="text-success">✔ Cargado</span>
-                                                {% endif %}
-                                        </td>
-                                        {% endif %}
-                                        {% endif %}
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        </a>
+                        <a class="btn btn-danger delete-btn btn-sm" data-id="{{aprendiz.id}}" data-toggle="tooltip" data-placement="top" title="Desvincular aprendiz">
+                            {% icon 'delete' %}
+                        </a>
                     </td>
+                    <td colspan="3">
+                        <div class="accordion" id="accordion-{{ forloop.counter }}">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
+                                    <button class="accordion-button collapsed" type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#collapse-{{ forloop.counter }}" 
+                                            aria-expanded="false" 
+                                            aria-controls="collapse-{{ forloop.counter }}">
+                                        Ver documentación
+                                    </button>
+                                </h2>
+                                <div id="collapse-{{ forloop.counter }}" 
+                                    class="accordion-collapse collapse" 
+                                    aria-labelledby="heading-{{ forloop.counter }}">
+                                    <div class="accordion-body p-2">
+                                        <table class="table table-bordered w-100" style="table-layout: auto;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 30%;">Nombre del Documento</th>
+                                                    <th style="width: 15%;">Estado</th>
+                                                    <th style="width: 15%;">Archivo</th>
+                                                    {% if grupo.esta in 'Pre matricula,Validacion matriculas' %}
+                                                        {% if rol == 'lider' %}
+                                                            <th style="width: 40%;">Aprobación</th>
+                                                        {% else %}
+                                                            <th style="width: 40%;">Cargar</th>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for documento in documentos %}
+                                                    <tr>
+                                                        <td>{{ documento.nom }}</td>
+                                                        <td>
+                                                            {% if documento.vali == '0' %}
+                                                                Pendiente
+                                                            {% else %}
+                                                                Aprobado
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if documento.docu.archi %}
+                                                                <a href="{{ documento.docu.archi.url }}" target="_blank" 
+                                                                   class="btn btn-sm btn-outline-primary" 
+                                                                   title="Ver archivo">
+                                                                    {% icon 'search' %}
+                                                                </a>
+                                                                {% if grupo.esta in 'Pre matricula,Validacion matriculas' and documento.vali == '0' and rol == 'gestor' %}
+                                                                    <a data-url="{% url 'eliminar_documento_pre' documento.docu.id %}" 
+                                                                       class="btn btn-sm btn-outline-danger delete-btn" 
+                                                                       title="Eliminar archivo">
+                                                                        {% icon 'delete' %}
+                                                                    </a>
+                                                                {% endif %}
+                                                            {% else %}
+                                                                No cargado
+                                                            {% endif %}
+                                                        </td>
+                    
+                                                        {% if grupo.esta in 'Pre matricula,Validacion matriculas' %}
+                                                            {% if rol == 'lider' %}
+                                                                <td>
+                                                                    {% if documento.docu.archi and documento.vali == '0' %}
+                                                                        <a href="{% url 'confirmar_documento' documento.id grupo.id %}" 
+                                                                           class="btn btn-success btn-sm">Aprobar</a>
+                                                                    {% elif documento.vali != '0' %}
+                                                                        <button class="btn btn-success btn-sm" disabled>Aprobado</button>
+                                                                    {% endif %}
+                                                                </td>
+                                                            {% else %}
+                                                                <td>
+                                                                    {% if documento.esta == "Pendiente" %}
+                                                                        <form method="post" 
+                                                                              action="{% url 'subir_documento_prematricula' documento.id aprendiz.id grupo.id %}" 
+                                                                              enctype="multipart/form-data">
+                                                                            {% csrf_token %}
+                                                                            <input type="file" name="archivo" class="form-control mb-2" required>
+                                                                            <button type="submit" class="btn btn-primary btn-sm">Cargar</button>
+                                                                        </form>
+                                                                    {% else %}
+                                                                        <span class="text-success">✔ Cargado</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    
                 </tr>
             {% empty %}
                 <tr>
@@ -230,5 +270,148 @@
             });
         });
     });
+
+
+        // Script para eliminacion de documentos!
+        document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".delete-btn").forEach(function (button) {
+            button.addEventListener("click", function (event) {
+                event.preventDefault(); // Evita la acción predeterminada del botón
+
+                const url = this.dataset.url;
+
+                Swal.fire({
+                    title: "¿Estás seguro?",
+                    text: "No podrás deshacer esta acción.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Sí, eliminar",
+                    cancelButtonText: "Cancelar"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Redirige a la URL de eliminación
+                        window.location.href = url;
+                    }
+                });
+            });
+        });
+    });
+
+    // Evento para desvincular aprendiz
+$(document).on('click', '.delete-btn', function () {
+const id = $(this).data('id');
+const row = $(this).parents('tr'); // Guardamos la fila para eliminarla después si es necesario
+
+// Confirmación antes de eliminar
+Swal.fire({
+    title: '¿Estás seguro?',
+    text: 'Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+}).then((result) => {
+    if (result.isConfirmed) {
+        // Si el usuario confirma, proceder con la eliminación
+        fetch(`/api/grupo/aprendiz/eliminar/${id}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}' // CSRF Token de Django
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                row.remove(); // Elimina la fila de la tabla
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Eliminado',
+                    text: 'El grupo ha sido eliminado correctamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Error al eliminar el registro.');
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message
+            });
+        });
+    }
+});
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+        // Manejo de ambos botones
+        const botonesZip = document.querySelectorAll('.descargar-zip');
+        const botonesAgrupados = document.querySelectorAll('.descargar-agrupados');
+
+        // Alerta para descarga ZIP del grupo
+        botonesZip.forEach(boton => {
+            boton.addEventListener('click', function (e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+
+                Swal.fire({
+                    title: 'Recomendaciones antes de descargar ZIP',
+                    html: `
+                        <ul style="text-align: left;">
+                            <li>Verifica que todos los documentos estén cargados.</li>
+                            <li>Asegúrate de que la documentación esté actualizada.</li>
+                            <li>Esta funcion descargara un ZIP con todos los documentos cargados de todos los estudiantes.</li>
+                        </ul>`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',  // Rojo
+                    cancelButtonColor: '#6c757d', // Gris
+                    confirmButtonText: 'Sí, continuar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = url;
+                    }
+                });
+            });
+        });
+
+        // Alerta para descarga de documentos agrupados
+        botonesAgrupados.forEach(boton => {
+            boton.addEventListener('click', function (e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+
+                Swal.fire({
+                    title: 'Recomendaciones antes de descargar documentos agrupados',
+                    html: `
+                        <ul style="text-align: left;">
+                            <li>Asegúrate de haber revisado todas las cartas de intención.</li>
+                            <li>Verifica que no falte ningún documento importante.</li>
+                            <li>Esta funcion agrupara y descargara todos los documentos "Carta de intencion" que hayan sido cargados.</li>
+                        </ul>`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',  // Rojo
+                    cancelButtonColor: '#6c757d', // Gris
+                    confirmButtonText: 'Sí, descargar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = url;
+                    }
+                });
+            });
+        });
+    });
+
+
 </script>
 {% endblock %}

@@ -70,12 +70,13 @@ class DocumentoLaboralForm(forms.ModelForm):
 class PerfilForm(forms.ModelForm):
     class Meta:
         model = T_perfil
-        exclude = ['user', 'rol', 'mail']  # Excluir los campos que no serán editables directamente
+        exclude = ['user', 'rol']  # Excluir los campos que no serán editables directamente
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre'}),
-            'apelli': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'apelli': forms.TextInput(attrs={'class': 'form-control'}),
+            'mail': forms.EmailInput(attrs={'class': 'form-control'}),
             'tipo_dni': forms.Select(attrs={'class': 'form-select'}),
-            'dni': forms.NumberInput(attrs={'class': 'form-control'}),
+            'dni': forms.TextInput(attrs={'class': 'form-control'}),
             'tele': forms.NumberInput(attrs={'class': 'form-control'}),
             'dire': forms.TextInput(attrs={'class': 'form-control'}),
             'gene': forms.Select(attrs={'class': 'form-select'}),
@@ -84,6 +85,7 @@ class PerfilForm(forms.ModelForm):
         labels = {
             'nom': 'Nombres',
             'apelli': 'Apellidos',
+            'mail': 'Correo electronico',
             'tipo_dni': 'Tipo de documento',
             'dni': 'Número de documento',
             'tele': 'Teléfono',
@@ -177,39 +179,35 @@ class InstructorForm(forms.ModelForm):
 class AprendizForm(forms.ModelForm):
     class Meta:
         model = T_apre
-        exclude = ['perfil', 'ficha', 'grupo']
+        exclude = ['perfil', 'ficha', 'grupo', 'repre_legal']
         widgets = {
             'cod': forms.TextInput(attrs={'class': 'form-control'}),
             'esta': forms.Select(attrs={'class': 'form-control'}),
-            'repre_legal': forms.Select(attrs={'class': 'form-select'}),
         }
         labels = {
             'cod': 'Codigo',
             'esta':  'Estado',
-            'repre_legal':  'Represante Legal'
         }
 
 class RepresanteLegalForm(forms.ModelForm):
     class Meta:
         model = T_repre_legal
-        fields = ['nom', 'tele', 'dire', 'mail', 'paren', 'ciu', 'depa']
+        fields = ['nom','dni', 'tele', 'dire', 'mail', 'paren']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'dni': forms.TextInput(attrs={'class': 'form-control'}),
             'tele': forms.TextInput(attrs={'class': 'form-control'}),
             'dire': forms.TextInput(attrs={'class': 'form-control'}),
-            'mail': forms.TextInput(attrs={'class': 'form-control'}),
-            'paren': forms.TextInput(attrs={'class': 'form-control'}),
-            'ciu': forms.TextInput(attrs={'class': 'form-control'}),
-            'depa': forms.TextInput(attrs={'class': 'form-control'})
+            'mail': forms.EmailInput(attrs={'class': 'form-control'}),
+            'paren': forms.Select(attrs={'class': 'form-control'})
         }
         labels = {
             'nom': 'Nombre',
+            'dni': 'Numero de identificacion',
             'tele': 'Telefono',
             'dire': 'Direccion',
             'mail': 'Correo',
-            'paren': 'Parentesco',
-            'ciu': 'Ciudad',
-            'depa': 'Departamento'
+            'paren': 'Parentesco'
         }
 
 class NovedadForm(forms.ModelForm):
@@ -302,49 +300,87 @@ class MunicipioForm(forms.ModelForm):
         }
 
 class InstitucionForm(forms.ModelForm):
+    depa = forms.ModelChoiceField(
+        queryset= T_departa.objects.all(),
+        empty_label="Seleccione un departamento",
+        widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_depa'}),
+        required=False
+    )
     class Meta:
         model = T_insti_edu
-        fields = ['nom', 'dire', 'secto', 'pote_apre', 'muni', 'coordi', 'coordi_mail', 'coordi_tele', 'esta', 'insti_mail', 'recto', 'recto_tel']
+        fields = ['depa', 'nom', 'dire', 'secto', 'muni', 'coordi', 'coordi_mail', 'coordi_tele', 'esta', 'insti_mail', 'dane', 'recto', 'recto_tel',  'gene', 'grados', 'jorna', 'num_sedes', 'zona', 'vigen', 'cale']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),
             'dire': forms.TextInput(attrs={'class': 'form-control'}),
             'secto': forms.Select(attrs={'class': 'form-control'}),
-            'pote_apre': forms.TextInput(attrs={'class': 'form-control'}),
-            'muni': forms.Select(attrs={'class': 'form-control'}),
-            'coordi': forms.TextInput(attrs={'class': 'form-control'}),
-            'coordi_mail': forms.TextInput(attrs={'class': 'form-control'}),
-            'coordi_tele': forms.TextInput(attrs={'class': 'form-control'}),
+            'muni': forms.Select(attrs={'class': 'form-control', 'id': 'muni', }, choices=[("", "Seleccione un municipio")]),
+            'coordi': forms.TextInput(attrs={
+                'class': 'form-control',
+                'data-toggle': 'tooltip',
+                'data-placement': 'top',
+                'title': 'Nombre de la persona encargada del convenio'
+                }),
+            'coordi_mail': forms.TextInput(attrs={
+                'class': 'form-control',
+                'data-toggle': 'tooltip',
+                'data-placement': 'top',
+                'title': 'Correo de la persona encargada del convenio'
+                }),
+            'coordi_tele': forms.TextInput(attrs={
+                'class': 'form-control',
+                'data-toggle': 'tooltip',
+                'data-placement': 'top',
+                'title': 'Telefono de la persona encargada del convenio'
+                }),
             'esta': forms.Select(attrs={'class': 'form-control'}),
             'insti_mail': forms.TextInput(attrs={'class': 'form-control'}),
+            'dane': forms.TextInput(attrs={'class': 'form-control'}),
             'recto': forms.TextInput(attrs={'class': 'form-control'}),
             'recto_tel': forms.TextInput(attrs={'class': 'form-control'}),
+            'gene': forms.Select(attrs={'class': 'form-control'}),
+            'grados': forms.TextInput(attrs={'class': 'form-control'}),
+            'jorna': forms.TextInput(attrs={'class': 'form-control'}),
+            'num_sedes': forms.TextInput(attrs={'class': 'form-control'}),
+            'zona': forms.Select(attrs={'class': 'form-control'}),
+            'vigen': forms.TextInput(attrs={'class': 'form-control'}),
+            'cale': forms.Select(attrs={'class': 'form-control'})
         }
         labels = {
             'nom': 'Nombre institución',
             'dire': 'Dirección institución',
             'secto': 'Sector',
-            'pote_apre': 'Aprendices potenciales',
             'muni': 'municipio',
             'coordi': 'Coordinador',
             'coordi_mail': 'Correo coordinador',
             'coordi_tele': 'Telefono coordinador',
             'esta': 'Estado',
             'insti_mail': 'Correo institucion',
+            'dane': 'Codigo DANE',
             'recto': 'Nombre Rector',
-            'recto_tel': 'Telefono rector'
+            'recto_tel': 'Telefono rector',
+            'gene': 'Genero',
+            'grados': 'Grados',
+            'jorna': 'Jornada',
+            'num_sedes': 'Numero de sedes',
+            'zona': 'Zona',
+            'vigen': 'Vigencia',
+            'cale': 'Calendario',
+            'depa': 'Departamento'
         }
 
 class CentroFormacionForm(forms.ModelForm):
     class Meta:
         model = T_centro_forma
-        fields = ['nom', 'depa']
+        fields = ['nom', 'depa', 'cod']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),
-            'depa': forms.TextInput(attrs={'class': 'form-control'}),
+            'depa': forms.Select(attrs={'class': 'form-control select2'}),
+            'cod': forms.TextInput(attrs={'class': 'form-control'}),
         }
         labels = {
             'nom': 'Nombre de centro de formacion',
             'depa': 'Departamento del centro de formación',
+            'cod': 'Codigo del centro de formacion',
         }
 
 class CargarAprendicesMasivoForm(forms.Form):

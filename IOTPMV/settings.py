@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'dal_select2',
     'administracion',
     'channels',
-    'whitenoise.runserver_nostatic'
+    'whitenoise.runserver_nostatic',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
@@ -63,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'usuarios.middleware.ExpiredSessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 CACHES = {
@@ -71,6 +73,8 @@ CACHES = {
         'LOCATION': 'unique-snowflake',  # Nombre único para la caché
     }
 }
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'IOTPMV.urls'
 
@@ -202,6 +206,7 @@ LOGIN_URL = '/signin/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1048576000  # 1 GB (en bytes)
 
 # Configuración de correo en Django
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

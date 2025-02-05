@@ -6,18 +6,21 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from commons.models import T_instru,T_cuentas, T_apre,T_docu_labo, T_gestor_depa, T_gestor,T_docu, T_perfil, T_admin, T_lider, T_nove, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
+from commons.models import T_instru,T_cuentas, T_gestor_insti_edu, T_apre,T_docu_labo, T_gestor_depa, T_gestor,T_docu, T_perfil, T_admin, T_lider, T_nove, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
 from .forms import InstructorForm, PerfilEForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, NovedadForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
 from .serializers import T_insti_edu_Serializer
 from rest_framework.views import APIView
+from django.db.models.functions import Cast
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.forms.models import model_to_dict
+from django.db.models.functions import TruncDate
 from io import TextIOWrapper
+from django.core.validators import validate_email
 from django.core.mail import send_mail
-from django.db.models import Q  # Para realizar búsquedas dinámicas
+from django.db.models import Q, F, Func, DateField  # Para realizar búsquedas dinámicas
 from django.conf import settings
 from datetime import datetime
 from django.db.models import Prefetch
@@ -31,6 +34,9 @@ def home(request):
     return render(request, 'home.html')
 
 def signin(request):
+    if request.user.is_authenticated:
+        return redirect('home')  # Reemplaza 'dashboard' con la vista deseada
+
     if request.method == 'GET':
         return render(request, 'signin.html', {
             'form': AuthenticationForm
@@ -55,7 +61,7 @@ def signin(request):
                 # Verificar el rol del perfil
                 if perfil.rol == 'aprendiz':
                     return redirect('panel_aprendiz')  # Redirigir al panel del aprendiz
-                if perfil.rol == 'gestor':
+                if perfil.rol == 'gestor' or 'lider':
                     return redirect('instituciones_gestor')
             except T_perfil.DoesNotExist:
                 pass  # Si no se encuentra el perfil, no hacer nada adicional
@@ -626,99 +632,271 @@ def eliminar_representante_legal(request, repreLegal_id):
         'represante_legal': representante_legal,
     })
 
- ### APRENDICES ###
+### APRENDICES ###
 
 @login_required
 def aprendices(request):
     perfil = getattr(request.user, 't_perfil', None)
     rol = perfil.rol
     aprendices = T_apre.objects.select_related('perfil__user').all()
+
+    perfil_form_data = request.session.pop('perfil_form_data', None)
+    representante_form_data = request.session.pop('representante_form_data', None)
+
+    perfil_form = PerfilForm(perfil_form_data, prefix='perfil') if perfil_form_data else PerfilForm(prefix='perfil')
+    representante_form = RepresanteLegalForm(representante_form_data, prefix='representante') if representante_form_data else RepresanteLegalForm(prefix='representante')
+
+
     return render(request, 'aprendiz.html', {
         'aprendices': aprendices,
-        'rol': rol
+        'rol': rol,
+        'perfil_form': perfil_form,
+        'representante_form': representante_form
     })
 
+## Endpoint para editar aprendiz ##
+def obtener_aprendiz(request, aprendiz_id):
+    aprendiz = T_apre.objects.filter(id=aprendiz_id).first()
+    perfil = T_perfil.objects.filter(id=aprendiz.perfil_id).first()
+    representante = T_repre_legal.objects.filter(id=aprendiz.repre_legal_id).first()
+    if aprendiz and perfil:
+        data = {
+            'perfil-nom': perfil.nom,
+            'perfil-apelli': perfil.apelli,
+            'perfil-tipo_dni': perfil.tipo_dni,
+            'perfil-dni': perfil.dni,
+            'perfil-tele': perfil.tele,
+            'perfil-dire': perfil.dire,
+            'perfil-mail': perfil.mail,
+            'perfil-gene': perfil.gene,
+            'perfil-fecha_naci': perfil.fecha_naci,
+            'representante-nom': representante.nom,
+            'representante-dni': representante.dni,
+            'representante-tele': representante.tele,
+            'representante-dire': representante.dire,
+            'representante-mail': representante.mail,
+            'representante-paren': representante.paren
+        }
+        return JsonResponse(data)
+    return JsonResponse({'error': 'Aprendiz no encontrado'}, status=404)
+
+# Enviar datos a los filtros de aprendices:
+
+## Filtro de usuario creacion ##
+def obtener_usuarios_creacion(request):
+    usuarios_ids = T_apre.objects.values_list('usu_crea', flat=True,).distinct()
+
+    # Obtener los perfiles relacionados a esos usuarios
+    perfiles = T_perfil.objects.filter(user__id__in=usuarios_ids).values('nom', 'apelli').distinct()
+
+    # Formatear como "Nombre Apellido"
+    usuarios = [f"{perfil['nom']} {perfil['apelli']}" for perfil in perfiles]
+
+    return JsonResponse(usuarios, safe=False)
+
+def obtener_opciones_estados(request):
+    estados = T_apre.objects.values_list('esta', flat=True).distinct()
+    return JsonResponse(list(estados), safe=False)
+
+## Endpoint para filtrar aprendices en la tabla ##
+def filtrar_aprendices(request):
+    usuarios = request.GET.getlist('usuario_creacion', [])
+    estado = request.GET.getlist('estado', [])
+    fecha = request.GET.get('fecha_creacion_', None)
+
+    aprendices = T_apre.objects.all()
+
+    if usuarios:
+        filtros = Q()
+
+        for usuario in usuarios:
+            nombre, *apellido = usuario.split(" ")
+            apellido = " ".join(apellido)
+
+            filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre, usu_crea__t_perfil__apelli__icontains=apellido)
+        
+        aprendices = aprendices.filter(filtros)
+    if estado:
+        aprendices = aprendices.filter(esta__in=estado)
+    if fecha:
+        # Convertir la fecha recibida en el formato adecuado
+        fecha_creacion = datetime.strptime(fecha, '%Y-%m-%d').date()
+        print(f"Fecha de creación recibida: {fecha_creacion}")
+
+        # Convertir la fecha de 'date_joined' a solo la fecha sin la hora
+        aprendices = aprendices.annotate(fecha_sin_hora=Cast('perfil__user__date_joined', output_field=DateField()))
+
+        # Imprimir el resultado de las fechas truncadas para depuración
+        for aprendiz in aprendices:
+            print(f"Aprendiz ID: {aprendiz.id}, User: {aprendiz.perfil.user}, Date Joined: {aprendiz.perfil.user.date_joined}, Fecha truncada: {aprendiz.fecha_sin_hora}")
+
+        # Filtrar por la fecha truncada
+        aprendices = aprendices.filter(fecha_sin_hora=fecha_creacion)
+
+
+    resultados = [
+        {
+            'id': a.id,
+            'nombre': a.perfil.nom,
+            'apellido': a.perfil.apelli,
+            'telefono': a.perfil.tele,
+            'direccion': a.perfil.dire,
+            'mail': a.perfil.mail,
+            'fecha_naci': a.perfil.fecha_naci,
+            'estado': a.esta,
+            'dni': a.perfil.dni,
+        }
+        for a in aprendices
+    ]
+    return JsonResponse(resultados, safe=False)
+
 @login_required
-def crear_aprendices(request):  # Funcion para crear aprendiz
-    if request.method == 'GET':
+def crear_aprendices(request):
+    if request.method == 'POST':
+        perfil_form = PerfilForm(request.POST, prefix='perfil')
+        representante_form = RepresanteLegalForm(request.POST, prefix='representante')
 
-        user_form = UserFormCreate()
-        perfil_form = PerfilForm()
-        aprendiz_form = AprendizForm()
+        if perfil_form.is_valid() and representante_form.is_valid():
+            try:
+                dni = perfil_form.cleaned_data['dni']
+                if T_perfil.objects.filter(dni=dni).exists():
+                    raise ValueError("El número de documento ya está registrado en el sistema.")
 
-        return render(request, 'aprendiz_crear.html', {
-            'user_form': user_form,
-            'perfil_form': perfil_form,
-            'aprendiz_form': aprendiz_form
-        })
-    else:
-        try:
-            user_form = UserFormCreate(request.POST)
-            perfil_form = PerfilForm(request.POST)
-            aprendiz_form = AprendizForm(request.POST)
-            if user_form.is_valid() and perfil_form.is_valid() and aprendiz_form.is_valid():
-                # Creacion del usuario
-                new_user = user_form.save(commit=False)
-                new_user.set_password(user_form.cleaned_data['password'])
-                new_user.save()
+                fecha_nacimiento = perfil_form.cleaned_data['fecha_naci']
+                if fecha_nacimiento:
+                    edad = (datetime.now().date() - fecha_nacimiento).days // 365
+                    if edad < 14:
+                        raise ValueError("El aprendiz debe tener al menos 14 años para registrarse.")
+                else:
+                    raise ValueError("La fecha de nacimiento es obligatoria.")
 
-                # creacion del perfil
+                nombre = perfil_form.cleaned_data['nom']
+                apellido = perfil_form.cleaned_data['apelli']
+                base_username = (nombre[:3] + apellido[:3]).lower()
+                username = base_username
+                i = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{base_username}{i}"
+                    i += 1
+
+                contraseña = generar_contraseña()
+
+                new_user = User.objects.create_user(
+                    username=username,
+                    password=contraseña,
+                    email=perfil_form.cleaned_data['mail']
+                )
+
                 new_perfil = perfil_form.save(commit=False)
                 new_perfil.user = new_user
                 new_perfil.rol = 'aprendiz'
                 new_perfil.mail = new_user.email
                 new_perfil.save()
 
-                # creacion del aprendiz
-                new_aprendiz = aprendiz_form.save(commit=False)
-                new_aprendiz.perfil = new_perfil
-                new_aprendiz.save()
+                nombre_repre = representante_form.cleaned_data['nom']
+                telefono_repre = representante_form.cleaned_data['tele']
+                new_repre_legal = T_repre_legal.objects.filter(
+                    nom=nombre_repre,
+                    tele=telefono_repre
+                ).first()
+
+                if not new_repre_legal:
+                    new_repre_legal = representante_form.save()
+                
+                perfil = getattr(request.user, 't_perfil', None)
+
+                T_apre.objects.create(
+                    cod="z",
+                    esta="Activo",
+                    perfil=new_perfil,
+                    repre_legal=new_repre_legal,
+                    usu_crea = perfil.user
+                )
+
                 return redirect('aprendices')
 
-        except ValueError as e:
-            return render(request, 'aprendiz_crear.html', {
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'aprendiz_form': aprendiz_form,
-                'error': f'Ocurrió un error: {str(e)}'
-            })
+            except ValueError as e:
+                messages.error(request, f'Ocurrió un error: {str(e)}')
+        else:
+            messages.error(request, 'Por favor, corrige los errores en el formulario.')
 
-@login_required
-def detalle_aprendices(request, aprendiz_id):  # Funcion para editar aprendiz
-    aprendiz = get_object_or_404(T_apre, pk=aprendiz_id)
-    perfil = aprendiz.perfil
-    user = perfil.user
+        # Redirigir de nuevo a la vista principal con los errores y formularios
+        aprendices_url = reverse('aprendices')
+        query_params = '?modal=open'  # Parámetro para abrir el modal automáticamente
+        response = redirect(f'{aprendices_url}{query_params}')
+        request.session['perfil_form_data'] = request.POST
+        request.session['representante_form_data'] = request.POST
+        return response
 
-    if request.method == 'GET':
+    return redirect('aprendices')
 
-        user_form = UserFormCreate(instance=user)
-        perfil_form = PerfilForm(instance=perfil)
-        aprendiz_form = AprendizForm(instance=aprendiz)
 
-        return render(request, 'aprendiz_detalle.html', {
-            'aprendiz': aprendiz,
-            'user_form': user_form,
-            'perfil_form': perfil_form,
-            'aprendiz_form': aprendiz_form
-        })
+def editar_aprendiz(request, id):
+    aprendiz = get_object_or_404(T_apre, pk=id)
+    perfil = get_object_or_404(T_perfil, pk=aprendiz.perfil_id)
+    representante = get_object_or_404(T_repre_legal, pk=aprendiz.repre_legal_id)
+    
+    if request.method == 'POST':
+        print(request.POST)  # Agregado para depurar
+        form_perfil = PerfilForm(request.POST, instance=perfil, prefix='perfil')
+        form_repre = RepresanteLegalForm(request.POST, instance=representante, prefix='representante')
+        
+        if form_perfil.is_valid() and form_repre.is_valid():
+            form_perfil.save()
+            form_repre.save()
+            messages.success(request, "Aprendiz actualizado con éxito.")
+            return redirect(request.META.get('HTTP_REFERER', '/'))  # Redirige a la página anterior
+            # En lugar de redirigir, simplemente renderiza la página con el formulario actualizado
+        else:
+            print(form_perfil.errors)
+            print(form_repre.errors)
+            messages.error(request, "Ocurrió un error al actualizar el aprendiz.")
     else:
-        try:
-            user_form = UserFormCreate(request.POST)
-            perfil_form = PerfilForm(request.POST)
-            aprendiz_form = AprendizForm(request.POST)
-            if user_form.is_valid() and perfil_form.is_valid() and aprendiz_form.is_valid():
-                user_form.save()
-                perfil_form.save()
-                aprendiz_form.save()
-            return redirect('aprendices')
+        form_perfil = PerfilForm(instance=perfil, prefix='perfil')
+        form_repre = RepresanteLegalForm(instance=representante, prefix='representante')
 
-        except ValueError:
-            return render(request, 'aprendiz_detalle.html', {
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'aprendiz_form': aprendiz_form,
-                'error': 'Error al actualizar el administrador. Verifique los datos'
-            })
+    return render(request, 'aprendiz.html', {
+        'form_perfil': form_perfil,
+        'form_repre': form_repre,
+        'aprendiz': aprendiz  # Pasa el aprendiz para poder acceder a su ID en el HTML
+    })
+
+# @login_required
+# def detalle_aprendices(request, aprendiz_id):  # Funcion para editar aprendiz
+#     aprendiz = get_object_or_404(T_apre, pk=aprendiz_id)
+#     perfil = aprendiz.perfil
+#     user = perfil.user
+
+#     if request.method == 'GET':
+
+#         user_form = UserFormCreate(instance=user)
+#         perfil_form = PerfilForm(instance=perfil)
+#         aprendiz_form = AprendizForm(instance=aprendiz)
+
+#         return render(request, 'aprendiz_detalle.html', {
+#             'aprendiz': aprendiz,
+#             'user_form': user_form,
+#             'perfil_form': perfil_form,
+#             'aprendiz_form': aprendiz_form
+#         })
+#     else:
+#         try:
+#             user_form = UserFormCreate(request.POST)
+#             perfil_form = PerfilForm(request.POST)
+#             aprendiz_form = AprendizForm(request.POST)
+#             if user_form.is_valid() and perfil_form.is_valid() and aprendiz_form.is_valid():
+#                 user_form.save()
+#                 perfil_form.save()
+#                 aprendiz_form.save()
+#             return redirect('aprendices')
+
+#         except ValueError:
+#             return render(request, 'aprendiz_detalle.html', {
+#                 'user_form': user_form,
+#                 'perfil_form': perfil_form,
+#                 'aprendiz_form': aprendiz_form,
+#                 'error': 'Error al actualizar el administrador. Verifique los datos'
+#             })
 
 @login_required
 def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
@@ -1137,9 +1315,40 @@ def eliminar_municipios(request, municipio_id):  # funcion para eliminar municip
 @login_required
 def instituciones(request):
     instituciones = T_insti_edu.objects.all()
+    institucionForm = InstitucionForm()
+
     return render(request, 'instituciones.html', {
-        'instituciones': instituciones
+        'instituciones': instituciones,
+        'institucionForm': institucionForm
     })
+
+## Endpoint para editar institucion ##
+def obtener_institucion(request, institucion_id):
+    institucion = T_insti_edu.objects.filter(id=institucion_id).first()
+    if institucion:
+        data = {
+            'nom': institucion.nom,
+            'dire': institucion.dire,
+            'municipio': institucion.muni.id,
+            'secto': institucion.secto,
+            'coordi': institucion.coordi,
+            'coordi_mail': institucion.coordi_mail,
+            'coordi_tele': institucion.coordi_tele,
+            'esta': institucion.esta,
+            'insti_mail': institucion.insti_mail,
+            'recto': institucion.recto,
+            'recto_tel': institucion.recto_tel,
+            'vigen': institucion.vigen,
+            'cale': institucion.cale,
+            'dane': institucion.dane,
+            'gene': institucion.gene,
+            'grados': institucion.grados,
+            'jorna': institucion.jorna,
+            'num_sedes': institucion.num_sedes,
+            'zona': institucion.zona,
+        }
+        return JsonResponse(data)
+    return JsonResponse({'error': 'Institución no encontrada'}, status=404)
 
 
 @login_required
@@ -1171,12 +1380,14 @@ def crear_instituciones(request):  # Función para crear institución
                 return redirect('instituciones')  # Redirigir a la lista de instituciones
             
             # Si el formulario no es válido, renderizar con errores
+            print(institucionForm.errors)
             return render(request, 'instituciones_crear.html', {
                 'institucionForm': institucionForm,
                 'error': 'Error al crear institución. Verifique los datos ingresados.'
             })
         
         except ValueError:
+            print(institucionForm.errors)
             # Manejar errores específicos
             return render(request, 'instituciones_crear.html', {
                 'institucionForm': institucionForm,
@@ -1187,6 +1398,18 @@ def crear_instituciones(request):  # Función para crear institución
         # Si el método no es GET ni POST, redirigir
         return redirect('instituciones')
 
+def editar_institucion(request, id):
+    institucion = get_object_or_404(T_insti_edu, pk=id)
+    if request.method == 'POST':
+        form = InstitucionForm(request.POST, instance=institucion)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Institucion actualizada con exito")
+            return redirect(request.META.get('HTTP_REFERER', '/'))  # Redirige a la página anterior
+    else:
+        form = InstitucionForm(instance=institucion)
+
+    return render(request, 'editar_institucion.html', {'form': form})
 
 
 @login_required
@@ -1229,10 +1452,26 @@ def eliminar_instituciones(request, institucion_id):
 ## Centros de formacion ##
 @login_required
 def centrosformacion(request):
-    centrosformacion = T_centro_forma.objects.all()
-    return render(request, 'centro_formacion.html', {
-        'centrosformacion': centrosformacion
-    })
+    if request.method == 'GET':
+        centrosformacion = T_centro_forma.objects.all()
+        centroformacionForm = CentroFormacionForm()
+        return render(request, 'centro_formacion.html', {
+            'centrosformacion': centrosformacion,
+            'centroformacionForm': centroformacionForm
+        })
+    else:
+        try:
+            centrosformacionForm = CentroFormacionForm(request.POST)
+            if centrosformacionForm.is_valid():
+                new_centroFormacion = centrosformacionForm.save(commit=False)
+                new_centroFormacion.save()
+                return redirect('centrosformacion')
+        except ValueError:
+                return render(request, 'centro_formacion.html', {
+            'centrosformacion': centrosformacion,
+            'centroformacionForm': centroformacionForm,
+            'error': 'Error al crear institución. Verifique los datos'
+            })
 
 
 login_required  # Funcion para crear centros de formacion
@@ -1302,73 +1541,71 @@ def obtener_municipios(request):
 
 # Función para generar contraseña aleatoria
 def generar_contraseña(length=8):
-    caracteres = string.ascii_letters + string.digits + string.punctuation
+    caracteres = string.ascii_letters + string.digits
     return ''.join(random.choice(caracteres) for _ in range(length))
 
 @login_required
 def cargar_aprendices_masivo(request):
     if request.method == 'POST':
+
+        errores = []
+        resumen = {
+            "insertados": 0,
+            "errores": 0,
+            "duplicados_dni": []
+        }
         form = CargarAprendicesMasivoForm(request.POST, request.FILES)
         if form.is_valid():
-            archivo = request.FILES['archivo']
-            datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
-
-            # Convertir punto y coma a coma en caso de que el CSV use el delimitador ";"
-            contenido_csv = datos_csv.read().replace(';', ',')
-
-            # Leer el archivo CSV
-            lector = csv.DictReader(contenido_csv.splitlines())
-
-            errores = []
-            resumen = {
-                "insertados": 0,
-                "errores": 0,
-                "duplicados_dni": []
-            }
-
             try:
                 # Iniciar una transacción
                 with transaction.atomic():
+                    archivo = request.FILES['archivo']
+                    datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
+
+                    # Validar extensión del archivo
+                    if not archivo.name.lower().endswith('.csv'):
+                        messages.error(request, "Solo se permiten archivos CSV (.csv).")
+                        resumen["errores"] += 1
+                        errores.append(f"Solo se permiten archivos CSV (.csv)")
+                        raise ValidationError(f"Solo se permiten archivos CSV (.csv).")
+                    
+                    # Validar tipo MIME (opcional pero recomendado)
+                    allowed_mime_types = ['text/csv', 'application/csv', 'text/plain']
+                    if archivo.content_type not in allowed_mime_types:
+                        messages.error(request, "Tipo de archivo no válido (solo CSV).")
+                        resumen["errores"] += 1
+                        errores.append(f"Solo se permiten archivos CSV (.csv)")
+                        raise ValidationError(f"Solo se permiten archivos CSV (.csv).")
+                                
+                    # Convertir punto y coma a coma en caso de que el CSV use el delimitador ";"
+                    contenido_csv = datos_csv.read().replace(';', ',')
+
+                    # Leer el archivo CSV
+                    lector = csv.DictReader(contenido_csv.splitlines())
+
                     representantes = {}  # Diccionario para llevar un registro de los representantes procesados
+                    perfil_crea = getattr(request.user, 't_perfil', None)
 
                     for fila in lector:
                         try:
-                            # Validar campos
 
-                            if 'email' not in fila or not fila['email']:
-                                errores.append(f"Error: 'email' ausente o vacío en la fila: {fila}")
-                                resumen["errores"] += 1
-                                continue
-                            
-                            if 'nom' not in fila or not fila['nom']:
-                                errores.append(f"Error: 'nombre' ausente o vacío en la fila: {fila}")
-                                resumen["errores"] += 1
-                                continue
+                            # Validar campos obligatorios
+                            campos_requeridos = ['email', 'nom', 'dni', 'apelli', 'tipo_dni', 'tele', 'dire', 'gene',
+                            'nom_repre', 'dni_repre', 'tele_repre', 'dire_repre', 'mail_repre', 'parentezco', 'ciu', 'depa']
+                            for campo in campos_requeridos:
+                                if campo not in fila or not fila[campo].strip():
+                                    raise ValidationError(f"Campo requerido faltante: '{campo}' en fila: {fila}")
 
-                            if 'dni' not in fila or not fila['dni']:
-                                errores.append(f"Error: 'dni' ausente o vacío en la fila: {fila}")
-                                resumen["errores"] += 1
-                                continue
                             
                             # Verificar si el DNI ya existe
                             dni = fila['dni']
                             if T_perfil.objects.filter(dni=dni).exists():
-                                mensaje_error = f"El DNI '{dni}' ya está registrado en el sistema. Fila omitida: {fila}"
-                                errores.append(mensaje_error)  # Registrar el error en la lista
-                                resumen["duplicados_dni"].append(dni)
-                                resumen["errores"] += 1
-                                continue
+                                raise ValidationError(f"DNI duplicado: {dni}")
 
-                            # Validar email
-                            try:
-                                user_email = fila['email']
-                                if not user_email:
-                                    raise ValidationError("El correo es inválido")
-                            except ValidationError as e:
-                                errores.append(f"Error: Correo inválido en la fila {fila}: {e}")
-                                resumen["errores"] += 1
-                                continue
-                            
+                            # Validar emails
+                            validate_email(fila['email'])
+                            validate_email(fila['mail_repre'])
+
                             # Convertir la fecha de nacimiento si existe
                             fecha_naci_str = fila.get('fecha_naci', '').strip()
                             if fecha_naci_str:
@@ -1377,10 +1614,8 @@ def cargar_aprendices_masivo(request):
                                     fecha_naci = datetime.strptime(fecha_naci_str, '%d/%m/%Y')
                                     # Convertirla al formato YYYY-MM-DD
                                     fecha_naci = fecha_naci.strftime('%Y-%m-%d')
-                                except ValueError:
-                                    errores.append(f"Error: La fecha de nacimiento '{fecha_naci_str}' no tiene el formato correcto en la fila: {fila}")
-                                    resumen["errores"] += 1
-                                    continue
+                                except ValueError as e:
+                                    raise ValidationError(f"Formato de fecha inválido en fila {fila}: {str(e)}")  # Cambiar esto
                             else:
                                 fecha_naci = None
 
@@ -1414,7 +1649,7 @@ def cargar_aprendices_masivo(request):
                                 tele=fila['tele'],
                                 dire=fila['dire'],
                                 gene=fila['gene'],
-                                mail=fila['mail'],
+                                mail=fila['email'],
                                 fecha_naci=fecha_naci,  # Asignar la fecha ya convertida
                                 rol="aprendiz"
                             )
@@ -1435,6 +1670,7 @@ def cargar_aprendices_masivo(request):
                                     # Si no existe en la base de datos, crear uno nuevo
                                     repre_legal = T_repre_legal.objects.create(
                                         nom=nombre_repre,
+                                        dni=fila['dni_repre'],
                                         tele=telefono_repre,
                                         dire=fila['dire_repre'],
                                         mail=fila['mail_repre'],
@@ -1449,32 +1685,32 @@ def cargar_aprendices_masivo(request):
                                 cod="z",
                                 esta="Activo",
                                 perfil=perfil,
-                                repre_legal=repre_legal
+                                repre_legal=repre_legal,
+                                usu_crea = perfil_crea.user
                             )
 
-                            # Enviar el correo con la contraseña
-                            asunto = "Bienvenido a la plataforma"
-                            mensaje = f"Hola {fila['nom']} {fila['apelli']},\n\nTu cuenta ha sido creada con éxito. A continuación se encuentran tus credenciales:\n\nUsuario: {username}\nContraseña: {contraseña}\n\nRecuerda cambiar tu contraseña después de iniciar sesión."
-                            send_mail(
-                                asunto,
-                                mensaje,
-                                settings.DEFAULT_FROM_EMAIL,
-                                [fila['email']],
-                                fail_silently=False,
-                            )
+                            # # Enviar el correo con la contraseña
+                            # asunto = "Bienvenido a la plataforma"
+                            # mensaje = f"Hola {fila['nom']} {fila['apelli']},\n\nTu cuenta ha sido creada con éxito. A continuación se encuentran tus credenciales:\n\nUsuario: {username}\nContraseña: {contraseña}\n\nRecuerda cambiar tu contraseña después de iniciar sesión."
+                            # send_mail(
+                            #     asunto,
+                            #     mensaje,
+                            #     settings.DEFAULT_FROM_EMAIL,
+                            #     [fila['email']],
+                            #     fail_silently=False,
+                            # )
 
                             resumen["insertados"] += 1
+                            messages.success(request, "Filas insertadas correctamente.")
 
                         except Exception as e:
-                            # En caso de error, revertir la transacción completa
-                            errores.append(f"Error inesperado al procesar la fila {fila}: {str(e)}")
+                            errores.append(f"Error: {str(e)} en la fila {fila}")
                             resumen["errores"] += 1
-                            raise  # Lanza la excepción para que se revierta la transacción
+                            resumen["insertados"] = 0
+                            raise  # Fuerza el rollback
 
             except Exception as e:
-                # Si hay un error, todo lo insertado hasta ese momento se revertirá
-                errores.append(f"Error en el proceso de importación: {str(e)}")
-                resumen["errores"] = len(errores)
+                messages.error(request, "No se ha cargado informacion, corrija los errores e intentelo de nuevo.")
 
             # Resumen de los datos procesados
             return render(request, 'aprendiz_masivo_crear.html', {
@@ -1505,10 +1741,36 @@ class T_insti_edu_APIView(APIView):
         start = int(request.GET.get('start', 0))
         length = int(request.GET.get('length', 10))
         search_value = request.GET.get('search[value]', '')
-        
-        # Consulta inicial
-        queryset = T_insti_edu.objects.all()
 
+        # Ordenamiento
+        order_column_index = request.GET.get('order[0][column]', 0) # Indice de la columna
+        order_dir = request.GET.get('order[0][dir]', 'asc') # Direccion de ordenamiento asc o desc
+
+        # Definicion de columnas correspondientes en el frontend
+        columns = [
+            'nom',                      # Nombre
+            'dire',                     # Direccion
+            'muni__nom_munici',        # Municipio
+            'muni__nom_departa__nom_departa',  # Departamento
+            'secto',                   # Sector
+            'esta',                    # Estado
+            'dane',                    # Código DANE
+            'gene',                    # Género
+            'zona'                     # Zona
+        ]
+
+        # Mapeo del indice al nombre de la columna
+        try:
+            order_column = columns[int(order_column_index)]
+        except (IndexError, ValueError):
+            order_column = 'nom' #Orden por defecto en caso de error
+
+        # Ordenamiento de la queryset
+        if order_dir == 'desc':
+            queryset = T_insti_edu.objects.order_by(f'-{order_column}')
+        else:
+            queryset = T_insti_edu.objects.order_by(order_column)
+        
         # Aplicar búsqueda si existe un término
         if search_value:
             queryset = queryset.filter(
@@ -1523,8 +1785,8 @@ class T_insti_edu_APIView(APIView):
                 Q(zona__icontains=search_value)
             )
 
-        # Total de registros
-        total = queryset.count()
+        # Total de registros antes del filtrado
+        total = T_insti_edu.objects.count()
 
         # Total de registros después del filtro
         total_filtered = queryset.count()
@@ -1539,7 +1801,7 @@ class T_insti_edu_APIView(APIView):
         return Response({
             'draw': draw,
             'recordsTotal': total,
-            'recordsFiltered': total,  # Ajusta si aplicas filtros
+            'recordsFiltered': total_filtered,  # Ajusta si aplicas filtros
             'data': serializer.data,
         })
 
@@ -1566,67 +1828,92 @@ def gestores(request):
 @login_required
 def crear_gestor(request):
     if request.method == 'GET':
-        user_form = UserFormCreate()
         perfil_form = PerfilForm()
         gestor_depa_form = GestorDepaForm()
 
         return render(request, 'gestor_crear.html', {
-            'user_form': user_form,
             'perfil_form': perfil_form,
             'gestor_depa_form': gestor_depa_form
         })
     else:
         try:
-            user_form = UserFormCreate(request.POST)
             perfil_form = PerfilForm(request.POST)
             gestor_depa_form = GestorDepaForm(request.POST)
 
-            if user_form.is_valid() and perfil_form.is_valid() and gestor_depa_form.is_valid():
-                username = user_form.cleaned_data['username']
-                if User.objects.filter(username=username).exists():
+            if perfil_form.is_valid() and gestor_depa_form.is_valid():
+                # Obtener datos del perfil
+                new_perfil = perfil_form.save(commit=False)
+
+                # Verificar si ya existe un gestor con la misma cédula
+                if T_perfil.objects.filter(dni=new_perfil.dni, rol="gestor").exists():
+                    messages.error(
+                    request,
+                    "Ya existe un gestor con esta cédula"
+                    )
                     return render(request, 'gestor_crear.html', {
-                        'user_form': user_form,
                         'perfil_form': perfil_form,
                         'gestor_depa_form': gestor_depa_form,
-                        'error1': 'El usuario ya existe.'
+                        'error': 'Ya existe un gestor con esta cédula.'
                     })
 
-                # Creación del usuario
-                new_user = user_form.save(commit=False)
-                new_user.set_password(user_form.cleaned_data['password'])
-                new_user.save()
+                # Generar username automáticamente
+                username_base = new_perfil.nom.lower().replace(" ", "")  # Eliminar espacios
+                username = f"{username_base}g"
 
-                # Creación del perfil
-                new_perfil = perfil_form.save(commit=False)
+                # Asegurar que el username sea único
+                count = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{username_base}g{count}"
+                    count += 1
+
+                # Generar una contraseña aleatoria
+                password = generar_contraseña()
+
+                # Crear el usuario con los datos generados
+                new_user = User.objects.create_user(username=username, password=password, email=new_perfil.mail)
+
+                # Asignar usuario al perfil y guardarlo
                 new_perfil.user = new_user
                 new_perfil.rol = 'gestor'
-                new_perfil.mail = new_user.email
                 new_perfil.save()
 
-                # Creación del gestor
-                new_gestor = T_gestor(
-                    perfil = new_perfil,
-                    esta = 'asignado'
-                )
+                # Crear el gestor
+                new_gestor = T_gestor(perfil=new_perfil, esta='asignado')
                 new_gestor.save()
 
-                # Creacion de la relacion con departamento
+                # Crear relación con departamentos
                 departamentos = gestor_depa_form.cleaned_data['departamentos']
                 for departamento in departamentos:
                     departai = T_departa.objects.get(nom_departa=departamento)
                     new_gestor_depa = T_gestor_depa(
-                        gestor = new_gestor,
-                        depa = departai,
-                        fecha_crea = datetime.now(),
-                        usuario_crea = request.user
+                        gestor=new_gestor,
+                        depa=departai,
+                        fecha_crea=datetime.now(),
+                        usuario_crea=request.user
                     )
                     new_gestor_depa.save()
-                
+
+                # Enviar correo de bienvenida
+                asunto = "Credenciales de acceso"
+                mensaje = (
+                    f"Hola {new_perfil.nom},\n\n"
+                    f"Su cuenta ha sido creada exitosamente.\n"
+                    f"Usuario: {username}\n"
+                    f"Contraseña: {password}\n\n"
+                    f"Por favor cambie su contraseña después de iniciar sesión."
+                )
+                send_mail(
+                    asunto,
+                    mensaje,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [new_perfil.mail],
+                    fail_silently=False,
+                )
+
                 return redirect('gestores')
 
             else:
                 return render(request, 'gestor_crear.html', {
-                    'user_form': user_form,
                     'perfil_form': perfil_form,
                     'gestor_depa_form': gestor_depa_form,
                     'error': 'Por favor corrige los errores en el formulario.'
@@ -1634,12 +1921,11 @@ def crear_gestor(request):
 
         except ValueError as e:
             return render(request, 'gestor_crear.html', {
-                'user_form': user_form,
                 'perfil_form': perfil_form,
                 'gestor_depa_form': gestor_depa_form,
                 'error': f'Error: {str(e)}'
             })
-        
+
 @login_required
 def gestor_detalle(request, gestor_id):
     gestor = get_object_or_404(T_gestor, pk=gestor_id)
@@ -1665,15 +1951,46 @@ def gestor_detalle(request, gestor_id):
         gestor_depa_form = GestorDepaForm(request.POST)
 
         if perfil_form.is_valid() and gestor_depa_form.is_valid():
-            perfil_form.save()
 
             # Actualizar departamentos asociados
-            nuevos_departamentos = gestor_depa_form.cleaned_data['departamentos']
+            nuevos_departamentos = set(
+                gestor_depa_form.cleaned_data['departamentos'].values_list('id', flat=True)
+            )
+            actuales_departamentos = set(
+                T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__id', flat=True)
+            )
+
+            # Identificar departamentos que se intentan eliminar
+            departamentos_a_eliminar = actuales_departamentos - nuevos_departamentos
+            print(nuevos_departamentos)
+            print(actuales_departamentos)
+            print(departamentos_a_eliminar)
+            # verificar si alguno de los deparatmentos a eliminar tiene instituciones asignadas
+            departamentos_con_instituciones = T_gestor_insti_edu.objects.filter(
+                gestor = gestor,
+                insti__muni__nom_departa__id__in= departamentos_a_eliminar
+            ).exists()
+
+            if departamentos_con_instituciones:
+                messages.error(
+                    request,
+                    "No se puede actualizar. Uno o mas departamentos que intenta eliminar tiene instituciones asiganadas"
+                )
+                return render(request, 'gestor_detalle.html', {
+                    'gestor': gestor,
+                    'perfil_form': perfil_form,
+                    'gestor_depa_form': gestor_depa_form,
+                })
+
+            # Si no hay problemas, guarda el perfin
+            perfil_form.save()
+            
             T_gestor_depa.objects.filter(gestor=gestor).delete()  # Elimina los existentes
             for depa in nuevos_departamentos:
+                departamento = T_departa.objects.get(id=depa)
                 T_gestor_depa.objects.create(
                     gestor=gestor, 
-                    depa=depa, 
+                    depa=departamento, 
                     fecha_crea = datetime.now(),
                     usuario_crea = request.user
                 )

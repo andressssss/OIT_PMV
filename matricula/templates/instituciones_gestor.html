@@ -6,139 +6,229 @@
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
     <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center pb-4">
-                <h1 class="text-center display-5">Instituciones Asignadas</h1>
-                <div class="d-flex justify-content-end mb-3">
+        <div class="col-6">
+            <h1 class="display-5">Instituciones Asignadas</h1>
+        </div>
+        <div class="col-5">
+            <!-- Nueva sección de insights -->
+            <div class="row">
+                <div class="col">
+                    <div class="card text-center shadow-sm h-10">
+                        <div class="card-body" data-toggle="tooltip" data-placement="top" title="Total de Instituciones">
+                            <p class="card-text  text-primary mb-0">{{ total_instituciones }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card text-center shadow-sm h-10">
+                        <div class="card-body" data-toggle="tooltip" data-placement="top" title="Instituciones Asignadas">
+                            <p class="card-text text-success mb-0">{{ instituciones_asignadas }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card text-center shadow-sm h-10">
+                        <div class="card-body" data-toggle="tooltip" data-placement="top" title="Instituciones con Grupos">
+                            <p class="card-text text-warning mb-0">{{ instituciones_con_grupos }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-1 text-center">
                     {% if perfil.rol == 'gestor' %}
-                    <a href="{% url 'asignar_institucion_gestor' %}" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Asignar instituciones">{% icon 'plus' %}
+                    <a href="{% url 'asignar_institucion_gestor' %}" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Asignar instituciones">
+                        {% icon 'plus' %}
                     </a>
                     {% endif %}
-                </div>  
             </div>
-                     
+            </div>
+            <!-- Filtros avanzados -->
+            <form id="filtros-form" class="row mb-3">
+                <div class="col-md-3">
+                    <select id="municipios" name="municipio" class="form-select" multiple></select>
+                </div>
+                <div class="col-md-3">
+                    <select id="estados" name="estado" class="form-select" multiple></select>
+                </div>
+                <div class="col-md-3">
+                    <select id="sectores" name="sector" class="form-select" multiple></select>
+                </div>
+            </form>
+        
+            <!-- Tabla -->
             <div class="table-responsive">
                 <table id="instituciones_gestor" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
-                    <tr>
-                        <th class="text-center">Nombre</th>
-                        <th class="text-center">Direccion</th>
-                        <th class="text-center">Municipio</th>
-                        <th class="text-center">Departamento</th>
-                        <th class="text-center">Sector</th>
-                        <th class="text-center">Estado</th>
-                        <th class="text-center">Dane</th>
-                        <th class="text-center">Genero</th>
-                        <th class="text-center">Zona</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for institucion in instituciones %}
-                    <tr data-id="{{ institucion.id }}">
-                        <td>{{ institucion.insti.nom}}</td>
-                        <td>{{ institucion.insti.dire}}</td>
-                        <td>{{ institucion.insti.muni.nom_munici}}</td>
-                        <td>{{ institucion.insti.muni.nom_departa.nom_departa}}</td>
-                        <td>{{ institucion.insti.secto}}</td>
-                        <td>{{ institucion.insti.esta}}</td>
-                        <td>{{ institucion.insti.dane}}</td>
-                        <td>{{ institucion.insti.gene}}</td>
-                        <td>
-                            {% if institucion.insti.zona %}
-                            {{institucion.insti.zona}}
-                            {% else %}
-                            No asignado
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a class="btn btn-warning btm-sm" title="Ver detalle" href="{% url 'instituciones_docs' institucion.insti.id %}" data-toggle="tooltip" data-placement="top" title="Ver documentacion">
-                                {% icon 'detalle' %}
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        </div>
-    </div>
-</section>
-</main>
-<!-- Modal -->
-<!-- <div class="modal fade" id="cargaestudiantes" tabindex="-1" aria-labelledby="cargaestudiantesLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="cargaestudiantesLabel">Administrar documentación</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h5 id="institucion-nombre"></h5>
-                <table class="table">
-                    <thead>
                         <tr>
-                            <th>Nombre del Documento</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
+                            <th class="text-center">Nombre</th>
+                            <th class="text-center">Direccion</th>
+                            <th class="text-center">Municipio</th>
+                            <th class="text-center">Departamento</th>
+                            <th class="text-center">Sector</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Dane</th>
+                            <th class="text-center">Genero</th>
+                            <th class="text-center">Zona</th>
+                            <th class="text-center">Estado D</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="documentos-lista">
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
-            <div class="modal-footer">
-                <button type="button" id="guardardoc" class="btn btn-secondary">Guardar</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </section>
+        <div id="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only"></span>
             </div>
         </div>
-    </div>
-</div> -->
-
-<!-- <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('cargaestudiantes');
-        const modalTitle = document.getElementById('institucion-nombre');
-        const documentosLista = document.getElementById('documentos-lista');
-
-        modal.addEventListener('show.bs.modal', function (event) {
-            // Botón que activó el modal
-            const button = event.relatedTarget;
-
-            // Extraer datos de los atributos data-*
-            const institucionNombre = button.getAttribute('data-institucion-nombre');
-            const documentosJSON = button.getAttribute('data-documentos');
-
-            // Actualizar el título del modal
-            modalTitle.textContent = institucionNombre;
-
-            // Limpiar contenido previo
-            documentosLista.innerHTML = '';
-
-            // Cargar los documentos
-            const documentos = JSON.parse(documentosJSON); // Suponiendo que `documentos` viene como un JSON
-            documentos.forEach(doc => {
-                const estado = doc.vali === '0' ? 'Pendiente' : 'Aprobado';
-                const acciones = doc.vali === '0'
-                    ? `<button class="btn btn-success btn-sm">Aprobar</button>`
-                    : `<span class="text-success">✔ Aprobado</span>`;
-
-                const archivo = doc.archivo_url
-                    ? `<a href="${doc.archivo_url}" target="_blank" class="btn btn-link">🔎</a>`
-                    : 'No cargado';
-
-                const fila = `
-                    <tr>
-                        <td>${doc.nombre}</td>
-                        <td>${estado}</td>
-                        <td>
-                            ${archivo}
-                            ${acciones}
-                        </td>
-                    </tr>`;
-                documentosLista.insertAdjacentHTML('beforeend', fila);
+        
+        </main>
+        
+        <script>
+            $(document).ready(function () {
+                // Mostrar el spinner antes de cargar los datos
+                $("#loading").show();
+        
+                // Inicializa DataTable
+                const table = $('#instituciones_gestor').DataTable({
+                    language: {
+                        url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+                    },
+                    deferRender: true,
+                });
+        
+                // Función para cargar opciones dinámicas en Select2 con animación de carga
+                function cargarOpciones(url, elemento, placeholder) {
+                    return fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            $(elemento).select2({
+                                data: data.map(item => ({ id: item, text: item })), // Convierte los datos a formato Select2
+                                placeholder: placeholder, // Placeholder dinámico
+                                allowClear: true,
+                            });
+                        })
+                        .catch(error => console.error(`Error al cargar opciones para ${elemento}:`, error));
+                }
+        
+                // Cargar opciones dinámicas para los Select2 con placeholders personalizados
+                const promesasSelect2 = [
+                    cargarOpciones('/api/municipios/', '#municipios', 'Seleccione un municipio'),
+                    cargarOpciones('/api/estados/', '#estados', 'Seleccione un estado'),
+                    cargarOpciones('/api/sectores/', '#sectores', 'Seleccione un sector')
+                ];
+        
+                // Función para actualizar la tabla con los datos filtrados
+                function actualizarTabla(data) {
+                    table.clear(); // Limpia la tabla
+        
+                    data.forEach(item => {
+                        table.row.add([
+                            item.nombre,
+                            item.direccion,
+                            item.municipio,
+                            item.departamento,
+                            item.sector,
+                            item.estado,
+                            item.dane,
+                            item.genero === 'mi' ? 'Mixto' : item.zona === 'ma' ? 'Masculino': item.zona === 'fe' ? 'Femenino' : 'No asignado',
+                            item.zona === 'u' ? 'Urbana' : item.zona === 'r' ? 'Rural' : 'No asignado',
+                            item.estado_docu,
+                            `<a class="btn btn-warning btn-sm" title="Ver detalle" href="${item.detalle_url}" data-bs-toggle="tooltip" data-bs-placement="top">
+                                {% icon 'detalle' %}
+                            </a>
+                            <button class="btn btn-danger btn-sm ms-1 delete-btn" data-id="${item.id}" title="Eliminar" data-bs-toggle="tooltip" data-bs-placement="top">
+                                {% icon 'delete' %}
+                            </button>`
+                        ]);
+                    });
+        
+                    table.draw(); // Refresca la tabla con los nuevos datos
+                    $('[data-toggle="tooltip"]').tooltip(); // Reinicializa tooltips
+                }
+        
+                // Petición inicial para cargar todas las instituciones con animación de carga
+                const promesaTabla = fetch('/api/filtrar-instituciones/')
+                    .then(response => response.json())
+                    .then(data => actualizarTabla(data))
+                    .catch(error => console.error('Error al cargar datos iniciales:', error));
+        
+                // Cuando todas las peticiones (Select2 y DataTable) terminen, ocultar el loader
+                Promise.all([...promesasSelect2, promesaTabla]).finally(() => {
+                    $("#loading").fadeOut();
+                });
+        
+                // Manejar cambios en los filtros de Select2
+                $('#municipios, #estados, #sectores').on('select2:select select2:unselect', function () {
+                    $("#loading").show(); // Mostrar loader al filtrar
+        
+                    const formData = new FormData(document.getElementById('filtros-form'));
+                    const params = new URLSearchParams(formData).toString();
+        
+                    console.log('Parámetros enviados:', params);
+        
+                    // Realiza la petición al servidor para obtener los datos filtrados
+                    fetch(`/api/filtrar-instituciones/?${params}`)
+                        .then(response => response.json())
+                        .then(data => actualizarTabla(data))
+                        .catch(error => console.error('Error al filtrar los datos:', error))
+                        .finally(() => $("#loading").fadeOut()); // Ocultar el loader cuando termine
+                });
             });
-        });
-    });
-</script> -->
+
+            // Evento para eliminar relacion de institucion
+            $(document).on('click', '.delete-btn', function () {
+                const id = $(this).data('id');
+                const row = $(this).parents('tr'); // Guardamos la fila para eliminarla después si es necesario
+
+                // Confirmación antes de eliminar
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: 'Esta acción no se puede deshacer.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Si el usuario confirma, proceder con la eliminación
+                        fetch(`/api/institucion_gestor/eliminar/${id}/`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token }}' // CSRF Token de Django
+                            }
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                row.remove(); // Elimina la fila de la tabla
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Eliminado',
+                                    text: 'La institución ha sido eliminada correctamente.',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                return response.json().then(data => {
+                                    throw new Error(data.error || 'Error al eliminar el registro.');
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: error.message
+                            });
+                        });
+                    }
+                });
+            });
+
+        </script>
+        
 {% endblock %}

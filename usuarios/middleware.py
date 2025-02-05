@@ -7,7 +7,6 @@ class ExpiredSessionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        print("Middleware ejecutado")
         if request.user.is_authenticated:
             print(f"Usuario autenticado: {request.user}")
             sesion_expira = request.session.get_expiry_date()

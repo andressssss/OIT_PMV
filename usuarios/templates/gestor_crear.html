@@ -10,7 +10,7 @@
                 <h1 class="display-5">Crear gestor</h1>
             </div>
             <form action="/gestores/crear/" method="POST" class="">
-                  {% if user_form.errors %}
+                {% if user_form.errors %}
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <strong>Error:</strong>
                     <ul class="mb-0">
@@ -24,30 +24,6 @@
                 </div>
                 {% endif %}
                 {% csrf_token %}
-                <h3>Datos del Usuario</h3>
-                <!-- Campo de Nombre de Usuario -->
-                <div class="mb-3">
-                    <label for="id_username" class="form-label">
-                        {{ user_form.username.label }}
-                    </label>
-                    {{ user_form.username }}
-                </div>
-
-                <!-- Campo de Contraseña -->
-                <div class="mb-3">
-                    <label for="id_password" class="form-label">
-                        {{ user_form.password.label }}
-                    </label>
-                    {{ user_form.password }}
-                </div>
-
-                <!-- Campo de Correo Electrónico -->
-                <div class="mb-3">
-                    <label for="id_email" class="form-label">
-                        {{ user_form.email.label }}
-                    </label>
-                    {{ user_form.email }}
-                </div>
                 <h3>Datos del Perfil</h3>
                 {{ perfil_form.as_p }}
                 <h3>Departamentos asociados</h3>

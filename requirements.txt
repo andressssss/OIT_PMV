@@ -13,6 +13,7 @@ daphne==4.1.2
 Django==5.1.4
 django-appconf==1.0.6
 django-autocomplete-light==3.11.0
+django-cors-headers==4.6.0
 django-icons==24.4
 django-js-asset==3.0.1
 django-mptt==0.16.0
@@ -30,7 +31,9 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pycodestyle==2.12.1
 pycparser==2.22
+pycryptodome==3.21.0
 pyOpenSSL==25.0.0
+PyPDF2==3.0.1
 redis==5.2.1
 service-identity==24.2.0
 setuptools==75.8.0

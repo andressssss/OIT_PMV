@@ -23,12 +23,12 @@
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="{{ institucionForm.dire.id_for_label }}" class="form-label"">
-                                {{ institucionForm.dire.label }}
+                            <label for="{{ institucionForm.esta.id_for_label }}" class="form-label"">
+                                {{ institucionForm.esta.label }}
                             </label>
-                            {{ institucionForm.dire }}
-                            {% if institucionForm.dire.errors %}
-                                <div class="text-danger">{{ institucionForm.dire.errors }}</div>
+                            {{ institucionForm.esta }}
+                            {% if institucionForm.esta.errors %}
+                                <div class="text-danger">{{ institucionForm.esta.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -71,20 +71,20 @@
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="{{ institucionForm.pote_apre.id_for_label }}" class="form-label"">
-                                {{ institucionForm.pote_apre.label }}
+                            <label for="{{ institucionForm.vigen.id_for_label }}" class="form-label"">
+                                {{ institucionForm.vigen.label }}
                             </label>
-                            {{ institucionForm.pote_apre }}
-                            {% if institucionForm.pote_apre.errors %}
-                                <div class="text-danger">{{ institucionForm.pote_apre.errors }}</div>
+                            {{ institucionForm.vigen }}
+                            {% if institucionForm.vigen.errors %}
+                                <div class="text-danger">{{ institucionForm.vigen.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="{{ institucionForm.coordi.id_for_label }}" class="form-label"">
+                        <div class="mb-3" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Tooltip on top">
+                            <label for="{{ institucionForm.coordi.id_for_label }}" class="form-label" >
                                 {{ institucionForm.coordi.label }}
                             </label>
                             {{ institucionForm.coordi }}
@@ -119,12 +119,12 @@
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="{{ institucionForm.esta.id_for_label }}" class="form-label"">
-                                {{ institucionForm.esta.label }}
+                            <label for="{{ institucionForm.dire.id_for_label }}" class="form-label"">
+                                {{ institucionForm.dire.label }}
                             </label>
-                            {{ institucionForm.esta }}
-                            {% if institucionForm.esta.errors %}
-                                <div class="text-danger">{{ institucionForm.esta.errors }}</div>
+                            {{ institucionForm.dire }}
+                            {% if institucionForm.dire.errors %}
+                                <div class="text-danger">{{ institucionForm.dire.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -165,11 +165,145 @@
                             {% endif %}
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ institucionForm.gene.id_for_label }}" class="form-label"">
+                                {{ institucionForm.gene.label }}
+                            </label>
+                            {{ institucionForm.gene }}
+                            {% if institucionForm.gene.errors %}
+                                <div class="text-danger">{{ institucionForm.gene.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ institucionForm.grados.id_for_label }}" class="form-label"">
+                                {{ institucionForm.grados.label }}
+                            </label>
+                            {{ institucionForm.grados }}
+                            {% if institucionForm.grados.errors %}
+                                <div class="text-danger">{{ institucionForm.grados.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ institucionForm.jorna.id_for_label }}" class="form-label"">
+                                {{ institucionForm.jorna.label }}
+                            </label>
+                            {{ institucionForm.jorna }}
+                            {% if institucionForm.jorna.errors %}
+                                <div class="text-danger">{{ institucionForm.jorna.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ institucionForm.num_sedes.id_for_label }}" class="form-label"">
+                                {{ institucionForm.num_sedes.label }}
+                            </label>
+                            {{ institucionForm.num_sedes }}
+                            {% if institucionForm.num_sedes.errors %}
+                                <div class="text-danger">{{ institucionForm.num_sedes.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ institucionForm.zona.id_for_label }}" class="form-label"">
+                                {{ institucionForm.zona.label }}
+                            </label>
+                            {{ institucionForm.zona }}
+                            {% if institucionForm.zona.errors %}
+                                <div class="text-danger">{{ institucionForm.zona.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ institucionForm.cale.id_for_label }}" class="form-label"">
+                                {{ institucionForm.cale.label }}
+                            </label>
+                            {{ institucionForm.cale }}
+                            {% if institucionForm.cale.errors %}
+                                <div class="text-danger">{{ institucionForm.cale.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ institucionForm.dane.id_for_label }}" class="form-label"">
+                                {{ institucionForm.dane.label }}
+                            </label>
+                            {{ institucionForm.dane }}
+                            {% if institucionForm.dane.errors %}
+                                <div class="text-danger">{{ institucionForm.dane.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Crear institución</button>
             </form>
         </div>
     </div>
 </main>
+<script>
+    $(document).ready(function() {
+        console.log("Script de filtrado de municipios cargado correctamente.");
+
+        var $muni = $('#muni');
+        $muni.empty(); // 🔹 Vacía los municipios al cargar la página
+        $muni.append('<option value="">Seleccione un municipio</option>');
+
+        $('#id_depa').change(function() {
+            var departamentoId = $(this).val();
+            console.log("Departamento seleccionado:", departamentoId);
+
+            if (!departamentoId) {
+                console.log("No se ha seleccionado un departamento.");
+                return;
+            }
+
+            $.ajax({
+                url: "{% url 'api_municipios_form_insti' %}",
+                data: {'departamento_id': departamentoId},
+                dataType: 'json',
+                beforeSend: function() {
+                    console.log("Enviando solicitud AJAX a Django...");
+                },
+                success: function(data) {
+                    console.log("Respuesta recibida:", data);
+
+                    var $muni = $('#muni');
+                    $muni.empty();
+                    $muni.append('<option value="">Seleccione un municipio</option>');
+
+                    if (data.length === 0) {
+                        console.log("No se encontraron municipios para este departamento.");
+                    } else {
+                        $.each(data, function(index, item) {
+                            $muni.append('<option value="' + item.id + '">' + item.nom_munici + '</option>');
+                        });
+                        console.log("Municipios actualizados correctamente.");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log("Error en la solicitud AJAX:");
+                    console.log("Estado:", status);
+                    console.log("Error:", error);
+                    console.log("Respuesta completa:", xhr.responseText);
+                }
+            });
+        });
+    });
+</script>
+
 
 {% endblock %}

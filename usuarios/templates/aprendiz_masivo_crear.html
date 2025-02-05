@@ -3,11 +3,27 @@
 {% block content %}
 <main class="container mt-5">
   <h1 class="text-center">Carga Masiva de Aprendices</h1>
+
+  <!-- Botones de acciones -->
+  <div class="d-flex justify-content-between mb-3">
+    <div>
+      <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#instruccionesModal">
+        Ver Instrucciones CSV
+      </button>
+    </div>
+    <div>
+      <a href="/media/formatos/formato_carga_masiva.csv" class="btn btn-success" download>
+        Descargar Formato Oficial
+      </a>
+    </div>
+  </div>
+
   <form method="post" enctype="multipart/form-data" class="mt-4">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit" class="btn btn-primary">Cargar</button>
   </form>
+
   {% if errores %}
   <div class="alert alert-danger mt-3">
     <ul>
@@ -28,4 +44,146 @@
   </div>
   {% endif %}
 </main>
+
+  <!-- Modal de Instrucciones -->
+  <div class="modal fade" id="instruccionesModal" tabindex="-1" aria-labelledby="instruccionesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="instruccionesModalLabel">Instrucciones para el formato CSV</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h5>Requisitos del archivo CSV:</h5>
+          <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item">✅ El archivo debe estar en formato <b>CSV</b></li>
+            <li class="list-group-item">✅ Conservar los nombres de las columnas del formato oficial</li>
+            <li class="list-group-item">✅ Codificación UTF-8 (seleccionar al guardar el archivo)</li>
+            <li class="list-group-item">✅ Utilizar el delimitador de columnas con coma (,)</li>
+          </ul>
+
+          <h5>Instrucciones de llenado:</h5>
+          <div class="alert alert-warning">
+            <strong>Campos obligatorios:</strong> Todos los campos deben estar completos
+          </div>
+          
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Campo</th>
+                <th>Requerimientos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>email</td>
+                <td>Correo electronico del aprendiz en formato válido de correo electrónico</td>
+              </tr>
+              <tr>
+                <td>nom</td>
+                <td>Nombres del aprendiz</td>
+              </tr>
+              <tr>
+                <td>apelli</td>
+                <td>Apellidos del aprendiz</td>
+              </tr>
+              <tr>
+                <td>tipo_dni</td>
+                <td>Tipo de documento del aprendiz, colocar solo(ti, cc, pp o cc): 
+                  <ul>
+                    <li>ti: Tarjeta de identidad</li>
+                    <li>cc: Cedula de ciudadania</li>
+                    <li>pp: Pasaporte</li>
+                    <li>cc: Tarjeta de extranjeria</li>
+                  </ul>
+                </td>
+              </tr>
+              <tr>
+                <td>dni</td>
+                <td>Número de identidad único, sin puntos ni espacios</td>
+              </tr>
+              <tr>
+                <td>tele</td>
+                <td>Telefono del aprendiz, sin puntos, espacios o caracteres especiales</td>
+              </tr>
+              <tr>
+                <td>dire</td>
+                <td>Direccion de residencia del aprendiz</td>
+              </tr>
+              <tr>
+                <td>gene</td>
+                <td>Genero del aprendiz, solo colocar una letra(H, M):
+                  <ul>
+                    <li>H: Masculino</li>
+                    <li>M: Femenino</li>
+                  <ul></ul>
+                </td>
+              </tr>
+              <tr>
+                <td>fecha_naci</td>
+                <td>Formato DD/MM/AAAA (ej: 15/04/2000)</td>
+              </tr>
+              <tr>
+                <td>nom_repre</td>
+                <td>Nombre del representante legal del aprendiz</td>
+              </tr>
+              <tr>
+                <td>dni_repre</td>
+                <td>Numero de identificacion del representante legal, sin puntos ni espacios</td>
+              </tr>
+              <tr>
+                <td>tele_repre</td>
+                <td>Telfono representante legal, sin comas, espacios ni caracteres especiales</td>
+              </tr>
+              <tr>
+                <td>dire_repre</td>
+                <td>Direccion del representante legal</td>
+              </tr>
+              <tr>
+                <td>mail_repre</td>
+                <td>Correo electronico del representante legal en formato válido de correo electrónico</td>
+              </tr>
+              <tr>
+                <td>parentezco</td>
+                <td>Parentezco del representante legal, colocar una de las siguientes opciones en miniscula y sin tildes:
+                  <ul>
+                    <li>padre</li>
+                    <li>madre</li>
+                    <li>abuelo</li>
+                    <li>abuela</li>
+                    <li>hermano</li>
+                    <li>hermana</li>
+                    <li>tio</li>
+                    <li>tia</li>
+                    <li>otro</li>
+                  </ul>
+                </td>
+              </tr>
+              <tr>
+                <td>ciu</td>
+                <td>Ciudad de residencia del representante legal</td>
+              </tr>
+              <tr>
+                <td>depa</td>
+                <td>Departamento asociado a la ciudad de residencia del representante legal</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="alert alert-danger mt-3">
+            <strong>⚠️ Importante:</strong>
+            <ul>
+              <li>No modificar el orden de las columnas</li>
+              <li>No incluir caracteres especiales (ñ, tildes, etc)</li>
+              <li>Verificar que los DNI no estén duplicados en el sistema</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 {% endblock %}

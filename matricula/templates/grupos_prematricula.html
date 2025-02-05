@@ -47,13 +47,20 @@
                         {% if grupo.grupo.esta == 'Pre matricula' %}
                             <a href="{% url 'asignar_aprendices' grupo.grupo.id %}" class="btn btn-info btn-sm" data-toggle="tooltip" title="Asignar aprendices">{% icon 'asignarapre' %}</a>
                         {% elif grupo.grupo.esta == 'Validacion matriculas' %}
+                            <a href="{% url 'asignar_aprendices' grupo.grupo.id %}" class="btn btn-info btn-sm" data-toggle="tooltip" title="Asignar aprendices">{% icon 'asignarapre' %}</a>
                             <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-warning btn-sm" data-toggle="tooltip" title="ver detalle">{% icon 'detalle' %}</a>
                             {% if rol == 'lider' %}
-                            <a href="{% url 'confirmar_documentacion' grupo.grupo.id %}" class="btn btn-success btn-sm" data-toggle="tooltip" title="Confirmar documentacion">{% icon 'confirmar' %}</a>
+                            <a href="{% url 'confirmar_documentacion' grupo.grupo.id %}" 
+                            class="btn btn-success btn-sm mt-1 confirmar-doc" 
+                            data-toggle="tooltip" 
+                            title="Confirmar documentación">
+                            {% icon 'confirmar' %}
+                            </a>
                             {% endif %}
                         {% elif grupo.grupo.esta == 'En radicacion' %}
                             <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-warning btn-sm" data-toggle="tooltip" title="ver detalle">{% icon 'detalle' %}</a>
                         {% endif %}
+                            <a class="btn btn-danger btn-sm delete-btn mt-1" data-id="{{grupo.grupo.id}}" data-toggle="tooltip" title="Eliminar">{% icon 'delete' %}</a>
                     </td>
                 </tr>           
             {% endfor %}
@@ -61,6 +68,87 @@
     </table>
     </section>
 </main>
+<script>
+// Evento para eliminar grupo
+$(document).on('click', '.delete-btn', function () {
+const id = $(this).data('id');
+const row = $(this).parents('tr'); // Guardamos la fila para eliminarla después si es necesario
 
+// Confirmación antes de eliminar
+Swal.fire({
+    title: '¿Estás seguro?',
+    text: 'Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+}).then((result) => {
+    if (result.isConfirmed) {
+        // Si el usuario confirma, proceder con la eliminación
+        fetch(`/api/grupo/eliminar/${id}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}' // CSRF Token de Django
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                row.remove(); // Elimina la fila de la tabla
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Eliminado',
+                    text: 'El grupo ha sido eliminado correctamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Error al eliminar el registro.');
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message
+            });
+        });
+    }
+});
+});
+
+
+document.addEventListener('DOMContentLoaded', function () {
+        const botonesConfirmar = document.querySelectorAll('.confirmar-doc');
+
+        botonesConfirmar.forEach(boton => {
+            boton.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevenir la redirección inmediata
+                const url = this.getAttribute('href');
+
+                Swal.fire({
+                    title: '¿Está seguro?',
+                    text: "Esta acción confirmará toda la documentación del grupo y no se podran modificar los documentos ni los aprendices asociados.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',  // Verde
+                    cancelButtonColor: '#d33',      // Rojo
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Redirigir si el usuario confirma
+                        window.location.href = url;
+                    }
+                });
+            });
+        });
+    });
+
+
+</script>
 
 {% endblock %}

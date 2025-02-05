@@ -10,7 +10,7 @@
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de Aprendices</h1>
                 <div>
-                    <a href="/aprendices/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear aprendiz">
+                    <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear aprendiz" data-bs-toggle="modal" data-bs-target="#crearAprendizModal">
                         {% icon 'plus' %}
                     </a>
                     <a href="{% url 'cargar_aprendices_masivo' %}" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Crear aprendiz masivamente">
@@ -18,52 +18,63 @@
                     </a>
                 </div>
             </div>
+            <!-- Filtros avanzados -->
+            <form id="filtros-form" class="row mb-3">
+                <div class="col-md-3">
+                    <select id="usuarios_creacion" name="usuario_creacion" class="form-select" multiple></select>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" id="fecha_creacion" name="fecha_creacion_" class="form-control" value="{{ request.GET.fecha_creacion }}">
+                </div>
+                <div class="col-md-3">
+                    <select id="estados" name="estado" class="form-select" multiple></select>
+                </div>
+            </form>
+            
             <div class="table-responsive">
                 <table id="aprendices" class="table table-hover table-bordered align-middle ">
                     <thead class="table-secondary text-center">
                     <tr>
-                        <th></th>
                         <th>Nombre</th>
                         <th>Apellido</th>
                         <th>Telefono</th>
                         <th>Direccion</th>
                         <th>Mail</th>
                         <th>Fecha nacimiento</th>
-                        <th>Codigo</th>
                         <th>Estado</th>
-                        <th>Ficha</th>
-                        <th>Instituto</th>
-                        <th>Representante</th>
                         <th>DNI</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for aprendiz in aprendices %}
+                    <!-- {% for aprendiz in aprendices %}
                     <tr>
-                        <td>
-                        <a href="{% url 'obtener_detalles_aprendiz' aprendiz.id %}" class="btn btn-primary btn-sm mb-1" data-toggle="tooltip" data-placement="top" title="Editar">
-                            {% icon 'edit' %}
-                        </a>
-                        {% if rol == 'admin'%}
-                        <a href="{% url 'obtener_detalles_aprendiz' aprendiz.id %}" class="btn btn-danger btn-sm" data-toggle="tooltip" data-placement="top" title="Eliminar">
-                            {% icon 'delete' %}
-                        </a>
-                        {% endif %}
                         <td>{{ aprendiz.perfil.nom}}</td>
                         <td>{{ aprendiz.perfil.apelli}}</td>
                         <td>{{ aprendiz.perfil.tele}}</td>
                         <td>{{ aprendiz.perfil.dire}}</td>
                         <td>{{ aprendiz.perfil.mail}}</td>
                         <td>{{ aprendiz.perfil.fecha_naci}}</td>
-                        <td>{{ aprendiz.cod}}</td>
                         <td>{{ aprendiz.esta}}</td>
-                        <td>{{ aprendiz.ficha}}</td>
-                        <td>{{ aprendiz.insti}}</td>
-                        <td>{{ aprendiz.repre_legal}}</td>
                         <td>{{ aprendiz.perfil.dni}}</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm mb-1 edit-btn" 
+                                data-id="{{ aprendiz.id }}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#editAprendizModal"
+                                data-toggle="tooltip" data-placement="top" title="Editar" 
+                                title="Editar">
+                                {% icon 'edit' %}
+                            </button>
+                            {% if rol == 'admin'%}
+                            <a href="{% url 'obtener_detalles_aprendiz' aprendiz.id %}" class="btn btn-danger btn-sm" data-toggle="tooltip" data-placement="top" title="Eliminar">
+                                {% icon 'delete' %}
+                            </a>
+                            {% endif %}
+                        </td>
 
                     </tr>
-                    {% endfor %}
+                    {% endfor %} -->
                 </tbody>
             </table>
         </div>
@@ -71,4 +82,484 @@
     </div>
     </section>
 </main>
+<!-- Modal para crear Aprendiz -->
+<div class="modal fade" id="crearAprendizModal" tabindex="-1" aria-labelledby="modalAprendizLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAprendizLabel">Crear Aprendiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCrearAprendiz" action="/aprendices/crear/" method="POST">
+                    {{ error }}
+                    {% csrf_token %}
+
+                    <h3>Datos del Perfil</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
+                            {{ perfil_form.nom }}
+                            {% if perfil_form.nom.errors %}
+                                <div class="text-danger">{{ perfil_form.nom.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
+                            {{ perfil_form.apelli }}
+                            {% if perfil_form.apelli.errors %}
+                                <div class="text-danger">{{ perfil_form.apelli.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
+                            {{ perfil_form.tipo_dni }}
+                            {% if perfil_form.tipo_dni.errors %}
+                                <div class="text-danger">{{ perfil_form.tipo_dni.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
+                            {{ perfil_form.dni }}
+                            {% if perfil_form.dni.errors %}
+                                <div class="text-danger">{{ perfil_form.dni.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
+                            {{ perfil_form.tele }}
+                            {% if perfil_form.tele.errors %}
+                                <div class="text-danger">{{ perfil_form.tele.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
+                            {{ perfil_form.dire }}
+                            {% if perfil_form.dire.errors %}
+                                <div class="text-danger">{{ perfil_form.dire.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
+                            {{ perfil_form.mail }}
+                            {% if perfil_form.mail.errors %}
+                                <div class="text-danger">{{ perfil_form.mail.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                            {{ perfil_form.gene }}
+                            {% if perfil_form.gene.errors %}
+                                <div class="text-danger">{{ perfil_form.gene.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
+                            {{ perfil_form.fecha_naci }}
+                            {% if perfil_form.fecha_naci.errors %}
+                                <div class="text-danger">{{ perfil_form.fecha_naci.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <!-- <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                            {{ perfil_form.gene }}
+                            {% if perfil_form.gene.errors %}
+                                <div class="text-danger">{{ perfil_form.gene.errors }}</div>
+                            {% endif %}
+                        </div> -->
+                    </div>
+
+                    <h3>Datos del Representante Legal</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.nom.id_for_label }}">{{ representante_form.nom.label }}</label>
+                            {{ representante_form.nom }}
+                            {% if representante_form.nom.errors %}
+                                <div class="text-danger">{{ representante_form.nom.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.dni.id_for_label }}">{{ representante_form.dni.label }}</label>
+                            {{ representante_form.dni }}
+                            {% if representante_form.dni.errors %}
+                                <div class="text-danger">{{ representante_form.dni.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.tele.id_for_label }}">{{ representante_form.tele.label }}</label>
+                            {{ representante_form.tele }}
+                            {% if representante_form.tele.errors %}
+                                <div class="text-danger">{{ representante_form.tele.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.dire.id_for_label }}">{{ representante_form.dire.label }}</label>
+                            {{ representante_form.dire }}
+                            {% if representante_form.dire.errors %}
+                                <div class="text-danger">{{ representante_form.dire.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.mail.id_for_label }}">{{ representante_form.mail.label }}</label>
+                            {{ representante_form.mail }}
+                            {% if representante_form.mail.errors %}
+                                <div class="text-danger">{{ representante_form.mail.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.paren.id_for_label }}">{{ representante_form.paren.label }}</label>
+                            {{ representante_form.paren }}
+                            {% if representante_form.paren.errors %}
+                                <div class="text-danger">{{ representante_form.paren.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para editar Aprendiz -->
+<div class="modal fade" id="editAprendizModal" tabindex="-1" aria-labelledby="modalEditAprendizLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditAprendizLabel">Editar Aprendiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarAprendiz" method="POST">
+                    {{ error }}
+                    {% csrf_token %}
+                    <h3>Datos del Perfil</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
+                            {{ perfil_form.nom }}
+                            {% if perfil_form.nom.errors %}
+                                <div class="text-danger">{{ perfil_form.nom.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
+                            {{ perfil_form.apelli }}
+                            {% if perfil_form.apelli.errors %}
+                                <div class="text-danger">{{ perfil_form.apelli.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
+                            {{ perfil_form.tipo_dni }}
+                            {% if perfil_form.tipo_dni.errors %}
+                                <div class="text-danger">{{ perfil_form.tipo_dni.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
+                            {{ perfil_form.dni }}
+                            {% if perfil_form.dni.errors %}
+                                <div class="text-danger">{{ perfil_form.dni.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
+                            {{ perfil_form.tele }}
+                            {% if perfil_form.tele.errors %}
+                                <div class="text-danger">{{ perfil_form.tele.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
+                            {{ perfil_form.dire }}
+                            {% if perfil_form.dire.errors %}
+                                <div class="text-danger">{{ perfil_form.dire.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
+                            {{ perfil_form.mail }}
+                            {% if perfil_form.mail.errors %}
+                                <div class="text-danger">{{ perfil_form.mail.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                            {{ perfil_form.gene }}
+                            {% if perfil_form.gene.errors %}
+                                <div class="text-danger">{{ perfil_form.gene.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
+                            {{ perfil_form.fecha_naci }}
+                            {% if perfil_form.fecha_naci.errors %}
+                                <div class="text-danger">{{ perfil_form.fecha_naci.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <!-- <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                            {{ perfil_form.gene }}
+                            {% if perfil_form.gene.errors %}
+                                <div class="text-danger">{{ perfil_form.gene.errors }}</div>
+                            {% endif %}
+                        </div> -->
+                    </div>
+
+                    <h3>Datos del Representante Legal</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.nom.id_for_label }}">{{ representante_form.nom.label }}</label>
+                            {{ representante_form.nom }}
+                            {% if representante_form.nom.errors %}
+                                <div class="text-danger">{{ representante_form.nom.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.dni.id_for_label }}">{{ representante_form.dni.label }}</label>
+                            {{ representante_form.dni }}
+                            {% if representante_form.dni.errors %}
+                                <div class="text-danger">{{ representante_form.dni.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.tele.id_for_label }}">{{ representante_form.tele.label }}</label>
+                            {{ representante_form.tele }}
+                            {% if representante_form.tele.errors %}
+                                <div class="text-danger">{{ representante_form.tele.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.dire.id_for_label }}">{{ representante_form.dire.label }}</label>
+                            {{ representante_form.dire }}
+                            {% if representante_form.dire.errors %}
+                                <div class="text-danger">{{ representante_form.dire.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.mail.id_for_label }}">{{ representante_form.mail.label }}</label>
+                            {{ representante_form.mail }}
+                            {% if representante_form.mail.errors %}
+                                <div class="text-danger">{{ representante_form.mail.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ representante_form.paren.id_for_label }}">{{ representante_form.paren.label }}</label>
+                            {{ representante_form.paren }}
+                            {% if representante_form.paren.errors %}
+                                <div class="text-danger">{{ representante_form.paren.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="loading">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only"></span>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('modal') === 'open') {
+            const modal = new bootstrap.Modal(document.getElementById('crearAprendizModal'));
+            modal.show();
+        }
+    });
+
+    $(document).on('click', '.edit-btn', function() {
+    var aprendizId = $(this).data('id'); // Obtener el ID del aprendiz
+    var url = `/api/aprendiz/${aprendizId}/`; // URL de la API para obtener los datos del aprendiz
+    var $form = $('#formEditarAprendiz'); 
+
+    // Deshabilitar todos los inputs mientras se cargan los datos
+    $form.find('input, select, button').prop('disabled', true);
+
+    $.ajax({
+        url: url,
+        type: 'GET',
+        success: function(data) {
+            console.log(data)
+            // Llenar los campos del formulario con los datos obtenidos
+            $form.find('input[name="perfil-nom"]').val(data['perfil-nom']);
+            $form.find('input[name="perfil-apelli"]').val(data['perfil-apelli']);
+            $form.find('select[name="perfil-tipo_dni"]').val(data['perfil-tipo_dni']);
+            $form.find('input[name="perfil-dni"]').val(data['perfil-dni']);
+            $form.find('input[name="perfil-tele"]').val(data['perfil-tele']);
+            $form.find('input[name="perfil-dire"]').val(data['perfil-dire']);
+            $form.find('input[name="perfil-mail"]').val(data['perfil-mail']);
+            $form.find('select[name="perfil-gene"]').val(data['perfil-gene']);
+            $form.find('input[name="perfil-fecha_naci"]').val(data['perfil-fecha_naci']);
+            $form.find('input[name="representante-nom"]').val(data['representante-nom']);
+            $form.find('input[name="representante-dni"]').val(data['representante-dni']);
+            $form.find('input[name="representante-tele"]').val(data['representante-tele']);
+            $form.find('input[name="representante-dire"]').val(data['representante-dire']);
+            $form.find('input[name="representante-mail"]').val(data['representante-mail']);
+            $form.find('select[name="representante-paren"]').val(data['representante-paren']);
+            // Aquí puedes agregar más campos si es necesario
+
+            // Habilitar los campos después de cargar los datos
+            $form.find('input, select, button').prop('disabled', false);
+
+            // Agregar el ID al formulario para enviarlo en el POST
+            $form.attr('action', `/aprendices/editar/${aprendizId}/`);
+        },
+        error: function(xhr, status, error) {
+            console.error("Error al obtener los datos:", error);
+            // En caso de error, habilitar los campos para permitir otra acción
+            $form.find('input, select, button').prop('disabled', false);
+        }
+    });
+});
+// Logica para el llenado y filtrado de la tabla!
+
+$(document).ready(function () {
+                // Mostrar el spinner antes de cargar los datos
+                $("#loading").show();
+        
+                // Inicializa DataTable
+                const table = $('#aprendices').DataTable({
+                    language: {
+                        url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+                    },
+                    deferRender: true,
+                });
+        
+                // Función para cargar opciones dinámicas en Select2 con animación de carga
+                function cargarOpciones(url, elemento, placeholder) {
+                    return fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            $(elemento).select2({
+                                data: data.map(item => ({ id: item, text: item })), // Convierte los datos a formato Select2
+                                placeholder: placeholder, // Placeholder dinámico
+                                allowClear: true,
+                            }).addClass("form-select");
+                        })
+                        .catch(error => console.error(`Error al cargar opciones para ${elemento}:`, error));
+                }
+        
+                // Cargar opciones dinámicas para los Select2 con placeholders personalizados
+                const promesasSelect2 = [
+                    cargarOpciones('/api/aprendices/usuarios_crea/', '#usuarios_creacion', 'Seleccione un usuario'),
+                    cargarOpciones('/api/aprendices/estados/', '#estados', 'Seleccione un estado'),
+                ];
+        
+                // Función para actualizar la tabla con los datos filtrados
+                function actualizarTabla(data) {
+                    table.clear(); // Limpia la tabla
+        
+                    data.forEach(item => {
+                        table.row.add([
+                            item.nombre,
+                            item.apellido,
+                            item.telefono,
+                            item.direccion,
+                            item.mail,
+                            item.fecha_naci,
+                            item.estado,
+                            item.dni,
+                            `<button class="btn btn-primary btn-sm mb-1 edit-btn" 
+                            data-id="${item.id}" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#editAprendizModal"
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="top" 
+                            data-bs-title="Editar"
+                            title="Editar">
+                            {% icon 'edit' %}
+                            </button>`
+                        ]);
+                    });
+        
+                    table.draw(); // Refresca la tabla con los nuevos datos
+                    $('#aprendices [data-bs-toggle="tooltip"]').tooltip();
+                }
+        
+                // Petición inicial para cargar todas las instituciones con animación de carga
+                const promesaTabla = fetch('/api/aprendices/filtrar-aprendices/')
+                    .then(response => response.json())
+                    .then(data => actualizarTabla(data))
+                    .catch(error => console.error('Error al cargar datos iniciales:', error));
+        
+                // Cuando todas las peticiones (Select2 y DataTable) terminen, ocultar el loader
+                Promise.all([...promesasSelect2, promesaTabla]).finally(() => {
+                    $("#loading").fadeOut();
+                });
+        
+                // Manejar cambios en los filtros de Select2
+                $('#usuarios_creacion, #estados').on('select2:select select2:unselect', function () {
+                    $("#loading").show(); // Mostrar loader al filtrar
+        
+                    const formData = new FormData(document.getElementById('filtros-form'));
+                    const params = new URLSearchParams(formData).toString();
+        
+                    console.log('Parámetros enviados:', params);
+        
+                    // Realiza la petición al servidor para obtener los datos filtrados
+                    fetch(`/api/aprendices/filtrar-aprendices/?${params}`)
+                        .then(response => response.json())
+                        .then(data => actualizarTabla(data))
+                        .catch(error => console.error('Error al filtrar los datos:', error))
+                        .finally(() => $("#loading").fadeOut()); // Ocultar el loader cuando termine
+                });
+                // Agregar evento para filtrar por fecha
+                $('#fecha_creacion').on('change', function () {
+                    $("#loading").show(); // Mostrar loader al filtrar
+
+                    const formData = new FormData(document.getElementById('filtros-form'));
+                    const params = new URLSearchParams(formData).toString();
+
+                    console.log('Parámetros enviados:', params);
+
+                    // Realiza la petición al servidor para obtener los datos filtrados
+                    fetch(`/api/aprendices/filtrar-aprendices/?${params}`)
+                        .then(response => response.json())
+                        .then(data => actualizarTabla(data))
+                        .catch(error => console.error('Error al filtrar los datos:', error))
+                        .finally(() => $("#loading").fadeOut()); // Ocultar el loader cuando termine
+                });
+
+            });
+
+
+</script>
 {% endblock %}

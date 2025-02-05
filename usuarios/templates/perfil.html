@@ -14,12 +14,12 @@
                         <div data-toggle="tooltip" data-placement="top" title="Editar perfil">
                             <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#editProfileModal">
                                 {% icon 'edit' %}
-                              </button>
+                            </button>
                         </div>
                         <div data-toggle="tooltip" data-placement="top" title="Cambiar contraseña">
                             <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                                 {% icon 'password' %}
-                              </button>
+                            </button>
                         </div>
                         
                         <a href="/logout" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Cerrar sesion">{% icon 'salir' %}</a>
@@ -198,7 +198,7 @@
                             <label for="{{ form_contraseña.new_password1.id_for_label }}">Nueva contraseña:</label>
                             {{ form_contraseña.new_password1 }}  
                             <div id="new_password1_errors"></div>
-                      
+
                         </div>
                     </div>
 

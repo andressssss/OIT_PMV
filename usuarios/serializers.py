@@ -8,4 +8,4 @@ class T_insti_edu_Serializer(ModelSerializer):
 
     class Meta:
         model = T_insti_edu
-        fields = ['nom', 'dire', 'municipio_nombre', 'departamento_nombre', 'secto', 'esta','dane', 'gene', 'zona']
+        fields = ['id', 'nom', 'dire', 'municipio_nombre', 'departamento_nombre', 'secto', 'esta','dane', 'gene', 'zona']

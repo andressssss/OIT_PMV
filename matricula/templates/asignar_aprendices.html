@@ -3,64 +3,127 @@
 {% block content %}
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
-    <div class="row">
-        <div class="col-12 offset-md-12">
-            <h1 class="text-center text-center display-5">Seleccione los aprendices</h1>
-            <div class="d-flex justify-content-end mb-3">
-            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#cargaestudiantes">
-                Asignacion masiva
-            </button>
-        </div>
-            <form action="" method="POST" class="">
-                {{error}}
-                {% csrf_token %}
+        <div class="row">
+            <div class="col-12 offset-md-12">
+                <h1 class="text-center display-5">Seleccione los aprendices</h1>
 
-                {{ aprendiz_asi_form.as_p }}
-                <button type="submit" class="btn btn-primary">Asignar aprendices</button>
-            </form>
-            {% if errores %}
-            <div class="alert alert-danger mt-3">
-              <ul>
-                {% for error in errores %}
-                <li>{{ error }}</li>
-                {% endfor %}
-              </ul>
+                <!-- Botones superiores -->
+                <div class="d-flex justify-content-end mb-3 gap-2">
+                    <a href="/media/formatos/formato_asignacion_masiva.csv" class="btn btn-success">
+                        Descargar CSV oficial
+                    </a>
+                    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#instruccionesModal">
+                        Ver instrucciones
+                    </button>
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#cargaestudiantes">
+                        Asignación masiva
+                    </button>
+                </div>
+
+                <form action="" method="POST">
+                    {{ error }}
+                    {% csrf_token %}
+                    {{ aprendiz_asi_form.as_p }}
+                    <button type="submit" class="btn btn-primary">Asignar aprendices</button>
+                </form>
+
+                {% if errores %}
+                <div class="alert alert-danger mt-3">
+                    <ul>
+                        {% for error in errores %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if resumen %}
+                <div class="alert alert-success mt-3">
+                    <ul>
+                        <li>Asignados: {{ resumen.asignados|default:"0" }}</li>
+                        <li>Errores: {{ resumen.errores }}</li>
+                        <li>Duplicados: {{ resumen.duplicados|default:"0" }}</li>
+                        <li>Ya asignados: {{ resumen.ya_asignados|default:"0" }}</li>
+                    </ul>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
-          
-            {% if resumen %}
-            <div class="alert alert-success mt-3">
-              <ul>
-                <li>Asignados: {{ resumen.asignados|default:"0" }}</li>
-                <li>Errores: {{ resumen.errores }}</li>
-                <li>Duplicados: {{ resumen.duplicados|default:"0" }}</li>
-                <li>Ya asignados: {{ resumen.ya_asignados|default:"0" }}</li>
-              </ul>
-            </div>
-            {% endif %}
         </div>
-    </div>
     </section>
 </main>
-  <!-- Modal -->
-  <div class="modal fade " id="cargaestudiantes" tabindex="-1" aria-labelledby="cargaestudiantesLabel" aria-hidden="true">
+
+<!-- Modal de Carga de Estudiantes -->
+<div class="modal fade" id="cargaestudiantes" tabindex="-1" aria-labelledby="cargaestudiantesLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="cargaestudiantesLabel">Cargue el archivo plano .csv</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="cargaestudiantesLabel">Cargue el archivo plano .csv</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ aprendiz_masivo_form.as_p }}
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Cargar archivo</button>
+                </form>
+            </div>
         </div>
-        <div class="modal-body">
-            <form method="POST" enctype="multipart/form-data">
-              {% csrf_token %}
-              {{ aprendiz_masivo_form.as_p }}
-          
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Cargar archivo</button>
-        </form>
-        </div>
-      </div>
     </div>
-  </div>
+</div>
+
+<!-- Modal de Instrucciones -->
+<div class="modal fade" id="instruccionesModal" tabindex="-1" aria-labelledby="instruccionesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="instruccionesModalLabel">Instrucciones para diligenciar el CSV</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <h5>Requisitos del archivo CSV:</h5>
+              <ul class="list-group list-group-flush mb-4">
+                <li class="list-group-item">✅ El archivo debe estar en formato <b>CSV</b></li>
+                <li class="list-group-item">✅ Conservar los nombres de las columnas del formato oficial</li>
+                <li class="list-group-item">✅ Codificación UTF-8 (seleccionar al guardar el archivo)</li>
+                <li class="list-group-item">✅ Utilizar el delimitador de columnas con coma (,)</li>
+              </ul>
+    
+              <h5>Instrucciones de llenado:</h5>
+              <div class="alert alert-warning">
+                <strong>Campos obligatorios:</strong> Todos los campos deben estar completos
+              </div>
+              
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Campo</th>
+                    <th>Requerimientos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>dni</td>
+                    <td>Numero de identificacion del aprendiz, sin espacios ni caracteres especiales</td>
+                  </tr>
+                </tbody>
+              </table>
+    
+              <div class="alert alert-danger mt-3">
+                <strong>⚠️ Importante:</strong>
+                <ul>
+                  <li>No modificar el orden de las columnas</li>
+                  <li>No agregar nuevas columnas</li>
+                  <li>No incluir caracteres especiales (ñ, tildes, etc)</li>
+                  <li>Verificar que los DNI no estén asignados a otro grupo en el sistema</li>
+                </ul>
+              </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

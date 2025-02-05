@@ -67,15 +67,31 @@ urlpatterns = [
     path('tasks/<int:task_id>/delete/',tasks_views.delete_task, name='delete_task'),
 
     # ROL Admin
+    # Aprendices
     path('admin_dashboard/', usuarios_views.dashboard_admin, name='admin_dashboard'),
     path('aprendices/', usuarios_views.aprendices, name='aprendices'),
     path('aprendices/crear/', usuarios_views.crear_aprendices,name='crear_aprendices'),  # ----> Crear aprendiz
-    path('aprendices/<int:aprendiz_id>/', usuarios_views.detalle_aprendices,name='obtener_detalles_aprendiz'),  # ----> actualizar informacion de aprendiz
+    # path('aprendices/<int:aprendiz_id>/', usuarios_views.detalle_aprendices,name='obtener_detalles_aprendiz'),  # ----> actualizar informacion de aprendiz
     path('aprendices/<int:aprendiz_id>/eliminar', usuarios_views.eliminar_aprendiz,name='eliminar_aprendiz'),  # ----> Eliminar informacion de aprendiz
+    path('aprendices/editar/<int:id>/', usuarios_views.editar_aprendiz, name='editar_aprendiz'),
+
+    # API llenado de filtros
+    path('api/aprendices/usuarios_crea/', usuarios_views.obtener_usuarios_creacion, name='api_usuarios_crea_aprendices'),
+    path('api/aprendices/estados/', usuarios_views.obtener_opciones_estados, name='api_estados_aprendices'),
+
+    # API filtrado de aprendices
+
+    path('api/aprendices/filtrar-aprendices/', usuarios_views.filtrar_aprendices, name='api_filtrar_aprendices'),
+
+
+    # Instructores
+    
     path('instructores/', usuarios_views.instructores, name='instructores'),
     path('instructores/crear/', usuarios_views.crear_instructor,name='crear_instructor'),
     path('instructores/<int:instructor_id>/',usuarios_views.instructor_detalle, name='instructor_detalle'),
     path('obtener_detalles/<int:instructor_id>/',usuarios_views.instructor_detalle_tabla, name='obtener_detalles'),
+    
+    # Rol Administradores
     path('administradores/', usuarios_views.administradores, name='administradores'),
     path('administradores/crear/', usuarios_views.crear_administradores,name='crear_administradores'),  # ----> Crear nuevo usuario admin
     path('administradores/<int:admin_id>/', usuarios_views.detalle_administradores,name='administrador_detalle'),  # ----> actualizar info usuario admin
@@ -101,7 +117,7 @@ urlpatterns = [
     # ROL Departamentos
     path('departamentos/', usuarios_views.departamentos, name='departamentos'),
     path('departamentos/crear/', usuarios_views.creardepartamentos, name='creardepartamentos'),
-     path('departamentos/<int:departamento_id>/', usuarios_views.detalle_departamentos,name='detalle_departamentos'),
+    path('departamentos/<int:departamento_id>/', usuarios_views.detalle_departamentos,name='detalle_departamentos'),
     path('departamentos/<int:departamento_id>/eliminar', usuarios_views.eliminar_departamentos,name='eliminar_departamentos'),
 
     # ROL Municipios
@@ -109,13 +125,16 @@ urlpatterns = [
     path('municipios/crear/', usuarios_views.crearmunicipios, name='crearmunicipios'),
     path('municipios/<int:municipio_id>/',usuarios_views.detalle_municipios, name='detalle_municipio'),
     path('municipios/<int:municipio_id>/eliminar/', usuarios_views.eliminar_municipios, name='eliminar_municipio'),
-    path('obtener-municipios/', usuarios_views.obtener_municipios, name='obtener_municipios'),
+    
+    # Endpoint municipio
+    path('api/municipiosFormInsti/', usuarios_views.obtener_municipios, name='api_municipios_form_insti'),
 
     # ROL Instituciones
     path('instituciones/', usuarios_views.instituciones,name='instituciones'),
     path('instituciones/crear/', usuarios_views.crear_instituciones,name='crear_instituciones'),
     path('instituciones/<int:institucion_id>/', usuarios_views.detalle_instituciones,name='detalle_institucion'),
     path('instituciones/<int:institucion_id>/eliminar/', usuarios_views.eliminar_instituciones,name='eliminar_institucion'),
+    path('institucion/editar/<int:id>/', usuarios_views.editar_institucion, name='editar_institucion'),
 
     # Rol  De Centros De Formacion
     path('centroformacion/', usuarios_views.centrosformacion,name='centrosformacion'),
@@ -194,8 +213,33 @@ urlpatterns = [
     path('confirmar_documento/<int:documento_id>/<int:grupo_id>/', matricula_views.confirmar_documento, name='confirmar_documento'),
     path('confirmar_documento_insti/<int:documento_id>/<int:institucion_id>/', matricula_views.confirmar_documento_insti, name='confirmar_documento_insti'),
 
+    path('grupos/<int:grupo_id>/descargar_documentos/<str:documento_tipo>/', matricula_views.descargar_documentos_grupo, name='descargar_documentos_grupo',),
+    # Endpoints matricula:
+    # API instituciones educativas
     path('api/data/', usuarios_views.T_insti_edu_APIView.as_view(), name='t_insti_edu_api'),
     
+    # Endpoint editar instituciones educativas modal
+    path('api/institucion/<int:institucion_id>/', usuarios_views.obtener_institucion, name='api_obtener_institucion_modal'),
+
+    # Endpoint editar aprendices modal
+    path('api/aprendiz/<int:aprendiz_id>/', usuarios_views.obtener_aprendiz, name='api_obtener_aprendiz_modal'),
+
+    # API llenado de filtros
+    path('api/municipios/', matricula_views.obtener_opciones_municipios, name='api_municipios'),
+    path('api/estados/', matricula_views.obtener_opciones_estados, name='api_estados'),
+    path('api/sectores/', matricula_views.obtener_opciones_sectores, name='api_sectores'),
+
+    # API filtrado de instituciones asignadas
+
+    path('api/filtrar-instituciones/', matricula_views.filtrar_instituciones, name='api_filtrar_instituciones'),
+    path('api/institucion_gestor/eliminar/<int:id>/', matricula_views.eliminar_institucion_gestor, name='eliminar_institucion_gestor'),
+
+    # API eliminar grupos
+    path('api/grupo/eliminar/<int:id>/', matricula_views.eliminar_grupos, name='eliminar_grupos'),
+
+    
+    path('api/grupo/aprendiz/eliminar/<int:id>/', matricula_views.eliminar_relacion_aprendiz_grupos, name='eliminar_relacion_aprendiz_grupos'),
+
     # path('ruta-a-obtener-municipios/<int:departamento_id>/', formacion_views.get_municipios, name='get_municipios'),
     # path('ruta-a-obtener-instituciones/<int:municipio_id>/', formacion_views.get_instituciones, name='get_instituciones'),
     # path('ruta-a-obtener-centros/<int:departamento_id>/', formacion_views.get_centros, name='get_centros'),
@@ -219,5 +263,4 @@ urlpatterns = [
 ]       
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -11,7 +11,7 @@
                         <p>Aquí deberá cargar los documentos relacionados con la institucion.</p>
                     </div>
                     <div>
-                        <h4 id="document-counter">{{ total_documentos }}/4</h4>
+                        <h4 id="document-counter">{{ total_documentos }}/6</h4>
                     </div>
                 </div>
                 
@@ -47,7 +47,7 @@
                                         </a>
                                         {% if rol == 'gestor' %}
                                             {% if documento.vali == "0" %}
-                                                <a href="{% url 'eliminar_documento_pre_insti' documento.docu.id %}" class="btn" data-toggle="tooltip" data-placement="top" title="Eliminar archivo">
+                                                <a data-url="{% url 'eliminar_documento_pre_insti' documento.docu.id %}" class="btn delete-btn" data-toggle="tooltip" data-placement="top" title="Eliminar archivo">
                                                     {% icon 'delete' %}
                                                 </a>
                                             {% endif %}
@@ -90,4 +90,32 @@
                 </div>
     </section>
 </main>
+<script>
+            // Script para eliminacion de documentos!
+            document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".delete-btn").forEach(function (button) {
+            button.addEventListener("click", function (event) {
+                event.preventDefault(); // Evita la acción predeterminada del botón
+
+                const url = this.dataset.url;
+
+                Swal.fire({
+                    title: "¿Estás seguro?",
+                    text: "No podrás deshacer esta acción.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Sí, eliminar",
+                    cancelButtonText: "Cancelar"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Redirige a la URL de eliminación
+                        window.location.href = url;
+                    }
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

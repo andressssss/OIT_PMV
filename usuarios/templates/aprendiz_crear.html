@@ -9,12 +9,10 @@
                 <h1 class="text-center">Crear Aprendiz</h1>
                 {{error}}
                 {% csrf_token %}
-                <h3>Datos del Usuario</h3>
-                {{ user_form.as_p }}
                 <h3>Datos del Perfil</h3>
                 {{ perfil_form.as_p }}
-                <h3>Datos del aprendiz</h3>
-                {{ aprendiz_form.as_p }}
+                <h3>Datos del representante legal</h3>
+                {{ representante_form.as_p }}
                 <button type="submit" class="btn btn-primary">Crear Aprendiz</button>
             </form>
         </div>

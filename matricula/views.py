@@ -1,20 +1,23 @@
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.safestring import mark_safe
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseNotAllowed
 from dal import autocomplete
 from django.views import generic
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from commons.models import T_ficha,T_grupo,T_docu,T_perfil, T_insti_edu,T_insti_docu, T_centro_forma, T_munici, T_gestor_grupo, T_prematri_docu, T_apre,T_gestor, T_gestor_insti_edu
+from commons.models import T_ficha,T_gestor_depa, T_grupo,T_docu,T_perfil, T_insti_edu,T_insti_docu, T_centro_forma, T_munici, T_gestor_grupo, T_prematri_docu, T_apre,T_gestor, T_gestor_insti_edu
 from .forms import AsignarAprendicesGrupoForm, GrupoForm, AsignarAprendicesMasivoForm, AsignarInstiForm
 from .scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.core.files.storage import default_storage
 from datetime import datetime
 from django.contrib import messages
 from django.db import transaction
+from django.db import models
+from django.contrib.auth.models import User
 import zipfile
+from PyPDF2 import PdfMerger
 import io
 import os
 import csv
@@ -54,7 +57,8 @@ def asignar_aprendices(request, grupo_id=None):
             'Compromiso del Aprendiz',
             'Formato de Tratamiento de Datos del Menor de Edad',
             'Certificado de aprobación de Grado Noveno',
-            'Acta de Compromiso de Articulación'
+            'Acta de Compromiso de Articulación',
+            'Registro civil'
         ]
 
         errores = []
@@ -153,7 +157,7 @@ def asignar_aprendices(request, grupo_id=None):
                                 except T_apre.DoesNotExist:
                                     errores.append(f"No se encontró un aprendiz asociado al DNI {dni}. Fila omitida.")
                                     resumen["errores"] += 1
-                             # Solo cambiar el estado si no hubo errores
+                            # Solo cambiar el estado si no hubo errores
                             if not errores:
                                 grupo.esta = 'Validacion matriculas'
                                 grupo.save()
@@ -215,6 +219,50 @@ def ver_docs_prematricula_grupo(request, grupo_id):
         'rol': rol
     })
 
+@login_required
+def descargar_documentos_grupo(request, grupo_id, documento_tipo):
+    # Obtener el grupo
+    grupo = get_object_or_404(T_grupo, id=grupo_id)
+
+    # Obtener los aprendices del grupo
+    aprendices = T_apre.objects.filter(grupo=grupo)
+
+    # Crear un objeto para combinar PDFs
+    merger = PdfMerger()
+
+    # Recorrer cada aprendiz y buscar el documento específico asociado
+    for aprendiz in aprendices:
+        try:
+            # Obtener el documento del tipo especificado para el aprendiz
+            documento_relacionado = T_prematri_docu.objects.filter(
+                apren=aprendiz,
+                nom=documento_tipo,  # Filtrar por el tipo de documento
+                docu__esta='Activo'         # Solo considerar documentos activos
+            ).first()
+
+            # Si el documento existe, agregarlo al PDF combinado
+            if documento_relacionado and documento_relacionado.docu and documento_relacionado.docu.archi:
+                file_path = documento_relacionado.docu.archi.path  # Ruta completa del archivo
+                merger.append(file_path)
+        except Exception as e:
+            print(f"Error con el aprendiz {aprendiz.id}: {e}")
+
+    # Verificar si se agregaron documentos al merger
+    if not merger.pages:
+        messages.error(request, f"No hay documentos para combinar.")
+        return redirect(request.META.get('HTTP_REFERER', '/')) 
+
+    # Crear una respuesta HTTP para enviar el PDF combinado
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="documentos_{grupo.id}_{documento_tipo}.pdf"'
+
+    # Escribir el contenido combinado en la respuesta
+    merger.write(response)
+    merger.close()
+
+    return response
+
+
 def descargar_documentos_zip(request, aprendiz_id):
     # Obtén todos los documentos del estudiante
     aprendiz = get_object_or_404(T_apre, id=aprendiz_id)
@@ -263,14 +311,123 @@ def confirmar_documento_insti(request, documento_id, institucion_id):
 def instituciones_gestor(request):
     # Obtén el perfil del usuario autenticado
     perfil = getattr(request.user, 't_perfil', None)
-    if perfil.rol == 'gestor':  # Formulario de asignación manual
         # Filtra las instituciones asignadas al gestor actual
-        instituciones = T_gestor_insti_edu.objects.filter(usuario_asigna=perfil.user)
+    if perfil.rol == 'gestor':  # Formulario de asignación manual
+        gestor = T_gestor.objects.get(perfil = perfil)
+        instituciones = T_gestor_insti_edu.objects.filter(gestor=gestor)
+        print(instituciones)
     if perfil.rol == 'lider':
         instituciones = T_gestor_insti_edu.objects.all()
+    total_instituciones = T_insti_edu.objects.count()
+    instituciones_asignadas = T_gestor_insti_edu.objects.filter(esta='activo').values('insti').distinct().count()
+    instituciones_con_grupos = T_grupo.objects.values('insti').distinct().count()
+    instituciones_sin_zona = T_insti_edu.objects.filter(zona__isnull=True).count()
+    instituciones_con_multiples_grupos = (
+        T_grupo.objects.values('insti')
+        .annotate(grupo_count=models.Count('id'))
+        .filter(grupo_count__gt=1)
+        .count()
+    )
     return render(request, 'instituciones_gestor.html', {
+        'total_instituciones': total_instituciones,
+        'instituciones_asignadas': instituciones_asignadas,
+        'instituciones_con_grupos': instituciones_con_grupos,
+        'instituciones_sin_zona': instituciones_sin_zona,
+        'instituciones_con_multiples_grupos': instituciones_con_multiples_grupos,
         'instituciones': instituciones,
     })
+
+# Enviar datos a los filtros de institucion:
+
+def obtener_opciones_municipios(request):
+    perfil = T_perfil.objects.get(user=request.user)
+    if perfil.rol == 'gestor':
+        gestor = T_gestor.objects.get(perfil=perfil)
+        municipios_gest = T_gestor_insti_edu.objects.filter(gestor=gestor).values_list('insti__muni__nom_munici', flat=True).distinct()
+        print(municipios_gest)
+        municipios = T_munici.objects.filter(nom_munici__in=municipios_gest).values_list('nom_munici', flat=True).distinct()
+    if perfil.rol == 'lider':
+        municipios_gest = T_gestor_insti_edu.objects.all().values_list('insti__muni__nom_munici', flat=True).distinct()
+        municipios = T_munici.objects.filter(nom_munici__in=municipios_gest).values_list('nom_munici', flat=True).distinct()
+    return JsonResponse(list(municipios), safe=False)
+
+def obtener_opciones_estados(request):
+    estados = T_insti_edu.objects.values_list('esta', flat=True).distinct()
+    return JsonResponse(list(estados), safe=False)
+
+def obtener_opciones_sectores(request):
+    sectores = T_insti_edu.objects.values_list('secto', flat=True).distinct()
+    return JsonResponse(list(sectores), safe=False)
+
+# Listado filtrado
+
+def filtrar_instituciones(request):
+    municipio = request.GET.getlist('municipio', [])
+    estado = request.GET.getlist('estado', [])
+    sector = request.GET.getlist('sector', [])
+
+    # Obtén el perfil del usuario autenticado
+    perfil = getattr(request.user, 't_perfil', None)
+        # Filtra las instituciones asignadas al gestor actual
+    if perfil.rol == 'gestor':  # Formulario de asignación manual
+        gestor = T_gestor.objects.get(perfil = perfil)
+        instituciones = T_gestor_insti_edu.objects.filter(gestor=gestor)
+        print(instituciones)
+    if perfil.rol == 'lider':
+        instituciones = T_gestor_insti_edu.objects.all()
+
+    if municipio:
+        instituciones = instituciones.filter(insti__muni__nom_munici__in=municipio)
+    if estado:
+        instituciones = instituciones.filter(insti__esta__in=estado)
+    if sector:
+        instituciones = instituciones.filter(insti__secto__in=sector)
+
+    resultados = [
+        {
+            'id': i.id,
+            'nombre': i.insti.nom,
+            'direccion': i.insti.dire,
+            'municipio': i.insti.muni.nom_munici,
+            'departamento': i.insti.muni.nom_departa.nom_departa,
+            'sector': i.insti.secto,
+            'estado': i.insti.esta,
+            'dane': i.insti.dane,
+            'genero': i.insti.gene,
+            'zona': i.insti.zona,
+            'estado_docu': i.insti.esta_docu,
+            'detalle_url': reverse('instituciones_docs', args=[i.insti.id])  # Genera la URL
+        }
+        for i in instituciones
+    ]
+    return JsonResponse(resultados, safe=False)
+
+def eliminar_institucion_gestor(request, id):
+    if request.method == 'DELETE':
+        try:
+            institucion_gest = T_gestor_insti_edu.objects.get(id=id)
+            id_institucion = institucion_gest.insti.id
+
+            # Verificar si hay registros en T_grupo relacionados con la institución
+            grupos_asociados = T_grupo.objects.filter(insti_id=id_institucion).exists()
+
+            if grupos_asociados:
+                return JsonResponse({
+                    'error': 'No se puede eliminar la institución porque tiene grupos asociados.'
+                }, status=400)
+
+            # Eliminar documentos asociados en T_insti_docu
+            T_insti_docu.objects.filter(insti_id=id_institucion).delete()
+
+            # Eliminar la institución gestora
+            institucion_gest.delete()
+
+            return JsonResponse({'mensaje': 'Institución y documentos asociados eliminados correctamente.'}, status=200)
+
+        except T_gestor_insti_edu.DoesNotExist:
+            return JsonResponse({'error': 'Institución no encontrada.'}, status=404)
+    else:
+        return HttpResponseNotAllowed(['DELETE'])
 
 def cargar_documento_prematricula(request, documento_id, aprendiz_id, grupo_id):
 
@@ -293,22 +450,16 @@ def cargar_documento_prematricula(request, documento_id, aprendiz_id, grupo_id):
         
         # Validar el tipo de archivo
         if extension not in TIPOS_PERMITIDOS:
-            return render(request, 'grupos_prematricula.html', {
-                'grupo': grupo,
-                'error': f"Tipo de archivo no permitido. Los tipos permitidos son: {', '.join(TIPOS_PERMITIDOS)}."
-            })
+            messages.error(request, f"Tipo de archivo no permitido. Los tipos permitidos son: {', '.join(TIPOS_PERMITIDOS)}.")
+            return redirect('ver_docs_prematricula', grupo_id= grupo.id)
         
         # Validar el tamaño del archivo
         if archivo.size > TAMANO_MAXIMO:
-            return render(request, 'grupos_prematricula.html', {
-                'grupo': grupo,
-                'error': f"El archivo excede el tamaño máximo permitido de {TAMANO_MAXIMO // (1024 * 1024)} MB."
-            })
+            messages.error(request, f"El archivo excede el tamaño máximo permitido de {TAMANO_MAXIMO // (1024 * 1024)} MB.")
+            return redirect('ver_docs_prematricula', grupo_id= grupo.id)
 
-        ruta = default_storage.save(
-            f'documentos/aprendices/prematricula/{documento.apren.perfil.nom}{documento.apren.perfil.apelli}{documento.apren.perfil.dni}/{archivo.name}', 
-            archivo
-        )
+        ruta = f'documentos/aprendices/prematricula/{documento.apren.perfil.nom}{documento.apren.perfil.apelli}{documento.apren.perfil.dni}/{archivo.name}'
+
         ruta_guardada = default_storage.save(ruta, archivo)
 
         # Crear un registro en T_docu
@@ -326,10 +477,10 @@ def cargar_documento_prematricula(request, documento_id, aprendiz_id, grupo_id):
         documento.fecha_carga = datetime.now()
         documento.usr_carga = request.user
         documento.save()
+        messages.success(request, "Documento cargado exitosamente.")
+        return redirect('ver_docs_prematricula', grupo_id= grupo.id)
 
-        return redirect(request.META.get('HTTP_REFERER', '/'))
-
-    return render(request, 'grupos_prematricula.html', {
+    return render(request, 'detalle_docs_prematricula.html', {
         'grupo': grupo
         })
 
@@ -430,6 +581,59 @@ def crear_grupo(request):
                 'error': f'Ocurrió un error inesperado: {str(e)}'
             })
 
+def eliminar_grupos(request, id):
+    if request.method == 'DELETE':
+        try:
+            grupo = T_grupo.objects.get(id=id)
+
+            # Verificar si hay aprendices asignados al grupo
+            aprendices = T_apre.objects.filter(grupo_id=grupo.id)
+
+            # Verificar si algún aprendiz tiene documentos validados (vali = 1)
+            documentos_validados = T_prematri_docu.objects.filter(apren__in=aprendices, vali=1).exists()
+
+            if documentos_validados:
+                return JsonResponse({
+                    'error': 'No se puede eliminar el grupo porque existen documentos validados para aprendices asignados.'
+                }, status=400)
+
+            # Usar una transacción para asegurar la integridad de la base de datos
+            with transaction.atomic():
+                # Eliminar los registros de t_prematri_docu para los aprendices relacionados
+                T_prematri_docu.objects.filter(apren__in=aprendices).delete()
+
+                # Eliminar la relación de los aprendices con el grupo (dejar el campo vacío)
+                aprendices.update(grupo=None)
+
+                # Finalmente, eliminar el grupo
+                grupo.delete()
+
+            return JsonResponse({'mensaje': 'Grupo y documentos asociados eliminados correctamente.'}, status=200)
+
+        except T_grupo.DoesNotExist:
+            return JsonResponse({'error': 'Grupo no encontrado.'}, status=404)
+    else:
+        return HttpResponseNotAllowed(['DELETE'])
+    
+def eliminar_relacion_aprendiz_grupos(request, id):
+    if request.method == 'DELETE':
+        try:
+            aprendiz = T_apre.objects.get(id=id)
+
+            # Eliminar todos los registros en t_prematri_docu relacionados al aprendiz
+            T_prematri_docu.objects.filter(apren=aprendiz).delete()
+
+            # Desvincular el aprendiz del grupo
+            aprendiz.grupo = None
+            aprendiz.save()
+
+            return JsonResponse({'mensaje': 'Aprendiz y documentos asociados eliminados correctamente.'}, status=200)
+
+        except T_apre.DoesNotExist:
+            return JsonResponse({'error': 'Aprendiz no encontrado.'}, status=404)
+    else:
+        return HttpResponseNotAllowed(['DELETE'])
+
 
 def asignar_institucion_gestor(request):
     if request.method == 'GET':
@@ -443,7 +647,9 @@ def asignar_institucion_gestor(request):
                         'Carta Intención',
                         'Formato de Inscripción Especial 2025',
                         'Certificado de Aprobacion de Grado Noveno',
-                        'Acta de Compromiso de Articulacion'
+                        'Acta de Compromiso de Articulacion',
+                        'Acentamiento de matricula',
+                        'Formato de diagnostico'
                     ]
             asignar_insti_form = AsignarInstiForm(request.POST, user=request.user)
             perfil = T_perfil.objects.get(user=request.user)
@@ -459,7 +665,7 @@ def asignar_institucion_gestor(request):
                         'asignar_insti_form': asignar_insti_form,
                     })
                 
-                 # Validar si la institución está asignada a otro gestor
+                # Validar si la institución está asignada a otro gestor
                 if T_gestor_insti_edu.objects.filter(insti=institucion, esta="activo").exclude(gestor=gestor).exists():
                     messages.error(request, 'Esta institución ya está asignada a otro gestor.')
                     return render(request, 'asignar_instituciones_gestor.html', {
@@ -475,6 +681,9 @@ def asignar_institucion_gestor(request):
                     gestor = gestor,
                     usuario_asigna = request.user
                 )
+                insti_edu = T_insti_edu.objects.get(id = institucion.id)
+                insti_edu.esta_docu = 'Pendiente'
+                insti_edu.save()
                 new_gestor_insti.save()
                 for documento in documentos_matricula:
                     new_documento = T_insti_docu(
@@ -575,10 +784,7 @@ def cargar_documento_institucion(request, documento_id, institucion_id):
             messages.error(request, f"El archivo excede el tamaño máximo permitido de {TAMANO_MAXIMO // (1024 * 1024)} MB.")
             return redirect(request.META.get('HTTP_REFERER', '/'))
         
-        ruta = default_storage.save(
-            f'documentos/instituciones/{documento.insti.nom}/{archivo.name}', 
-            archivo
-        )
+        ruta = f'documentos/instituciones/{documento.insti.nom}/{archivo.name}' 
         ruta_guardada = default_storage.save(ruta, archivo)
 
         # Crear un registro en T_docu
@@ -597,17 +803,44 @@ def cargar_documento_institucion(request, documento_id, institucion_id):
         documento.usr_carga = request.user
         documento.save()
 
+        # Verificar si todos los documentos de la institución están en estado "Cargado"
+        documentos_institucion = T_insti_docu.objects.filter(insti=documento.insti)
+        if all(doc.esta == "Cargado" for doc in documentos_institucion):
+            # Actualizar el estado de la institución a "Completo"
+            institucion = documento.insti
+            institucion.esta_docu = "Completo"
+            institucion.save()
+
         return redirect(request.META.get('HTTP_REFERER', '/'))
 
     return render(request, 'grupos_prematricula.html', {
         })
 
-@login_required  # Funcion para eliminar documento de prematricula aprendiz
+@login_required
 def eliminar_documento_pre_insti(request, documento_id):
-    documentot = get_object_or_404(T_docu, id = documento_id)
+    # Obtener el documento
+    documentot = get_object_or_404(T_docu, id=documento_id)
+
+    # Obtener el registro de la relación entre documento e institución
     prematri_docu = T_insti_docu.objects.filter(docu_id=documentot.id).first()
-    prematri_docu.esta = 'Pendiente'
-    prematri_docu.vali = '0'
-    prematri_docu.save()
-    documentot.delete()
+
+    if prematri_docu:
+        # Marcar el documento como "Pendiente"
+        prematri_docu.esta = 'Pendiente'
+        prematri_docu.vali = '0'
+        prematri_docu.save()
+
+        # Eliminar el documento físico
+        documentot.delete()
+
+        # Verificar si hay documentos no "Cargados" en la institución
+        documentos_institucion = T_insti_docu.objects.filter(insti=prematri_docu.insti)
+        if any(doc.esta != "Cargado" for doc in documentos_institucion):
+            print("Si hay?")
+            # Si algún documento no está "Cargado", marcar la institución como "Pendiente"
+            institucion = prematri_docu.insti
+            institucion.esta_docu = "Pendiente"
+            institucion.save()
+
+    # Redirigir después de eliminar el documento
     return redirect(request.META.get('HTTP_REFERER', '/'))
