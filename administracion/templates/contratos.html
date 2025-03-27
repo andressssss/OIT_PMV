@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load icons %}
+
+{% block content %}
+<main class="container py-5">
+    <section class="card card-body shadow-sm p-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center pb-4">
+                    <h1 class="display-5">Ofertas</h1>
+                    <a href="{% url 'crear_ofertas' %}" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear oferta">
+                        {% icon 'plus' %}
+                    </a>
+                </div>
+
+                <!-- Contenedor con desplazamiento horizontal -->
+                <div class="table-responsive">
+                    <table id="ofertas_table" class="table table-hover table-bordered align-middle">
+                        <thead class="table-secondary text-center">
+                            <tr>
+                                <th></th>
+                                <th>Estado</th>
+                                <th>Contrato</th>
+                                <th>Horario</th>
+                                <th>Tipo</th>
+                                <th>Descripcion</th>
+                                <th>Cargo</th>
+                                <th>Fecha creacion</th>
+                                <th>Fecha apertura</th>
+                                <th>Fecha cierre</th>
+                                <th>Educacion minima</th>
+                                <th>Experiencia minima</th>
+                                <th>Profesion requerida</th>
+                                <th>Departamento</th>
+                                <th>Programa de formacion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for oferta in ofertas %}
+                                <tr>  
+                                    <td>
+                                            <a href="" class="btn btn-sm btn-warning mb-1" title="Editar">
+                                                {% icon 'edit' %}
+                                            </a>
+                                            <a href="" class="btn btn-sm btn-danger mb-1" title="Eliminar">
+                                                {% icon 'delete' %}
+                                            </a>
+                                        <a href="{% url 'ver_postulantes' oferta.id %}" class="btn btn-sm btn-info">
+                                            {% icon 'search' %}
+                                        </a>
+                                    </td>
+                                    </td></td>
+                                    <td>{{ oferta.esta }}</td>
+                                    <td>{{ oferta.tipo_contra }}</td>
+                                    <td>{{ oferta.jorna_labo }}</td> 
+                                    <td>{{ oferta.tipo }}</td> 
+                                    <td>{{ oferta.descri }}</td> 
+                                    <td>{{ oferta.cargo }}</td> 
+                                    <td>{{ oferta.fecha_crea }}</td> 
+                                    <td>{{ oferta.fecha_ape }}</td> 
+                                    <td>{{ oferta.fecha_cie }}</td> 
+                                    <td>{{ oferta.edu_mini }}</td> 
+                                    <td>{{ oferta.expe_mini }}</td> 
+                                    <td>{{ oferta.profe_reque }}</td> 
+                                    <td>{{ oferta.depa.nom_departa }}</td> 
+                                    <td>{{ oferta.progra.nom }}</td> 
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

@@ -26,6 +26,9 @@ from datetime import datetime
 from django.db.models import Prefetch
 from django.contrib import messages
 from django.db import transaction
+from django.utils.html import escape
+from django.core.paginator import Paginator
+from django.db.models.functions import Lower
 import csv
 import random
 import string
@@ -57,12 +60,16 @@ def signin(request):
             # Obtener el perfil del usuario
             try:
                 perfil = T_perfil.objects.get(user=user)  # Obtener el perfil asociado al usuario
-                
                 # Verificar el rol del perfil
                 if perfil.rol == 'aprendiz':
+                    print("1")
                     return redirect('panel_aprendiz')  # Redirigir al panel del aprendiz
-                if perfil.rol == 'gestor' or 'lider':
+                elif perfil.rol in ['gestor', 'lider']:
+                    print("2")
                     return redirect('instituciones_gestor')
+                elif perfil.rol == 'instructor':
+                    print("3")
+                    return redirect('ofertas_show')
             except T_perfil.DoesNotExist:
                 pass  # Si no se encuentra el perfil, no hacer nada adicional
 
@@ -703,6 +710,7 @@ def filtrar_aprendices(request):
     usuarios = request.GET.getlist('usuario_creacion', [])
     estado = request.GET.getlist('estado', [])
     fecha = request.GET.get('fecha_creacion_', None)
+    ordenar = request.GET.get('ordenar_por', None)
 
     aprendices = T_apre.objects.all()
 
@@ -716,23 +724,25 @@ def filtrar_aprendices(request):
             filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre, usu_crea__t_perfil__apelli__icontains=apellido)
         
         aprendices = aprendices.filter(filtros)
+        
     if estado:
         aprendices = aprendices.filter(esta__in=estado)
+
     if fecha:
         # Convertir la fecha recibida en el formato adecuado
         fecha_creacion = datetime.strptime(fecha, '%Y-%m-%d').date()
-        print(f"Fecha de creación recibida: {fecha_creacion}")
 
         # Convertir la fecha de 'date_joined' a solo la fecha sin la hora
         aprendices = aprendices.annotate(fecha_sin_hora=Cast('perfil__user__date_joined', output_field=DateField()))
 
-        # Imprimir el resultado de las fechas truncadas para depuración
-        for aprendiz in aprendices:
-            print(f"Aprendiz ID: {aprendiz.id}, User: {aprendiz.perfil.user}, Date Joined: {aprendiz.perfil.user.date_joined}, Fecha truncada: {aprendiz.fecha_sin_hora}")
-
         # Filtrar por la fecha truncada
         aprendices = aprendices.filter(fecha_sin_hora=fecha_creacion)
 
+    if ordenar:
+        if ordenar == 'fecha_desc':
+            aprendices = aprendices.order_by('-perfil__user__date_joined')
+        elif ordenar == 'fecha_asc':
+            aprendices = aprendices.order_by('perfil__user__date_joined')
 
     resultados = [
         {
@@ -749,6 +759,21 @@ def filtrar_aprendices(request):
         for a in aprendices
     ]
     return JsonResponse(resultados, safe=False)
+
+def ver_perfil_aprendiz(request, aprendiz_id):
+    aprendiz = get_object_or_404(T_apre, id=aprendiz_id)
+    repre_legal = get_object_or_404(T_repre_legal, id=aprendiz.repre_legal.id)
+    gestor = None
+    if aprendiz.grupo:
+        try:
+            gestor = T_perfil.objects.get(user=aprendiz.grupo.autor)
+        except T_perfil.DoesNotExist:
+            gestor = None 
+    return render(request, 'aprendiz_perfil_modal.html', {
+        'aprendiz': aprendiz,
+        'repre_legal': repre_legal,
+        'gestor': gestor
+        })
 
 @login_required
 def crear_aprendices(request):
@@ -837,66 +862,22 @@ def editar_aprendiz(request, id):
     representante = get_object_or_404(T_repre_legal, pk=aprendiz.repre_legal_id)
     
     if request.method == 'POST':
-        print(request.POST)  # Agregado para depurar
         form_perfil = PerfilForm(request.POST, instance=perfil, prefix='perfil')
         form_repre = RepresanteLegalForm(request.POST, instance=representante, prefix='representante')
         
         if form_perfil.is_valid() and form_repre.is_valid():
             form_perfil.save()
             form_repre.save()
-            messages.success(request, "Aprendiz actualizado con éxito.")
-            return redirect(request.META.get('HTTP_REFERER', '/'))  # Redirige a la página anterior
-            # En lugar de redirigir, simplemente renderiza la página con el formulario actualizado
+            return JsonResponse({'success': True, 'message': 'Aprendiz actualizado con exito.'})
         else:
-            print(form_perfil.errors)
-            print(form_repre.errors)
-            messages.error(request, "Ocurrió un error al actualizar el aprendiz.")
-    else:
-        form_perfil = PerfilForm(instance=perfil, prefix='perfil')
-        form_repre = RepresanteLegalForm(instance=representante, prefix='representante')
+            errores = {
+                'perfil': form_perfil.errors,
+                'representante': RepresanteLegalForm.errors
+            }
+            return JsonResponse({'success': False, 'message': 'Error al actualizar el aprendiz', 'errors': errores}, status=400) 
+    
+    return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
 
-    return render(request, 'aprendiz.html', {
-        'form_perfil': form_perfil,
-        'form_repre': form_repre,
-        'aprendiz': aprendiz  # Pasa el aprendiz para poder acceder a su ID en el HTML
-    })
-
-# @login_required
-# def detalle_aprendices(request, aprendiz_id):  # Funcion para editar aprendiz
-#     aprendiz = get_object_or_404(T_apre, pk=aprendiz_id)
-#     perfil = aprendiz.perfil
-#     user = perfil.user
-
-#     if request.method == 'GET':
-
-#         user_form = UserFormCreate(instance=user)
-#         perfil_form = PerfilForm(instance=perfil)
-#         aprendiz_form = AprendizForm(instance=aprendiz)
-
-#         return render(request, 'aprendiz_detalle.html', {
-#             'aprendiz': aprendiz,
-#             'user_form': user_form,
-#             'perfil_form': perfil_form,
-#             'aprendiz_form': aprendiz_form
-#         })
-#     else:
-#         try:
-#             user_form = UserFormCreate(request.POST)
-#             perfil_form = PerfilForm(request.POST)
-#             aprendiz_form = AprendizForm(request.POST)
-#             if user_form.is_valid() and perfil_form.is_valid() and aprendiz_form.is_valid():
-#                 user_form.save()
-#                 perfil_form.save()
-#                 aprendiz_form.save()
-#             return redirect('aprendices')
-
-#         except ValueError:
-#             return render(request, 'aprendiz_detalle.html', {
-#                 'user_form': user_form,
-#                 'perfil_form': perfil_form,
-#                 'aprendiz_form': aprendiz_form,
-#                 'error': 'Error al actualizar el administrador. Verifique los datos'
-#             })
 
 @login_required
 def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
@@ -1350,92 +1331,76 @@ def obtener_institucion(request, institucion_id):
         return JsonResponse(data)
     return JsonResponse({'error': 'Institución no encontrada'}, status=404)
 
+def api_municipios(request):
+    municipios = T_munici.objects.all().values('id', 'nom_munici')
+    data = list(municipios)
+    return JsonResponse(data, safe=False)
 
 @login_required
-def crear_instituciones(request):  # Función para crear institución
-    if request.method == 'GET':
-        institucionForm = InstitucionForm()
-        return render(request, 'instituciones_crear.html', {
-            'institucionForm': institucionForm
-        })
-
-    elif request.method == 'POST':
+def crear_instituciones(request):
+    if request.method == 'POST':
         try:
             institucionForm = InstitucionForm(request.POST)
-            
-            # Validar el formulario
+
             if institucionForm.is_valid():
-                # Obtener el departamento seleccionado
                 departamento_id = institucionForm.cleaned_data.get('depa')
-                
-                # Actualizar el queryset de municipios
+
                 if departamento_id:
                     institucionForm.fields['muni'].queryset = T_munici.objects.filter(nom_departa=departamento_id)
-                
 
-                # Guardar la nueva institución
+                nombre = institucionForm.cleaned_data.get('nom')
+                municipio = institucionForm.cleaned_data.get('muni')
+
+                if T_insti_edu.objects.filter(nom = nombre, muni = municipio).exists():
+                    errors = "<ul><li>Ya existe una institución con ese nombre asociada al municipio seleccionado.</li></ul>"
+                    return JsonResponse({'status': 'error', 'message': 'Institución duplicada.', 'errors': errors}, status=400)
+
                 new_institucion = institucionForm.save(commit=False)
                 new_institucion.vigen = datetime.now().year
                 new_institucion.save()
-                return redirect('instituciones')  # Redirigir a la lista de instituciones
-            
-            # Si el formulario no es válido, renderizar con errores
-            print(institucionForm.errors)
-            return render(request, 'instituciones_crear.html', {
-                'institucionForm': institucionForm,
-                'error': 'Error al crear institución. Verifique los datos ingresados.'
-            })
-        
-        except ValueError:
-            print(institucionForm.errors)
-            # Manejar errores específicos
-            return render(request, 'instituciones_crear.html', {
-                'institucionForm': institucionForm,
-                'error': 'Error al crear institución. Verifique los datos ingresados.'
-            })
+
+                return JsonResponse({'status':'success', 'message': 'Institución creada correctamente.'}, status=200)
+
+            errors = institucionForm.errors.as_ul()
+            return JsonResponse({'status': 'error','message': 'Valide el formulario nuevamente', 'errors': errors}, status=400)
+
+        except ValueError as e:
+            errors = "<ul><li>Error interno: {}</li></ul>".format(str(e))
+            return JsonResponse({'status':'error','errors': errors}, status=500)
 
     else:
-        # Si el método no es GET ni POST, redirigir
-        return redirect('instituciones')
+        return JsonResponse({"errors": "<ul><li>Método no permitido.</li></ul>"}, status=405)
 
-def editar_institucion(request, id):
-    institucion = get_object_or_404(T_insti_edu, pk=id)
-    if request.method == 'POST':
-        form = InstitucionForm(request.POST, instance=institucion)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Institucion actualizada con exito")
-            return redirect(request.META.get('HTTP_REFERER', '/'))  # Redirige a la página anterior
-    else:
-        form = InstitucionForm(instance=institucion)
+def editar_institucion(request, institucion_id):
+    institucion = get_object_or_404(T_insti_edu, id = institucion_id)
 
-    return render(request, 'editar_institucion.html', {'form': form})
+    try:
+        institucion.nom = request.POST.get('nom', '').strip()
+        institucion.dire = request.POST.get('dire', '').strip()
+        institucion.secto = request.POST.get('secto', '').strip()
+        institucion.coordi = request.POST.get('coordi', '').strip()
+        institucion.coordi_mail = request.POST.get('coordi_mail', '').strip()
+        institucion.coordi_tele = request.POST.get('coordi_tele', '').strip()
+        institucion.esta = request.POST.get('esta', '').strip()
+        institucion.insti_mail = request.POST.get('insti_mail', '').strip()
+        institucion.recto = request.POST.get('recto', '').strip()
+        institucion.recto_tel = request.POST.get('recto_tel', '').strip()
+        institucion.cale = request.POST.get('cale', '').strip()
+        institucion.dane = request.POST.get('dane', '').strip()
+        institucion.gene = request.POST.get('gene', '').strip()
+        institucion.grados = request.POST.get('grados', '').strip()
+        institucion.jorna = request.POST.get('jorna', '').strip()
+        institucion.num_sedes = request.POST.get('num_sedes', '').strip()
+        institucion.zona = request.POST.get('zona', '').strip()
 
+        municipio_id = request.POST.get('muni')
+        if municipio_id:
+            institucion.muni_id = municipio_id
 
-@login_required
-# funcion para actualizar institucion
-def detalle_instituciones(request, institucion_id):
-    institucion = get_object_or_404(T_insti_edu, id=institucion_id)
-
-    if request.method == 'GET':
-        institucionForm = InstitucionForm(instance=institucion)
-        return render(request, 'instituciones_detalle.html', {
-            'institucion': institucion,
-            'institucionForm': institucionForm
-        })
-    else:
-        try:
-            institucionForm = InstitucionForm(
-                request.POST, instance=institucion)
-            if institucionForm.is_valid():
-                institucionForm.save()
-                return redirect('instituciones')
-        except ValueError:
-            return render(request, 'instituciones_detalle.html', {
-                'institucionForm': institucionForm,
-                'error': 'Error al actualizar. Verifique los datos.'
-            })
-
+        institucion.save()
+        return JsonResponse({'status': 'success', 'message': 'Institucion actualizada.'}, status = 200)
+    except Exception as e:
+        return JsonResponse({'status': 'false', 'message':'Error en la operacion', 'errors': str(e)}, status = 400)
 
 @login_required  # funcion para eliminar institucion
 def eliminar_instituciones(request, institucion_id):
@@ -1448,89 +1413,119 @@ def eliminar_instituciones(request, institucion_id):
         'institucion': institucion,
     })
 
+def obtener_institucion_modal(request, institucion_id):
+    institucion = get_object_or_404(T_insti_edu, id=institucion_id)
+    return render(request, 'institucion_ver_modal.html', {
+        'institucion': institucion
+    })
+
 
 ## Centros de formacion ##
 @login_required
 def centrosformacion(request):
     if request.method == 'GET':
-        centrosformacion = T_centro_forma.objects.all()
         centroformacionForm = CentroFormacionForm()
         return render(request, 'centro_formacion.html', {
-            'centrosformacion': centrosformacion,
             'centroformacionForm': centroformacionForm
         })
     else:
-        try:
-            centrosformacionForm = CentroFormacionForm(request.POST)
-            if centrosformacionForm.is_valid():
-                new_centroFormacion = centrosformacionForm.save(commit=False)
-                new_centroFormacion.save()
-                return redirect('centrosformacion')
-        except ValueError:
-                return render(request, 'centro_formacion.html', {
-            'centrosformacion': centrosformacion,
+        return render(request, 'centro_formacion.html', {
             'centroformacionForm': centroformacionForm,
-            'error': 'Error al crear institución. Verifique los datos'
             })
 
-
-login_required  # Funcion para crear centros de formacion
-
-
-def crear_centrosformacion(request):
-    if request.method == 'GET':
-        centrosformacionForm = CentroFormacionForm()
-        return render(request, 'centro_formacion_crear.html', {
-            'centrosformacionForm': centrosformacionForm
-        })
-    else:
-        try:
-            centrosformacionForm = CentroFormacionForm(request.POST)
-            if centrosformacionForm.is_valid():
-                new_centroFormacion = centrosformacionForm.save(commit=False)
-                new_centroFormacion.save()
-                return redirect('centrosformacion')
-        except ValueError:
-            return render(request, 'centro_formacion_crear.html', {
-                'centrosformacionForm': centrosformacionForm,
-                'error': 'Error al crear institución. Verifique los datos'
-            })
-
-
-@login_required  # funcion para actualizar centro de formacion
-def detalle_centrosformacion(request, centroformacion_id):
-    centroFormacion = get_object_or_404(T_centro_forma, id=centroformacion_id)
-
-    if request.method == 'GET':
-        centrosformacionForm = CentroFormacionForm(instance=centroFormacion)
-        return render(request, 'centro_formacion_detalle.html', {
-            'centroFormacion': centroFormacion,
-            'centrosformacionForm': centrosformacionForm
-        })
-    else:
-        try:
-            centrosformacionForm = CentroFormacionForm(
-                request.POST, instance=centroFormacion)
-            if centrosformacionForm.is_valid():
-                centrosformacionForm.save()
-                return redirect('centrosformacion')
-        except ValueError:
-            return render(request, 'centro_formacion_detalle.html', {
-                'centrosformacionForm': centrosformacionForm,
-                'error': 'Error al crear institución. Verifique los datos'
-            })
-
-
-@login_required  # funcion para eliminar centro de formacion
-def eliminar_centrosformacion(request, centroformacion_id):
-    centroformacion = get_object_or_404(T_centro_forma, id=centroformacion_id)
-
+# Funcion para crear centros de formacion
+@login_required
+def crear_centro(request):
     if request.method == 'POST':
-        centroformacion.delete()
-        return redirect('centrosformacion')
-    return render(request, 'confirmar_eliminacion_centro_formacion.html', {
-        'centroformacion': centroformacion,
-    })
+        centroForm = CentroFormacionForm(request.POST)
+        if centroForm.is_valid():
+            nom = centroForm.cleaned_data.get('nom')
+            cod = centroForm.cleaned_data.get('cod')
+
+            if T_centro_forma.objects.filter(nom__iexact = nom).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un centro con ese nombre'}, status = 400)
+
+            if T_centro_forma.objects.filter(cod__iexact = cod).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un centro con ese codigo'}, status = 400)
+
+            centroForm.save()
+            return JsonResponse({'status': 'success', 'message': 'Centro creado con exito.'}, status = 200)
+        else:
+            errores_dict = centroForm.errors.get_json_data()
+            errores_custom = []
+
+            for field, errors_list in errores_dict.items():
+                # Obtiene el label personalizado del campo
+                nombre_campo = centroForm.fields[field].label or field.capitalize()
+                
+                for err in errors_list:
+                    mensaje = f"{nombre_campo}: {err['message']}"
+                    errores_custom.append(mensaje)
+
+            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
+
+## Endpoint para listar centro
+def listar_centros_formacion_json(request):
+    centros = T_centro_forma.objects.all()
+    data = []
+    for centro in centros:
+        data.append({
+            'id': centro.id,
+            'nom': centro.nom,
+            'cod': centro.cod,
+            'depa': centro.depa.nom_departa
+        })
+    return JsonResponse({'data': data})
+
+## Endpoint para editar centro ##
+def obtener_centro(request, centro_id):
+    centro = T_centro_forma.objects.filter(id=centro_id).first()
+    
+    if centro:
+        data = {
+            'centro-nom': centro.nom,
+            'centro-depa': centro.depa.id,
+            'centro-codi': centro.cod
+        }
+        return JsonResponse(data)
+    return JsonResponse({'error': 'Centro no encontrado'}, status=404)
+
+def editar_centro(request, centro_id):
+    centro = get_object_or_404(T_centro_forma, pk=centro_id)
+    
+    if request.method == 'POST':
+        form_centro = CentroFormacionForm(request.POST, instance=centro)
+        nom = request.POST.get('nom', '').strip()
+        cod = request.POST.get('cod', '').strip()
+
+        if T_centro_forma.objects.filter(nom__iexact=nom).exclude(pk=centro_id).exists():
+            return JsonResponse({'status': 'error', 'message': 'Ya existe otro centro con este nombre.'}, status=400)
+
+        if T_centro_forma.objects.filter(cod__iexact=cod).exclude(pk=centro_id).exists():
+            return JsonResponse({'status': 'error', 'message': 'Ya existe otro centro con este código.'}, status=400)
+
+
+        if form_centro.is_valid():
+            form_centro.save()
+            return JsonResponse({'status': 'success', 'message': 'Centro de Formacion actualizado con exito.'})
+        else:
+            errores = form_centro.errors
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el centro de formacion', 'errors': {'centro': errores}}, status=400) 
+    
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+# Endpoiont para eliminar centro de formacion
+@login_required  
+def eliminar_centro(request, centro_id):
+    if request.method == 'POST':
+        try:
+            centro = get_object_or_404(T_centro_forma, id=centro_id)
+            centro.delete()
+            return JsonResponse({'status': 'success', 'message': 'Centro eliminado con exito.'}, status = 200)
+        except centro.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'No encontrado.'}, status = 404)       
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido.'}, status = 405)
 
 def obtener_municipios(request):
     departamento_id = request.GET.get('departamento_id')
@@ -1538,6 +1533,10 @@ def obtener_municipios(request):
         municipios = T_munici.objects.filter(nom_departa_id=departamento_id).values('id', 'nom_munici')
         return JsonResponse(list(municipios), safe=False)
     return JsonResponse({'error': 'No se proporcionó el ID del departamento'}, status=400)
+
+def obtener_departamentos(request):
+    departamentos = T_departa.objects.all().values('id', 'nom_departa') 
+    return JsonResponse(list(departamentos), safe=False)
 
 # Función para generar contraseña aleatoria
 def generar_contraseña(length=8):
@@ -1724,86 +1723,151 @@ def cargar_aprendices_masivo(request):
 
     return render(request, 'aprendiz_masivo_crear.html', {'form': form})
 
+def listar_instituciones(request):
+    municipio = request.GET.get('municipio')
+    departamento = request.GET.get('departamento')
+    zona = request.GET.get('zona')
+    estado = request.GET.get('estado')
+    ordenar_por = request.GET.get('ordenar_por')
 
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+    search_value = request.GET.get('search[value]', '').strip()
 
-class DataTablePagination(PageNumberPagination):
-    page_size_query_param = 'length'  # Usado por DataTables
-    page_query_param = 'start'       # Usado por DataTables
-    page_size = 10                   # Tamaño por defecto si no se especifica
+    order_column_index = request.GET.get('order[0][column]', 0)
+    order_dir = request.GET.get('order[0][dir]', 'asc')
 
-    def get_page_size(self, request):
-        return int(request.query_params.get('length', self.page_size))
+    columns = [
+        'nom',
+        'dire',
+        'muni__nom_munici',
+        'muni__nom_departa__nom_departa',
+        'secto',
+        'esta',
+        'dane',
+        'gene',
+        'zona'
+    ]
 
-class T_insti_edu_APIView(APIView):
-    def get(self, request, *args, **kwargs):
-        # Obtén los parámetros que envía DataTables
-        draw = int(request.GET.get('draw', 1))
-        start = int(request.GET.get('start', 0))
-        length = int(request.GET.get('length', 10))
-        search_value = request.GET.get('search[value]', '')
+    try:
+        order_column = columns[int(order_column_index)]
+    except (IndexError, ValueError):
+        order_column = 'nom'
 
-        # Ordenamiento
-        order_column_index = request.GET.get('order[0][column]', 0) # Indice de la columna
-        order_dir = request.GET.get('order[0][dir]', 'asc') # Direccion de ordenamiento asc o desc
+    if order_dir == 'desc':
+        order_column = f'-{order_column}'
 
-        # Definicion de columnas correspondientes en el frontend
-        columns = [
-            'nom',                      # Nombre
-            'dire',                     # Direccion
-            'muni__nom_munici',        # Municipio
-            'muni__nom_departa__nom_departa',  # Departamento
-            'secto',                   # Sector
-            'esta',                    # Estado
-            'dane',                    # Código DANE
-            'gene',                    # Género
-            'zona'                     # Zona
-        ]
+    # Query inicial sin slicing
+    queryset = T_insti_edu.objects.select_related('muni__nom_departa').order_by(order_column)
+    total_records = queryset.count()
 
-        # Mapeo del indice al nombre de la columna
-        try:
-            order_column = columns[int(order_column_index)]
-        except (IndexError, ValueError):
-            order_column = 'nom' #Orden por defecto en caso de error
+    # Filtros especiales (👈 mover arriba)
+    if municipio:
+        queryset = queryset.filter(muni__id=municipio)
+    if departamento:
+        queryset = queryset.filter(muni__nom_departa__id=departamento)
+    if zona:
+        queryset = queryset.filter(zona=zona)
+    if estado:
+        queryset = queryset.filter(esta=estado)
 
-        # Ordenamiento de la queryset
-        if order_dir == 'desc':
-            queryset = T_insti_edu.objects.order_by(f'-{order_column}')
-        else:
-            queryset = T_insti_edu.objects.order_by(order_column)
-        
-        # Aplicar búsqueda si existe un término
-        if search_value:
-            queryset = queryset.filter(
-                Q(nom__icontains=search_value) |
-                Q(dire__icontains=search_value) |
-                Q(muni__nom_munici__icontains=search_value) |
-                Q(muni__nom_departa__nom_departa__icontains=search_value) |
-                Q(secto__icontains=search_value) |
-                Q(esta__icontains=search_value) |
-                Q(dane__icontains=search_value) |
-                Q(gene__icontains=search_value) |
-                Q(zona__icontains=search_value)
-            )
+    # Ordenar por fecha personalizada
+    if ordenar_por == 'fecha_asc':
+        queryset = queryset.order_by('fecha_creacion')
+    elif ordenar_por == 'fecha_desc':
+        queryset = queryset.order_by('-fecha_creacion')
 
-        # Total de registros antes del filtrado
-        total = T_insti_edu.objects.count()
+    # Búsqueda
+    if search_value:
+        queryset = queryset.filter(
+            Q(nom__icontains=search_value) |
+            Q(dire__icontains=search_value) |
+            Q(muni__nom_munici__icontains=search_value) |
+            Q(muni__nom_departa__nom_departa__icontains=search_value) |
+            Q(secto__icontains=search_value) |
+            Q(esta__icontains=search_value) |
+            Q(dane__icontains=search_value) |
+            Q(gene__icontains=search_value) |
+            Q(zona__icontains=search_value)
+        )
 
-        # Total de registros después del filtro
-        total_filtered = queryset.count()
+    total_filtered = queryset.count()
 
-        # Paginación
-        queryset = queryset[start:start + length]
+    queryset = queryset[start:start + length]
 
-        # Serializa los datos
-        serializer = T_insti_edu_Serializer(queryset, many=True)
+    data = [{
+        'nom': i.nom,
+        'dire': i.dire,
+        'municipio_nombre': i.muni.nom_munici,
+        'departamento_nombre': i.muni.nom_departa.nom_departa,
+        'secto': i.secto,
+        'esta': i.esta,
+        'dane': i.dane,
+        'gene': i.gene,
+        'zona': i.zona,
+        'id': i.id,
+    } for i in queryset]
 
-        # Respuesta en el formato que espera DataTables
-        return Response({
-            'draw': draw,
-            'recordsTotal': total,
-            'recordsFiltered': total_filtered,  # Ajusta si aplicas filtros
-            'data': serializer.data,
-        })
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_filtered,
+        'data': data,
+    })
+
+def obtener_departamentos_filtro_insti(request):
+    departamentos = (
+        T_insti_edu.objects
+        .select_related('muni__nom_departa') 
+        .values('muni__nom_departa_id', 'muni__nom_departa__nom_departa') 
+        .distinct()
+        .order_by(Lower('muni__nom_departa__nom_departa'))
+    )
+
+    data = [
+        {'value': depto['muni__nom_departa_id'], 'label': depto['muni__nom_departa__nom_departa']}
+        for depto in departamentos if depto['muni__nom_departa__nom_departa']
+    ]
+    return JsonResponse(data, safe=False)
+
+def obtener_municipio_filtro_insti(request):
+    departamento_id = request.GET.get('departamento_id')
+
+    municipios_qs = T_insti_edu.objects.select_related('muni', 'muni__nom_departa')
+
+    if departamento_id:
+        municipios_qs = municipios_qs.filter(muni__nom_departa__id=departamento_id)
+
+    municipios = (municipios_qs
+                .values('muni_id', 'muni__nom_munici')
+                .distinct()
+                .order_by(Lower('muni__nom_munici')))
+
+    data = [
+        {'value': mun['muni_id'], 'label': mun['muni__nom_munici']}
+        for mun in municipios if mun['muni__nom_munici']
+    ]
+
+    return JsonResponse(data, safe=False)
+
+def obtener_estado_filtro_insti(request):
+    estados = (T_insti_edu.objects
+                .values_list('esta', flat=True)
+                .distinct()
+                .order_by(Lower('esta')))
+
+    data = [{'value': est, 'label': est.capitalize()} for est in estados if est]
+    return JsonResponse(data, safe=False)
+
+def obtener_zona_filtro_insti(request):
+    zonas = (T_insti_edu.objects
+            .values_list('zona', flat=True)
+            .distinct())
+
+    zona_map = {'u': 'Urbana', 'r': 'Rural'}
+    data = [{'value': zona, 'label': zona_map.get(zona, 'Desconocida')} for zona in zonas if zona]
+    return JsonResponse(data, safe=False)
 
 @login_required
 def gestores(request):

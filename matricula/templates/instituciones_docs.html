@@ -1,121 +1,195 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load icons %}
 {% load custom_filters %}
 
 {% block content %}
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4>Documentación de la institucion: {{ institucion.nom }}. {{ institucion.muni.nom_departa.nom_departa }}, {{ institucion.muni.nom_munici }}</h4>
-                        <p>Aquí deberá cargar los documentos relacionados con la institucion.</p>
-                    </div>
-                    <div>
-                        <h4 id="document-counter">{{ total_documentos }}/6</h4>
-                    </div>
-                </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4>Documentación de la institución: {{ institucion.nom }}. {{ institucion.muni.nom_departa.nom_departa }}, {{ institucion.muni.nom_munici }}</h4>
+                <p>Aquí deberá cargar los documentos relacionados con la institución.</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3 py-2 rounded-3 shadow-sm me-3" 
+                    data-bs-toggle="modal" data-bs-target="#historialModal" 
+                    id="btn-historial" data-institucion="{{ institucion.id }}">
+                    <i class="bi bi-clock-history me-1"></i> Ver Historial
+                </button>
                 
-                <div class="row g-4">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nombre del Documento</th>
-                                <th>Estado</th>
-                                <th>Archivo</th>
-                                {% if rol == 'gestor' %}
-                                    <th>Cargar</th>
-                                {% elif rol == 'lider' %}
-                                <th>Aprobacion</th>
+                <!-- Contador de documentos -->
+                <h4 id="document-counter" class="mb-0">{{ total_documentos }}/6</h4>
+            </div>
+        </div>
+        
+    
+        <div class="row g-4">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre del Documento</th>
+                        <th>Estado</th>
+                        <th>Archivo</th>
+                        {% if rol == 'gestor' %}
+                            <th>Cargar</th>
+                        {% elif rol == 'lider' %}
+                            <th>Aprobación</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <form id="upload-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <tbody>
+                        {% for documento in documentos %}
+                        <tr>
+                            <td>{{ documento.nom }}</td>
+                            <td>
+                                {% if documento.vali == '0' %}
+                                    <span class="badge bg-secondary">No cargado</span>
+                                {% elif documento.vali == '1' %}
+                                    <span class="badge bg-primary">Cargado</span>
+                                {% elif documento.vali == '2' %}
+                                    <span class="badge bg-danger">Rechazado</span>
+                                {% elif documento.vali == '3' %}
+                                    <span class="badge bg-warning">Recargado</span>
+                                {% elif documento.vali == '4' %}
+                                    <span class="badge bg-success">Aprobado</span>
                                 {% endif %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for documento in documentos %}
-                            <tr>
-                                <td>{{ documento.nom }}</td>
-                                <td>
-                                    {% if documento.vali == '0' %}
-                                    Pendiente
-                                    {% else %}
-                                    Aprobado
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if documento.docu.archi %}
-                                        <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn" class="btn" data-toggle="tooltip" data-placement="top" title="Ver archivo">
-                                            {% icon 'search' %}
+                            </td>
+                            <td>
+                                {% if documento.docu.archi %}
+                                    <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn btn-sm btn-outline-primary" data-toggle="tooltip" title="Ver archivo">
+                                        {% icon 'search' %}
+                                    </a>
+                                    {% if rol == 'gestor' and documento.vali == '1' %}
+                                        <a data-url="{% url 'eliminar_documento_pre_insti' documento.docu.id %}" class="btn btn-sm btn-outline-danger delete-btn" data-toggle="tooltip" title="Eliminar archivo">
+                                            {% icon 'delete' %}
                                         </a>
-                                        {% if rol == 'gestor' %}
-                                            {% if documento.vali == "0" %}
-                                                <a data-url="{% url 'eliminar_documento_pre_insti' documento.docu.id %}" class="btn delete-btn" data-toggle="tooltip" data-placement="top" title="Eliminar archivo">
-                                                    {% icon 'delete' %}
-                                                </a>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% else %}
-                                        No cargado
                                     {% endif %}
-                                </td>
-                                {% if rol == 'gestor' %}
-                                <td>
-                                    {% if documento.esta == "Pendiente" %}
-                                    <form method="post" action="{% url 'cargar_documentos_institucion' documento.id institucion.id %}" enctype="multipart/form-data">
-                                        {% csrf_token %}
-                                        <input type="file" name="archivo" class="form-control mb-2" required>
-                                        <button type="submit" class="btn btn-primary">Cargar</button>
-                                    </form>
-                                    {% else %}
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span class="text-success">✔ Cargado</span>
-                                        </div>
-                                    {% endif %}
-                                </td>
+                                {% else %}
+                                    <span class="text-muted">No cargado</span>
                                 {% endif %}
-                                {% if rol == 'lider' %}
-                                <td>
-                                    {% if documento.docu.archi %}
-                                        {% if documento.vali == '0' %}
-                                            <a href="{% url 'confirmar_documento_insti' documento.id institucion.id %}" class="btn btn-success btn-sm">Aprobar</a>
-                                        {% else %}
-                                            <button type="button" class="btn btn-success btn-sm" disabled>Aprobado</button> 
-                                        {% endif %}
-
-                                    {% endif %}
-                                </td>
+                            </td>
+    
+                            <!-- SECCIÓN DEL GESTOR (Carga de documentos) -->
+                            {% if rol == 'gestor' %}
+                            <td>
+                                {% if documento.vali in "02" %}  {# No cargado o Rechazado #}
+                                    <input type="file" data-name="{{ documento.nom }}" name="archivo_{{ documento.id }}" class="form-control file-input mb-2" data-doc-id="{{ documento.id }}" required>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-lock"></i> No modificable
+                                    </span>
                                 {% endif %}
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>                    
-                </div>
+                            </td>
+                            {% endif %}
+    
+                            <!-- SECCIÓN DEL LÍDER (Aprobación o rechazo) -->
+                            {% if rol == 'lider' %}
+                            <td>
+                                {% if documento.docu.archi and documento.vali in "13" %}  {# Cargado o Recargado #}
+                                    <a href="{% url 'confirmar_documento_insti' documento.id institucion.id %}" class="btn btn-outline-success btn-sm">Aprobar</a>
+                                    <a class="btn btn-outline-warning btn-sm reject-btn" data-id="{{ documento.id }}" data-insti="{{ institucion.id }}">Rechazar</a>
+                                {% elif documento.vali == '4' %}  {# Aprobado #}
+                                    <button type="button" class="btn btn-success btn-sm" disabled>Aprobado</button>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </form>
+            </table>
+    
+            {% if perfil.rol == 'gestor' %}
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-warning mt-3" style="width: 12%;" data-bs-toggle="modal" data-bs-target="#infoModal">
+                    Información
+                </button>
+                <button type="button" id="upload-btn" data-id="{{ institucion.id }}" style="width: 86%" class="btn btn-primary mt-3">Cargar documentos</button>
+            </div>
+            {% endif %}
+        </div>
     </section>
+    
+    
+
+    <!-- Modal con la información del formato y descripción -->
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoModalLabel">Formato y Descripción de los Documentos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <ul>
+                        <li><strong>Carta Intención	:</strong> Formato PDF (.pdf) que debe incluir los datos completos de los participantes.</li>
+                        <li><strong>Formato de Inscripción Especial 2025:</strong> Formato Excel (.xls, .xlsx) que debe incluir los datos completos de los participantes.</li>
+                        <li><strong>Certificado de Aprobación de Grado Noveno:</strong> Formato PDF (.pdf) del certificado oficial emitido por la autoridad competente.</li>
+                        <li><strong>Acta de Compromiso de Articulación:</strong> Formato PDF (.pdf) que certifique la aprobación oficial del programa de formación.</li>
+                        <li><strong>Acertamiento de matricula:</strong> Formato PDF (.pdf) del documento de identidad del representante legal.</li>
+                        <li><strong>Formato de diagnostico:</strong> Formato PDF (.pdf) de los programas educativos registrados.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rejectModalLabel">Motivo del rechazo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="reject-reason" class="form-control" rows="4" placeholder="Describa el motivo del rechazo..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="confirm-reject-btn" class="btn btn-danger">Rechazar documento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Modal -->
+<div class="modal fade" id="historialModal" tabindex="-1" aria-labelledby="historialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historialModalLabel">Historial de Acciones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Documento</th>
+                            <th>Comentario</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historial-body">
+                        <tr>
+                            <td colspan="4" class="text-center">Cargando historial...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 </main>
-<script>
-            // Script para eliminacion de documentos!
-            document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".delete-btn").forEach(function (button) {
-            button.addEventListener("click", function (event) {
-                event.preventDefault(); // Evita la acción predeterminada del botón
+{% endblock %}
 
-                const url = this.dataset.url;
-
-                Swal.fire({
-                    title: "¿Estás seguro?",
-                    text: "No podrás deshacer esta acción.",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "Sí, eliminar",
-                    cancelButtonText: "Cancelar"
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Redirige a la URL de eliminación
-                        window.location.href = url;
-                    }
-                });
-            });
-        });
-    });
-</script>
+{% block scripts %}
+<script type ="module" src="{% static 'js/matricula/instituciones_docs.js' %}"></script>
 {% endblock %}

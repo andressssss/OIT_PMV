@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{%load icons %}
+{% load icons %}
 {% load static %}
 
 {% block content %}
@@ -10,15 +10,24 @@
                 <div class="d-flex justify-content-between align-items-center pb-4">
                     <h1 class="display-5">Detalle de Postulación</h1>
                     <div>
-                    <a href="" class="btn btn-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Siguiente fase">
-                        {% icon 'confirm' %}
-                    </a>
-                    <a href="" class="btn btn-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Rechazar perfil">
-                        {% icon 'x' %}
-                    </a>
+                        {% if postulacion.esta == 'desistido' %}
+                        <a href="#" class="btn btn-secondary disabled">
+                            {% icon 'x' %} El postulante desistió
+                        </a>
+                        {% elif postulacion.esta == 'finalizado' %}
+                        <a href="#" class="btn btn-secondary disabled">
+                            {% icon 'x' %} Proceso finalizado
+                        </a>
+                        {% else %}
+                        <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalSiguienteFase">
+                            {% icon 'confirm' %}
+                        </a>
+                        <a href="#" class="btn btn-danger rechazar-btn" data-postulacion-id="{{ postulacion.id }}" data-bs-toggle="modal" data-bs-target="#modalRechazarPerfil">
+                            {% icon 'x' %}
+                        </a>
+                        {% endif %}
                 </div>
                 </div>
-            
             <!-- Detalle de la Postulación -->
             <div class="card shadow mb-4">
                 <h5 class="card-header">Postulación: {{ postulacion.ofe.nom }}</h5>
@@ -31,60 +40,158 @@
                     <p><strong>Estado:</strong> {{ postulacion.esta|title }}</p>
                 </div>
             </div>
-            <!-- Documentos Asociados -->
-            <h2>Documentos del Instructor</h2>
-            <hr>
-            <!-- Hoja de Vida -->
-            <div class="mb-4">
-                <h3 class="text-secondary">Hoja de Vida</h3>
-                <ul class="list-group">
-                    {% for doc in documentos %}
-                        {% if doc.tipo == 'hv' %}
-                            <li class="list-group-item">
-                                <a href="{{ doc.docu.archi.url }}" target="_blank">{{ doc.docu.nom }}</a>
-                                <span class="text-muted float-end">{{ doc.fecha_carga }}</span>
-                            </li>
-                        {% endif %}
-                    {% empty %}
-                        <li class="list-group-item">No hay hojas de vida disponibles.</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            <!-- Documentos Laborales -->
-            <div class="mb-4">
-                <h3 class="text-secondary">Documentos Laborales</h3>
-                <ul class="list-group">
-                    {% for doc in documentos %}
-                        {% if doc.tipo == 'laboral' %}
-                            <li class="list-group-item">
-                                <a href="{{ doc.docu.archi.url }}" target="_blank">{{ doc.docu.nom }}</a>
-                                <span class="text-muted float-end">{{ doc.fecha_carga }}</span>
-                            </li>
-                        {% endif %}
-                    {% empty %}
-                        <li class="list-group-item">No hay documentos laborales disponibles.</li>
-                    {% endfor %}
-                </ul>
-            </div>
-
-            <!-- Documentos Académicos -->
-            <div class="mb-4">
-                <h3 class="text-secondary">Documentos Académicos</h3>
-                <ul class="list-group">
-                    {% for doc in documentos %}
-                        {% if doc.tipo == 'academico' %}
-                            <li class="list-group-item">
-                                <a href="{{ doc.docu.archi.url }}" target="_blank">{{ doc.docu.nom }}</a>
-                                <span class="text-muted float-end">{{ doc.fecha_carga }}</span>
-                            </li>
-                        {% endif %}
-                    {% empty %}
-                        <li class="list-group-item">No hay documentos académicos disponibles.</li>
-                    {% endfor %}
-                </ul>
+            <div class="card shadow mb-4">
+                <h5 class="card-header">Documentos del Aspirante</h5>
+                <div class="card-body">
+                    <!-- Hoja de Vida -->
+                    <div class="mb-4">
+                        <h3 class="">{% icon 'hv' %} Hoja de Vida</h3>
+                        <ul class="list-group shadow-sm">
+                            {% for doc in documentos %}
+                                {% if doc.tipo == 'hv' %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <a href="{{ doc.docu.archi.url }}" target="_blank">
+                                            <i class="fas fa-file-pdf text-danger"></i> {{ doc.docu.nom }}
+                                        </a>
+                                        <span class="badge bg-secondary rounded-pill">{{ doc.fecha_carga }}</span>
+                                    </li>
+                                {% endif %}
+                            {% empty %}
+                                <li class="list-group-item text-muted text-center">No hay hojas de vida disponibles.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                
+                    <!-- Documentos Laborales -->
+                    <div class="mb-4">
+                        <h3 class="">{% icon 'laboral' %} Documentos Laborales</h3>
+                        <ul class="list-group shadow-sm">
+                            {% for doc in documentos %}
+                                {% if doc.tipo == 'laboral' %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <a href="{{ doc.docu.archi.url }}" target="_blank">
+                                            <i class="fas fa-file-pdf text-danger"></i> {{ doc.docu.nom }}
+                                        </a>
+                                        <span class="badge bg-secondary rounded-pill">{{ doc.fecha_carga }}</span>
+                                    </li>
+                                {% endif %}
+                            {% empty %}
+                                <li class="list-group-item text-muted text-center">No hay documentos laborales disponibles.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                
+                    <!-- Documentos Académicos -->
+                    <div class="mb-4">
+                        <h3 class="">{% icon 'academico' %} Documentos Académicos</h3>
+                        <ul class="list-group shadow-sm">
+                            {% for doc in documentos %}
+                                {% if doc.tipo == 'academico' %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <a href="{{ doc.docu.archi.url }}" target="_blank">
+                                            <i class="fas fa-file-pdf text-danger"></i> {{ doc.docu.nom }}
+                                        </a>
+                                        <span class="badge bg-secondary rounded-pill">{{ doc.fecha_carga }}</span>
+                                    </li>
+                                {% endif %}
+                            {% empty %}
+                                <li class="list-group-item text-muted text-center">No hay documentos académicos disponibles.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                
             </div>
         </div>
         </div>
     </section>
 </main>
+
+<!-- Modal de Rechazo -->
+<div class="modal fade" id="modalRechazarPerfil" tabindex="-1" aria-labelledby="modalRechazarPerfilLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalRechazarPerfilLabel">Rechazar Perfil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Por favor, indique el motivo del rechazo:</p>
+                <textarea id="motivo_rechazo" class="form-control" rows="3" placeholder="Escriba el motivo aquí..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarRechazo">Confirmar Rechazo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Siguiente Fase -->
+<div class="modal fade" id="modalSiguienteFase" tabindex="-1" aria-labelledby="modalSiguienteFaseLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalSiguienteFaseLabel">Confirmar Acción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="fw-bold">Esta acción registrará al instructor en la tabla de contratos con estado <span class="badge bg-warning text-dark">En contratación</span>.</p>
+                    <p>Asegurese de haber validado toda la informacion pertienente y de ponerse en contacto con el aspirante.</p>
+                    <p>¿Está seguro de continuar?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-info">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    let instructorId = null;
+
+    // Captura el ID del instructor cuando se abre el modal
+    document.querySelectorAll(".rechazar-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            instructorId = this.getAttribute("data-postulacion-id");
+        });
+    });
+
+    // Manejo del clic en "Confirmar Rechazo"
+    document.getElementById("btnConfirmarRechazo").addEventListener("click", function () {
+        let motivo = document.getElementById("motivo_rechazo").value.trim();
+
+        if (!motivo) {
+            Swal.fire("Error", "Debe ingresar un motivo de rechazo.", "error");
+            return;
+        }
+
+        fetch(`/rechazar_perfil/${instructorId}/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({ "motivo_rechazo": motivo })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire("Rechazado", data.message, "success").then(() => {
+                    location.reload(); // Recargar la página para actualizar el estado
+                });
+            } else {
+                Swal.fire("Error", data.message, "error");
+            }
+        })
+        .catch(error => {
+            Swal.fire("Error", "Hubo un problema al procesar la solicitud.", "error");
+        });
+    });
+});
+</script>    
 {% endblock %}

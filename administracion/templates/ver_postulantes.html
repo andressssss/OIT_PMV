@@ -24,7 +24,13 @@
                             {% for postulacion in postulaciones %}
                                 <tr>
                                     <td>{{ postulacion.instru.perfil.nom }}</td>
-                                    <td>{{ postulacion.esta}}</td>
+                                    <td>
+                                    {% if postulacion.esta == 'desistido'%}
+                                    <span class="badge text-bg-danger">Desistió</span>
+                                    {% else %}
+                                    {{ postulacion.esta}}
+                                    {% endif %}
+                                    </td>
                                     <td>{{ postulacion.fecha_apli|date:"d M, Y" }}</td>
                                     <td>
                                         {% if postulacion.respuesta_rh %}

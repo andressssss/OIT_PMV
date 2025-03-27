@@ -1,0 +1,100 @@
+<div class="row">
+<!-- Cabecera del perfil -->
+<div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+    <h2 class="display-6">Perfil del Aprendiz</h2>
+    <div>
+        <!-- Puedes colocar aquí acciones específicas si las necesitas -->
+        <span class="badge bg-primary">{{ aprendiz.esta|title }}</span>
+    </div>
+    </div>
+</div>
+
+<!-- Tarjetas en dos columnas -->
+<div class="col-12">
+    <div class="row">
+    <!-- Columna izquierda -->
+    <div class="col-lg-6 col-md-12">
+        <!-- Información Personal -->
+        <div class="card shadow mb-4">
+        <h5 class="card-header">Información Personal</h5>
+        <div class="card-body">
+            <p><strong>Nombre:</strong> {{ aprendiz.perfil.nom }}</p>
+            <p><strong>Apellido:</strong> {{ aprendiz.perfil.apelli }}</p>
+            <p><strong>Email:</strong> {{ aprendiz.perfil.mail }}</p>
+            <p><strong>Teléfono:</strong> {{ aprendiz.perfil.tele }}</p>
+            <p><strong>Fecha de Nacimiento:</strong> {{ aprendiz.perfil.fecha_naci }}</p>
+            <p><strong>DNI:</strong> {{ aprendiz.perfil.tipo_dni|upper }} {{ aprendiz.perfil.dni }}</p>
+            <p><strong>Dirección:</strong> {{ aprendiz.perfil.dire }}</p>
+        </div>
+        </div>
+
+        <!-- Acudiente -->
+        <div class="card shadow mb-4">
+        <h5 class="card-header">Acudiente</h5>
+        <div class="card-body">
+            <p><strong>Nombre:</strong> {{ repre_legal.nom }}</p>
+            <p><strong>Teléfono:</strong> {{ repre_legal.tele }}</p>
+            <p><strong>Correo:</strong> {{ repre_legal.mail }}</p>
+            <p><strong>Direccion:</strong> {{ repre_legal.dire }}</p>
+            <p><strong>Parentesco:</strong> {{ repre_legal.paren }}</p>
+            <p><strong>DNI:</strong> {{ repre_legal.dni }}</p>
+        </div>
+        </div>
+    </div>
+
+    <!-- Columna derecha -->
+    <div class="col-lg-6 col-md-12">
+
+        <!-- Grupos Inscritos -->
+        <div class="card shadow mb-4">
+        <h5 class="card-header">Grupos Inscritos</h5>
+        <div class="card-body">
+            {% if aprendiz.grupo %}
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Grupo:</strong> {{ aprendiz.grupo }}</li>
+                <li class="list-group-item"><strong>Programa:</strong> {{ aprendiz.grupo.progra.nom }}</li>
+                <li class="list-group-item"><strong>Institución:</strong> {{ aprendiz.grupo.insti.nom }}</li>
+                <li class="list-group-item"><strong>Dirección Institución:</strong> {{ aprendiz.grupo.insti.dire }}</li>
+                <li class="list-group-item"><strong>Municipio Institución:</strong> {{ aprendiz.grupo.insti.muni.nom_munici }}</li>
+                <li class="list-group-item"><strong>Departamento Institución:</strong> {{ aprendiz.grupo.insti.muni.nom_departa.nom_departa }}</li>
+                <li class="list-group-item"><strong>Centro de Formación:</strong> {{ aprendiz.grupo.centro.nom }}</li>
+                <li class="list-group-item"><strong>Estado:</strong> {{ aprendiz.grupo.esta }}</li>
+                <li class="list-group-item">
+                <strong>Gestor asignado:</strong>
+                {% if gestor %}
+                    {{ gestor.nom }} {{ gestor.apelli }}
+                {% else %}
+                    <em>No asignado</em>
+                {% endif %}
+                </li>
+            </ul>
+            {% else %}
+            <p>No tiene grupos inscritos.</p>
+            {% endif %}
+        </div>
+        </div>
+
+        <!-- Fichas Inscritas -->
+        <div class="card shadow mb-4">
+        <h5 class="card-header">Fichas Inscritas</h5>
+        <div class="card-body">
+            {% if aprendiz.ficha %}
+            <p>{{ aprendiz.ficha }}</p>
+            {% else %}
+            <p>No tiene fichas inscritas.</p>
+            {% endif %}
+        </div>
+        </div>
+
+        <!-- Estado Académico -->
+        <div class="card shadow mb-4">
+        <h5 class="card-header">Estado Académico</h5>
+        <div class="card-body">
+            <p><strong>Estado:</strong> {{ aprendiz.esta|title }}</p>
+        </div>
+        </div>
+    </div>
+    </div>
+</div>
+</div>

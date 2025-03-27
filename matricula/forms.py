@@ -93,7 +93,7 @@ class GrupoForm(forms.ModelForm):
         }
         labels = {
             'num_apre_poten': 'Aprendices potenciales',
-            'progra': 'Programa de formacion',
+            'progra': 'Programa de formación',
         }
     
     def __init__(self, *args, **kwargs):
@@ -132,11 +132,11 @@ class GrupoForm(forms.ModelForm):
     def clean_num_apre_poten(self):
         num_apre_poten = self.cleaned_data.get('num_apre_poten')
         if not num_apre_poten.isdigit():
-            raise forms.ValidationError("El numero de aprendices debe ser un numero")
+            raise forms.ValidationError("El número de aprendices debe ser un número")
         if int(num_apre_poten) <= 0:
-            raise forms.ValidationError("El numero de aprendices debe ser mayor a 0")
+            raise forms.ValidationError("El número de aprendices debe ser mayor a 0")
         if int(num_apre_poten) < 1 or int(num_apre_poten) > 100:
-            raise forms.ValidationError("El numero de aprendices debe estar entre 1 y 100")
+            raise forms.ValidationError("El número de aprendices debe estar entre 1 y 100")
         return num_apre_poten
 
 class AsignarAprendicesMasivoForm(forms.Form):

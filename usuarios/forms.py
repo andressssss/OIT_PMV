@@ -63,7 +63,7 @@ class DocumentoLaboralForm(forms.ModelForm):
             'cate': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'nom': 'Institucion',
+            'nom': 'Institución',
             'cate': 'Categoría',
         }
 
@@ -85,7 +85,7 @@ class PerfilForm(forms.ModelForm):
         labels = {
             'nom': 'Nombres',
             'apelli': 'Apellidos',
-            'mail': 'Correo electronico',
+            'mail': 'Correo electrónico',
             'tipo_dni': 'Tipo de documento',
             'dni': 'Número de documento',
             'tele': 'Teléfono',
@@ -150,9 +150,9 @@ class PerfilEditForm(forms.ModelForm):
             'nom': 'Nombres',
             'apelli': 'Apellidos',
             'tipo_dni': 'Tipo de documento',
-            'dni': 'Numero de documento',
-            'tele': 'Telefono',
-            'dire': 'Direccion',
+            'dni': 'Número de documento',
+            'tele': 'Teléfono',
+            'dire': 'Dirección',
         }
 
 class InstructorForm(forms.ModelForm):
@@ -168,12 +168,12 @@ class InstructorForm(forms.ModelForm):
             'tipo_vincu': forms.Select(attrs={'class': 'form-select'}),
         }
         labels = {
-            'contra': 'Numero de contrato',
+            'contra': 'Número de contrato',
             'fecha_ini': 'Fecha de inicio',
-            'fecha_fin': 'Fecha de finalizacion',
+            'fecha_fin': 'Fecha de finalización',
             'esta': 'Estado',
-            'profe': 'Profesion',
-            'tipo_vincu': 'Tipo de vinculacion'
+            'profe': 'Profesión',
+            'tipo_vincu': 'Tipo de vinculación'
         }
 
 class AprendizForm(forms.ModelForm):
@@ -185,7 +185,7 @@ class AprendizForm(forms.ModelForm):
             'esta': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'cod': 'Codigo',
+            'cod': 'Código',
             'esta':  'Estado',
         }
 
@@ -203,9 +203,9 @@ class RepresanteLegalForm(forms.ModelForm):
         }
         labels = {
             'nom': 'Nombre',
-            'dni': 'Numero de identificacion',
-            'tele': 'Telefono',
-            'dire': 'Direccion',
+            'dni': 'Número de identificación',
+            'tele': 'Teléfono',
+            'dire': 'Dirección',
             'mail': 'Correo',
             'paren': 'Parentesco'
         }
@@ -222,7 +222,7 @@ class NovedadForm(forms.ModelForm):
         }
         labels = {
             'nombre': 'Nombre',
-            'descri': 'Descripcion',
+            'descri': 'Descripción',
             'tipo': 'Tipo',
             'sub_tipo': 'Sub Tipo'
         }
@@ -280,7 +280,7 @@ class DepartamentoForm(forms.ModelForm):
             'nom_departa': forms.TextInput(attrs={'class': 'form-control'}),
         }
         labels = {
-            'cod_departa': 'Codigo de departamento',
+            'cod_departa': 'Código de departamento',
             'nom_departa': 'Departamento',
         }
 
@@ -294,7 +294,7 @@ class MunicipioForm(forms.ModelForm):
             'nom_departa': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'cod_munici': 'Codigo de municipio',
+            'cod_munici': 'Código de municipio',
             'nom_munici': 'Municipio',
             'nom_departa': 'Departamento',
         }
@@ -308,7 +308,7 @@ class InstitucionForm(forms.ModelForm):
     )
     class Meta:
         model = T_insti_edu
-        fields = ['depa', 'nom', 'dire', 'secto', 'muni', 'coordi', 'coordi_mail', 'coordi_tele', 'esta', 'insti_mail', 'dane', 'recto', 'recto_tel',  'gene', 'grados', 'jorna', 'num_sedes', 'zona', 'vigen', 'cale']
+        fields = ['depa', 'nom', 'dire', 'secto', 'muni', 'coordi', 'coordi_mail', 'coordi_tele', 'esta', 'insti_mail', 'dane', 'recto', 'recto_tel',  'gene', 'grados', 'jorna', 'num_sedes', 'zona', 'cale']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),
             'dire': forms.TextInput(attrs={'class': 'form-control'}),
@@ -330,7 +330,7 @@ class InstitucionForm(forms.ModelForm):
                 'class': 'form-control',
                 'data-toggle': 'tooltip',
                 'data-placement': 'top',
-                'title': 'Telefono de la persona encargada del convenio'
+                'title': 'Teléfono de la persona encargada del convenio'
                 }),
             'esta': forms.Select(attrs={'class': 'form-control'}),
             'insti_mail': forms.TextInput(attrs={'class': 'form-control'}),
@@ -352,16 +352,16 @@ class InstitucionForm(forms.ModelForm):
             'muni': 'municipio',
             'coordi': 'Coordinador',
             'coordi_mail': 'Correo coordinador',
-            'coordi_tele': 'Telefono coordinador',
+            'coordi_tele': 'Teléfono coordinador',
             'esta': 'Estado',
-            'insti_mail': 'Correo institucion',
-            'dane': 'Codigo DANE',
+            'insti_mail': 'Correo institución',
+            'dane': 'Código DANE',
             'recto': 'Nombre Rector',
-            'recto_tel': 'Telefono rector',
+            'recto_tel': 'Teléfono rector',
             'gene': 'Genero',
             'grados': 'Grados',
             'jorna': 'Jornada',
-            'num_sedes': 'Numero de sedes',
+            'num_sedes': 'Número de sedes',
             'zona': 'Zona',
             'vigen': 'Vigencia',
             'cale': 'Calendario',
@@ -378,9 +378,9 @@ class CentroFormacionForm(forms.ModelForm):
             'cod': forms.TextInput(attrs={'class': 'form-control'}),
         }
         labels = {
-            'nom': 'Nombre de centro de formacion',
+            'nom': 'Nombre de centro de formación',
             'depa': 'Departamento del centro de formación',
-            'cod': 'Codigo del centro de formacion',
+            'cod': 'Código del centro de formación',
         }
 
 class CargarAprendicesMasivoForm(forms.Form):

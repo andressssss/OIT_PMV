@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %} 
 {% load icons %}
 
 {% block content %}
@@ -14,7 +15,7 @@
         <ul class="nav nav-tabs mb-4 nav-fill" id="aprendizTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <a class="nav-link" id="instituciones-tab" data-bs-toggle="pill" href="#institucionest" role="tab" aria-controls="instituciones" aria-selected="true">
-                    Institucion
+                    Institución
                 </a>
             </li>
             <li class="nav-item" role="presentation">
@@ -36,43 +37,51 @@
                 <h4>Instituciones</h4>
                 <p>Aquí puedes consultar la documentación de la institución</p>
                 
-                <!-- Tabla de Documentos Cargados -->
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Nombre del Documento</th>
-                            <th>Estado</th>
-                            <th>Archivo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for documento in documentos_institucion %}
-                        <tr>
-                            <td>{{ documento.nom }}</td>
-                            <td>
-                                {% if documento.vali == '0' %}
-                                Pendiente
-                                {% else %}
-                                Aprobado
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if documento.docu.archi %}
-                                <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn" data-toggle="tooltip" data-placement="top" title="Ver archivo">
-                                    {% icon 'search' %}
+            <!-- Tabla de Documentos Cargados -->
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre del Documento</th>
+                        <th>Estado</th>
+                        <th>Archivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for documento in documentos_institucion %}
+                    <tr>
+                        <td>{{ documento.nom }}</td>
+                        <td>
+                            {% if documento.vali == '0' %}
+                            <span class="text-muted">No cargado</span>
+                            {% elif documento.vali == '1' %}
+                                <span class="badge bg-primary">Cargado</span>
+                            {% elif documento.vali == '2' %}
+                            <span class="badge bg-danger">Rechazado</span>
+                            {% elif documento.vali == '3' %}
+                            <span class="badge bg-warning">Recargado</span>
+                            {% elif documento.vali == '4' %}
+                            <span class="badge bg-success">Aprobado</span>
+                            {% else %}
+                                Estado desconocido
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if documento.docu and documento.docu.archi %}
+                                <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn btn-sm btn-outline-primary" data-toggle="tooltip" title="Ver archivo">
+                                    <i class="bi bi-eye"></i> Ver
                                 </a>
-                                {% else %}
+                            {% else %}
                                 No cargado
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="3" class="text-center">No hay documentos cargados.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center">No hay documentos cargados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             </div>
             
             <!-- Entregas -->
@@ -98,140 +107,49 @@
                         data-placement="top" 
                         title="Descargar documentos agrupados">
                         {% icon 'download' %}
-                    </a>
+                        </a>
+                        <a class="btn btn-danger float-end mx-2 descargar-agrupados"
+                        data-toggle="tooltip" 
+                        data-placement="top" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#dividirPdfModal"
+                        title="Dividir PDF">
+                        {% icon 'dividir' %}
+                        </a>
                     </div>
                 </div>
                 
     <div class="table-responsive">
         <table id="fichas_prematricula" class="table table-hover table-bordered align-middle">
             <thead class="table-secondary text-center">
-            <tr>
-                {% if documentos_por_aprendiz %}
-                    <th style="width: 15%;">Nombre</th>  <!-- Reducido al 25% -->
-                    <th style="width: 85%;">Resumen</th> <!-- Ampliado al 75% -->
-                {% else %}
-                    <th style="width: 100%;">Resumen</th> 
-                {% endif %}
-
-            </tr>
-        </thead>
-        <tbody>
-            {% for aprendiz, documentos in documentos_por_aprendiz.items %}
                 <tr>
-                    <td>{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}<!-- Botón para descargar ZIP -->
-                        <br>
-                        <a href="{% url 'descargar_documentos_zip' aprendiz.id %}" class="btn btn-success btn-sm" data-toggle="tooltip" data-placement="top" title="Descargar documento aprendiz">
-                            {% icon 'download' %}
-                        </a>
-                        <a class="btn btn-danger delete-btn btn-sm" data-id="{{aprendiz.id}}" data-toggle="tooltip" data-placement="top" title="Desvincular aprendiz">
-                            {% icon 'delete' %}
-                        </a>
-                    </td>
-                    <td colspan="3">
-                        <div class="accordion" id="accordion-{{ forloop.counter }}">
-                            <div class="accordion-item">
-                                <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
-                                    <button class="accordion-button collapsed" type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#collapse-{{ forloop.counter }}" 
-                                            aria-expanded="false" 
-                                            aria-controls="collapse-{{ forloop.counter }}">
-                                        Ver documentación
-                                    </button>
-                                </h2>
-                                <div id="collapse-{{ forloop.counter }}" 
-                                    class="accordion-collapse collapse" 
-                                    aria-labelledby="heading-{{ forloop.counter }}">
-                                    <div class="accordion-body p-2">
-                                        <table class="table table-bordered w-100" style="table-layout: auto;">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 30%;">Nombre del Documento</th>
-                                                    <th style="width: 15%;">Estado</th>
-                                                    <th style="width: 15%;">Archivo</th>
-                                                    {% if grupo.esta in 'Pre matricula,Validacion matriculas' %}
-                                                        {% if rol == 'lider' %}
-                                                            <th style="width: 40%;">Aprobación</th>
-                                                        {% else %}
-                                                            <th style="width: 40%;">Cargar</th>
-                                                        {% endif %}
-                                                    {% endif %}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for documento in documentos %}
-                                                    <tr>
-                                                        <td>{{ documento.nom }}</td>
-                                                        <td>
-                                                            {% if documento.vali == '0' %}
-                                                                Pendiente
-                                                            {% else %}
-                                                                Aprobado
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>
-                                                            {% if documento.docu.archi %}
-                                                                <a href="{{ documento.docu.archi.url }}" target="_blank" 
-                                                                   class="btn btn-sm btn-outline-primary" 
-                                                                   title="Ver archivo">
-                                                                    {% icon 'search' %}
-                                                                </a>
-                                                                {% if grupo.esta in 'Pre matricula,Validacion matriculas' and documento.vali == '0' and rol == 'gestor' %}
-                                                                    <a data-url="{% url 'eliminar_documento_pre' documento.docu.id %}" 
-                                                                       class="btn btn-sm btn-outline-danger delete-btn" 
-                                                                       title="Eliminar archivo">
-                                                                        {% icon 'delete' %}
-                                                                    </a>
-                                                                {% endif %}
-                                                            {% else %}
-                                                                No cargado
-                                                            {% endif %}
-                                                        </td>
-                    
-                                                        {% if grupo.esta in 'Pre matricula,Validacion matriculas' %}
-                                                            {% if rol == 'lider' %}
-                                                                <td>
-                                                                    {% if documento.docu.archi and documento.vali == '0' %}
-                                                                        <a href="{% url 'confirmar_documento' documento.id grupo.id %}" 
-                                                                           class="btn btn-success btn-sm">Aprobar</a>
-                                                                    {% elif documento.vali != '0' %}
-                                                                        <button class="btn btn-success btn-sm" disabled>Aprobado</button>
-                                                                    {% endif %}
-                                                                </td>
-                                                            {% else %}
-                                                                <td>
-                                                                    {% if documento.esta == "Pendiente" %}
-                                                                        <form method="post" 
-                                                                              action="{% url 'subir_documento_prematricula' documento.id aprendiz.id grupo.id %}" 
-                                                                              enctype="multipart/form-data">
-                                                                            {% csrf_token %}
-                                                                            <input type="file" name="archivo" class="form-control mb-2" required>
-                                                                            <button type="submit" class="btn btn-primary btn-sm">Cargar</button>
-                                                                        </form>
-                                                                    {% else %}
-                                                                        <span class="text-success">✔ Cargado</span>
-                                                                    {% endif %}
-                                                                </td>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                    
+                    <th>Nombre</th>
+                    <th>Acciones</th>
                 </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center">No hay aprendices en este grupo.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {% for aprendiz, documentos in documentos_por_aprendiz.items %}
+                    <tr>
+                        <td>
+                            {{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'descargar_documentos_zip' aprendiz.id %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Descargar documentos ZIP">{% icon 'download' %}</a>
+                            <a class="btn btn-danger delete-apre-btn btn-sm" data-id="{{aprendiz.id}}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Eliminar relación grupo">{% icon 'delete' %}</a>
+                            <button class="btn btn-primary btn-sm ver-documentacion"  
+                                data-id="{{aprendiz.id}}" 
+                                data-nombre="{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Ver documentación">
+                                <i class="bi bi-folder"></i>
+                            </button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center">No hay aprendices en este grupo.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
             </div>
 
@@ -246,172 +164,103 @@
         {% endif %}
     </section>
 </main>
+<!-- Modal -->
+<div class="modal fade" id="dividirPdfModal" tabindex="-1" aria-labelledby="dividirPdfModal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Dividir PDF</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+                <!-- Formulario -->
+            <form id="upload-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" class="form-control" name="pdf_file" id="pdf_file" accept=".pdf" required>
+        </div>
+        <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Dividir PDF</button>
+            </form>
+        </div>
+        </div>
+    </div>
+</div>
 
+<div class="modal fade" id="documentosModal" tabindex="-1" aria-labelledby="documentosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title m-0" id="documentosModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabla de Documentos -->
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Estado</th>
+                            <th>Archivo</th>
+                            <th>Aprobación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documentos-body">
+                        <tr><td colspan="4" class="text-center">Cargando documentos...</td></tr>
+                    </tbody>
+                </table>
+                
+                <!-- Sección de Historial -->
+                <div class="card mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="m-0">Historial de Acciones</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Acción</th>
+                                    <th>Documento</th>
+                                    <th>Comentario</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historial-body">
+                                <tr><td colspan="5" class="text-center">Cargando historial...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalRechazo" tabindex="-1" aria-labelledby="modalRechazoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalRechazoLabel">Rechazar documento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rejectDocId">
+                <input type="hidden" id="rejectAprendizId">
+                <label for="rejectComment" class="form-label">Motivo del rechazo:</label>
+                <textarea id="rejectComment" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnRechazar" class="btn btn-warning">Rechazar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const tabs = document.querySelectorAll('.nav-link');
-        const activeTab = localStorage.getItem("activeTab");
-
-        // Activar la última pestaña seleccionada
-        if (activeTab) {
-            const tab = document.querySelector(activeTab);
-            const pane = document.querySelector(tab.getAttribute("href"));
-            tabs.forEach(t => t.classList.remove("active"));
-            tab.classList.add("active");
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove("show", "active"));
-            pane.classList.add("show", "active");
-        }
-
-        // Guardar la pestaña activa al cambiar
-        tabs.forEach(tab => {
-            tab.addEventListener("click", function () {
-                localStorage.setItem("activeTab", `#${this.id}`);
-            });
-        });
-    });
-
-
-        // Script para eliminacion de documentos!
-        document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".delete-btn").forEach(function (button) {
-            button.addEventListener("click", function (event) {
-                event.preventDefault(); // Evita la acción predeterminada del botón
-
-                const url = this.dataset.url;
-
-                Swal.fire({
-                    title: "¿Estás seguro?",
-                    text: "No podrás deshacer esta acción.",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "Sí, eliminar",
-                    cancelButtonText: "Cancelar"
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Redirige a la URL de eliminación
-                        window.location.href = url;
-                    }
-                });
-            });
-        });
-    });
-
-    // Evento para desvincular aprendiz
-$(document).on('click', '.delete-btn', function () {
-const id = $(this).data('id');
-const row = $(this).parents('tr'); // Guardamos la fila para eliminarla después si es necesario
-
-// Confirmación antes de eliminar
-Swal.fire({
-    title: '¿Estás seguro?',
-    text: 'Esta acción no se puede deshacer.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-}).then((result) => {
-    if (result.isConfirmed) {
-        // Si el usuario confirma, proceder con la eliminación
-        fetch(`/api/grupo/aprendiz/eliminar/${id}/`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}' // CSRF Token de Django
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                row.remove(); // Elimina la fila de la tabla
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Eliminado',
-                    text: 'El grupo ha sido eliminado correctamente.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            } else {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Error al eliminar el registro.');
-                });
-            }
-        })
-        .catch(error => {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.message
-            });
-        });
-    }
-});
-});
-
-document.addEventListener('DOMContentLoaded', function () {
-        // Manejo de ambos botones
-        const botonesZip = document.querySelectorAll('.descargar-zip');
-        const botonesAgrupados = document.querySelectorAll('.descargar-agrupados');
-
-        // Alerta para descarga ZIP del grupo
-        botonesZip.forEach(boton => {
-            boton.addEventListener('click', function (e) {
-                e.preventDefault();
-                const url = this.getAttribute('href');
-
-                Swal.fire({
-                    title: 'Recomendaciones antes de descargar ZIP',
-                    html: `
-                        <ul style="text-align: left;">
-                            <li>Verifica que todos los documentos estén cargados.</li>
-                            <li>Asegúrate de que la documentación esté actualizada.</li>
-                            <li>Esta funcion descargara un ZIP con todos los documentos cargados de todos los estudiantes.</li>
-                        </ul>`,
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',  // Rojo
-                    cancelButtonColor: '#6c757d', // Gris
-                    confirmButtonText: 'Sí, continuar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = url;
-                    }
-                });
-            });
-        });
-
-        // Alerta para descarga de documentos agrupados
-        botonesAgrupados.forEach(boton => {
-            boton.addEventListener('click', function (e) {
-                e.preventDefault();
-                const url = this.getAttribute('href');
-
-                Swal.fire({
-                    title: 'Recomendaciones antes de descargar documentos agrupados',
-                    html: `
-                        <ul style="text-align: left;">
-                            <li>Asegúrate de haber revisado todas las cartas de intención.</li>
-                            <li>Verifica que no falte ningún documento importante.</li>
-                            <li>Esta funcion agrupara y descargara todos los documentos "Carta de intencion" que hayan sido cargados.</li>
-                        </ul>`,
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',  // Rojo
-                    cancelButtonColor: '#6c757d', // Gris
-                    confirmButtonText: 'Sí, descargar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = url;
-                    }
-                });
-            });
-        });
-    });
-
-
-</script>
+{% block scripts %}
+<script type ="module" src="{% static 'js/matricula/detalle_docs_prematricula.js' %}"></script>
 {% endblock %}

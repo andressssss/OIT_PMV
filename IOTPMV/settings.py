@@ -108,8 +108,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'usuarios.context_processors.perfil',
-                'usuarios.context_processors.expiracion_sesion_context'
+                'commons.context_processors.perfil',
+                'commons.context_processors.expiracion_sesion_context'
             ],
         },
     },
@@ -132,6 +132,13 @@ DJANGO_ICONS = {
         "upload": {"name": "bi bi-upload"},
         "x": {"name": "bi bi-x"},
         "confirm": {"name": "bi bi-check2"},
+        "info": {"name": "bi bi-info-square"},
+        'hv': {"name": "bi bi-file-earmark-person"},
+        'laboral': {"name": "bi bi-briefcase"},
+        'academico': {"name": "bi bi-mortarboard"},
+        'hojas': {"name": "bi bi-bookshelf"},
+        'ficha': {"name": "bi bi-person-video2"},
+        'dividir': {"name": "bi bi-file-earmark-break"}
     },
 }
 

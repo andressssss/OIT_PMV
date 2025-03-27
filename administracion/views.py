@@ -1,10 +1,11 @@
 from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
-from commons.models import T_oferta, T_cuentas, T_instru, T_oferta_instru, T_docu_labo
+from commons.models import T_oferta, T_cuentas, T_instru, T_oferta_instru, T_docu_labo, T_perfil
 from .forms import OfertaCreateForm
 from django.db.models import Q
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
 
 
 ############################################################
@@ -18,6 +19,7 @@ def ofertas(request):
     return render(request, 'ofertas.html', {
         'ofertas': ofertas,
     })
+
 # Listar ofertas showcase ######################
 @login_required
 def ofertas_show(request):
@@ -41,7 +43,13 @@ def listar_ofertas(request):
 # Ver detalle de oferta ################################
 def detalle_oferta(request, oferta_id):
     oferta = get_object_or_404(T_oferta, id=oferta_id)
-    return render(request, 'ofertas_detalle.html', {'oferta': oferta})
+    perfil = T_perfil.objects.filter(user = request.user).first()
+    instructor = T_instru.objects.filter(perfil = perfil).first()
+    usuario_postulado = T_oferta_instru.objects.filter(instru = instructor, ofe = oferta).exists()
+    return render(request, 'ofertas_detalle.html', {
+        'oferta': oferta,
+        'usuario_postulado': usuario_postulado
+        })
 
 # Crear ofertas#############################################
 @login_required
@@ -129,3 +137,37 @@ def ver_postulantes_detalle(request, postulacion_id):
         'postulacion': postulacion,
         'documentos': documentos
     })
+
+def rechazar_perfil(request, postulacion_id):
+    if request.method == 'POST':
+        motivo = request.POST.get("motivo_rechazo", "").strip()
+
+        if not motivo:
+            return JsonResponse({"success": False, "message": "Debe ingresar un motivo de rechazo."}, status=400)
+        
+        try:
+            postulacion = T_oferta_instru.objects.filter(id = postulacion_id).first()
+            postulacion.esta = "finalizado"
+            postulacion.respuesta_rh = motivo
+            postulacion.save()
+
+            return JsonResponse({"success": True, "message": "Perfil rechazado correctamente"})
+        except postulacion.DoesNotExist:
+            return JsonResponse({"success": "False", "message": "La postulacion no existe"}, status=404)
+    return JsonResponse({"success": False, "message": "Metodo no permitido"}, status=405)
+
+
+def desistir_postulacion(request, postulacion_id):
+    if request.method == 'POST':
+        try:
+            postulacion = T_oferta_instru.objects.filter(id = postulacion_id).first()
+            postulacion.esta = "desistido"
+            postulacion.save()
+
+            return JsonResponse({"success": True, "message": "Desistido correctamente"})
+        except postulacion.DoesNotExist:
+            return JsonResponse({"success": "False", "message": "La postulacion no existe"}, status=404)
+    return JsonResponse({"success": False, "message": "Metodo no permitido"}, status=405)
+        
+def contratos(request):
+    return render(request, 'contratos.html')

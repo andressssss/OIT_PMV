@@ -38,12 +38,7 @@ $(document).ready(function () {
             deferRender: true
         }
     });
-    new DataTable('#centrosformacion_table', {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-            deferRender: true
-        }
-    });
+
     new DataTable('#departamentos_table', {
         language: {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
@@ -353,32 +348,6 @@ $(document).ready(function() {
     });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    const departamentoSelect = document.getElementById('id_depa');
-    const municipioSelect = document.getElementById('id_muni');
-
-    departamentoSelect.addEventListener('change', function() {
-        const departamentoId = this.value;
-
-        // Limpiar municipios previos
-        municipioSelect.innerHTML = '<option value="">Seleccione un municipio</option>';
-
-        if (departamentoId) {
-            fetch(`/obtener-municipios/?departamento_id=${departamentoId}`)
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(municipio => {
-                        const option = document.createElement('option');
-                        option.value = municipio.id;
-                        option.textContent = municipio.nom_munici;
-                        municipioSelect.appendChild(option);
-                    });
-                })
-                .catch(error => console.error('Error:', error));
-        }
-    });
-});
-
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip();   
-  });
+});

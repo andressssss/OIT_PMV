@@ -1,0 +1,79 @@
+<div class="modal-header">
+    <h5 class="modal-title" id="verInstitucionLabel">{{ institucion.nom|default:"No registrado" }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    </div>
+    
+    <div class="modal-body">
+    <div class="row">
+        <!-- Columna izquierda -->
+        <div class="col-lg-6 col-md-12">
+        <!-- Información Básica -->
+        <div class="card shadow mb-4">
+            <h5 class="card-header">Información General</h5>
+            <div class="card-body">
+            <p><strong>DANE:</strong> {{ institucion.dane|default:"No registrado" }}</p>
+            <p><strong>Dirección:</strong> {{ institucion.dire|default:"No registrado" }}</p>
+            <p><strong>Municipio:</strong> {{ institucion.muni.nom_munici|default:"No registrado" }}</p>
+            <p><strong>Departamento:</strong> {{ institucion.muni.nom_departa.nom_departa|default:"No registrado" }}</p>
+            <p><strong>Zona:</strong> {{ institucion.get_zona_display|default:"No registrado" }}</p>
+            <p><strong>Género:</strong> {{ institucion.get_gene_display|default:"No registrado" }}</p>
+            <p><strong>Sector:</strong> {{ institucion.get_secto_display|default:"No registrado" }}</p>
+            <p><strong>Jornada:</strong> {{ institucion.jorna|default:"No registrado" }}</p>
+            <p><strong>Grados:</strong> {{ institucion.grados|default:"No registrado" }}</p>
+            <p><strong>Calendario:</strong> {{ institucion.get_cale_display|default:"No registrado" }}</p>
+            <p><strong>Vigencia:</strong> {{ institucion.vigen|default:"No registrado" }}</p>
+            <p><strong>Número de Sedes:</strong> {{ institucion.num_sedes|default:"No registrado" }}</p>
+            <p><strong>Estado:</strong> 
+                <span class="badge bg-primary">{{ institucion.get_esta_display|default:"No registrado" }}</span>
+            </p>
+            </div>
+        </div>
+    
+        <!-- Coordinador -->
+        <div class="card shadow mb-4">
+            <h5 class="card-header">Coordinador</h5>
+            <div class="card-body">
+            <p><strong>Nombre:</strong> {{ institucion.coordi|default:"No registrado" }}</p>
+            <p><strong>Teléfono:</strong> {{ institucion.coordi_tele|default:"No registrado" }}</p>
+            <p><strong>Email:</strong> {{ institucion.coordi_mail|default:"No registrado" }}</p>
+            </div>
+        </div>
+        </div>
+    
+        <!-- Columna derecha -->
+        <div class="col-lg-6 col-md-12">
+        <!-- Rector -->
+        <div class="card shadow mb-4">
+            <h5 class="card-header">Rector</h5>
+            <div class="card-body">
+            <p><strong>Nombre:</strong> {{ institucion.recto|default:"No registrado" }}</p>
+            <p><strong>Teléfono:</strong> {{ institucion.recto_tel|default:"No registrado" }}</p>
+            <p><strong>Email:</strong> {{ institucion.insti_mail|default:"No registrado" }}</p>
+            </div>
+        </div>
+    
+        <!-- Geolocalización -->
+        <div class="card shadow mb-4">
+            <h5 class="card-header">Ubicación</h5>
+            <div class="card-body">
+            <p><strong>Latitud:</strong> {{ institucion.lati|default:"No registrado" }}</p>
+            <p><strong>Longitud:</strong> {{ institucion.longi|default:"No registrado" }}</p>
+            <p><strong>Potencial de Aprendices:</strong> {{ institucion.pote_apre|default:"No registrado" }}</p>
+            </div>
+        </div>
+    
+        <!-- Estado Documentación -->
+        <div class="card shadow mb-4">
+            <h5 class="card-header">Documentación</h5>
+            <div class="card-body">
+            <p><strong>Estado de Documentos:</strong> {{ institucion.esta_docu|default:"Sin gestor" }}</p>
+            </div>
+        </div>
+        </div>
+    </div>
+    </div>
+    
+    <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+    </div>
+    

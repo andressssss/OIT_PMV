@@ -83,6 +83,8 @@ urlpatterns = [
 
     path('api/aprendices/filtrar-aprendices/', usuarios_views.filtrar_aprendices, name='api_filtrar_aprendices'),
 
+    # API modal perfil de aprendiz
+    path('api/aprendices/modal/ver_perfil_aprendiz/<int:aprendiz_id>', usuarios_views.ver_perfil_aprendiz, name='ver_perfil_aprendiz'),
 
     # Instructores
     
@@ -128,20 +130,31 @@ urlpatterns = [
     
     # Endpoint municipio
     path('api/municipiosFormInsti/', usuarios_views.obtener_municipios, name='api_municipios_form_insti'),
+    path('api/departamentosFormInsti/', usuarios_views.obtener_departamentos, name='api_departamentos_form_insti'),
 
     # ROL Instituciones
     path('instituciones/', usuarios_views.instituciones,name='instituciones'),
     path('instituciones/crear/', usuarios_views.crear_instituciones,name='crear_instituciones'),
-    path('instituciones/<int:institucion_id>/', usuarios_views.detalle_instituciones,name='detalle_institucion'),
     path('instituciones/<int:institucion_id>/eliminar/', usuarios_views.eliminar_instituciones,name='eliminar_institucion'),
-    path('institucion/editar/<int:id>/', usuarios_views.editar_institucion, name='editar_institucion'),
+    path('api/institucion/editar/<int:institucion_id>/', usuarios_views.editar_institucion, name='api_editar_institucion'),
 
-    # Rol  De Centros De Formacion
+    path('api/cargar_documentos_multiples_insti/<int:institucion_id>/', matricula_views.cargar_documentos_institucion_multiples, name='cargar_documentos_institucion_multiples'),
+    path('api/institucion/rechazar_documento/<int:docu_id>/<int:insti_id>/', matricula_views.rechazar_documento_insti, name='rechazar_documento_insti'),
+    path('api/institucion/obtener-historial/<int:institucion_id>/', matricula_views.obtener_historial_institucion, name='obtener_historial_institucion'),
+
+    # Rol Centros De Formacion
     path('centroformacion/', usuarios_views.centrosformacion,name='centrosformacion'),
-    path('centroformacion/crear/', usuarios_views.crear_centrosformacion,name='crear_centrosformacion'),
-    path('centroformacion/<int:centroformacion_id>/', usuarios_views.detalle_centrosformacion,name='detalle_centrosformacion'),
-    path('centroformacion/<int:centroformacion_id>/eliminar/', usuarios_views.eliminar_centrosformacion,name='eliminar_centrosformacion'),
+    path('api/centro/crear/', usuarios_views.crear_centro,name='api_crear_centro'),
 
+    # Endpoint listar centros de formacion
+    path('api/centro/', usuarios_views.listar_centros_formacion_json, name='api_listar_centro'),
+
+    # Endpoint editar centros modal
+    path('api/centro/<int:centro_id>/', usuarios_views.obtener_centro, name='api_obtener_centro_modal'),
+    path('api/centro/editar/<int:centro_id>/', usuarios_views.editar_centro, name='api_editar_centro'),
+
+    # Endpoint eliminar centro
+    path('api/centro/eliminar/<int:centro_id>/', usuarios_views.eliminar_centro, name='api_eliminar_centro'),
 
     # ROL Representantes Legales
     path('represantesLegales/', usuarios_views.representante_legal,name='represantesLegales'),
@@ -198,13 +211,17 @@ urlpatterns = [
     path('grupo/crear', matricula_views.crear_grupo, name='crear_grupo'),
     path('asignar_aprendices/<int:grupo_id>/', matricula_views.asignar_aprendices, name='asignar_aprendices'),
     path('confirmar_documentacion/<int:grupo_id>/', matricula_views.confirmar_documentacion, name='confirmar_documentacion'),
-    path('subir_documento_prematricula/<int:documento_id>/<int:aprendiz_id>/<int:grupo_id>/', matricula_views.cargar_documento_prematricula, name='subir_documento_prematricula'),
     path('pre_matricula/<int:grupo_id>/detalle/', matricula_views.ver_docs_prematricula_grupo, name='ver_docs_prematricula'),
-    path('eliminar_documento_pre/<int:documento_id>', matricula_views.eliminar_documento_pre, name='eliminar_documento_pre'),
     path('insti-autocomplete/', matricula_views.InstiAutocomplete.as_view(), name='insti-autocomplete'),
     path('subir_documento_prematricula_insti/<int:documento_id>/<int:institucion_id>/', matricula_views.cargar_documento_institucion, name='cargar_documentos_institucion'),
     path('eliminar_documento_pre_insti/<int:documento_id>/', matricula_views.eliminar_documento_pre_insti, name='eliminar_documento_pre_insti'),
     path('asignar_institucion_gestor/', matricula_views.asignar_institucion_gestor, name='asignar_institucion_gestor'),
+    path('api/prematricula/documentos_aprendiz/<int:aprendiz_id>/', matricula_views.obtener_documentos_prematricula, name='obtener_documentos_prematricula'),
+    path('api/prematricula/historial_doc_aprendiz/<int:aprendiz_id>/', matricula_views.obtener_historial_prematricula, name='obtener_historial_prematricula'),
+    path('api/prematricula/subir_documento/<int:documento_id>/', matricula_views.cargar_documento_prematricula, name='cargar_documento_prematricula'),
+    path('api/prematricula/eliminar_documento/<int:documento_id>', matricula_views.eliminar_documento_prematricula, name='eliminar_documento_prematricula'),
+    path('api/prematricula/aprobar_documento/<int:doc_id>/', matricula_views.aprobar_documento_prematricula, name="aprobar_documento_prematricula"),
+    path('api/prematricula/rechazar_documento/<int:doc_id>/', matricula_views.rechazar_documento_prematricula, name="rechazar_documento_prematricula"),
 
 
     path('cargar_aprendices_masivo/', usuarios_views.cargar_aprendices_masivo, name='cargar_aprendices_masivo'),
@@ -216,10 +233,20 @@ urlpatterns = [
     path('grupos/<int:grupo_id>/descargar_documentos/<str:documento_tipo>/', matricula_views.descargar_documentos_grupo, name='descargar_documentos_grupo',),
     # Endpoints matricula:
     # API instituciones educativas
-    path('api/data/', usuarios_views.T_insti_edu_APIView.as_view(), name='t_insti_edu_api'),
+    path('api/institucion/', usuarios_views.listar_instituciones, name='t_insti_edu_api'),
     
+    # EndPoint filtros institucion
+    path('api/institucion/departamento/', usuarios_views.obtener_departamentos_filtro_insti, name='obtener_departamentos_filtro_insti'),
+    path('api/institucion/municipio/', usuarios_views.obtener_municipio_filtro_insti, name='obtener_municipio_filtro_insti'),
+    path('api/institucion/estado/', usuarios_views.obtener_estado_filtro_insti, name='obtener_estado_filtro_insti'),
+    path('api/institucion/zona/', usuarios_views.obtener_zona_filtro_insti, name='obtener_zona_filtro_insti'),
+
     # Endpoint editar instituciones educativas modal
     path('api/institucion/<int:institucion_id>/', usuarios_views.obtener_institucion, name='api_obtener_institucion_modal'),
+
+    # Endpoint ver institucion modal
+    path('api/institucion/modal/ver_institucion/<int:institucion_id>/', usuarios_views.obtener_institucion_modal, name='obtener_institucion_modal'),
+
 
     # Endpoint editar aprendices modal
     path('api/aprendiz/<int:aprendiz_id>/', usuarios_views.obtener_aprendiz, name='api_obtener_aprendiz_modal'),
@@ -229,13 +256,18 @@ urlpatterns = [
     path('api/estados/', matricula_views.obtener_opciones_estados, name='api_estados'),
     path('api/sectores/', matricula_views.obtener_opciones_sectores, name='api_sectores'),
 
+    path('api/listar_municipios/', usuarios_views.api_municipios, name='api_municipios'),
+
+
     # API filtrado de instituciones asignadas
 
-    path('api/filtrar-instituciones/', matricula_views.filtrar_instituciones, name='api_filtrar_instituciones'),
+    path('api/institucion/filtrar_instituciones_gestor/', matricula_views.filtrar_instituciones_gestor, name='api_filtrar_instituciones_gestor'),
     path('api/institucion_gestor/eliminar/<int:id>/', matricula_views.eliminar_institucion_gestor, name='eliminar_institucion_gestor'),
 
     # API eliminar grupos
     path('api/grupo/eliminar/<int:id>/', matricula_views.eliminar_grupos, name='eliminar_grupos'),
+
+    path('dividir_pdf/', matricula_views.dividir_pdf, name='dividir_pdf'),
 
     
     path('api/grupo/aprendiz/eliminar/<int:id>/', matricula_views.eliminar_relacion_aprendiz_grupos, name='eliminar_relacion_aprendiz_grupos'),
@@ -260,7 +292,13 @@ urlpatterns = [
     path('ver_postulantes/<int:oferta_id>/', admin_views.ver_postulantes, name='ver_postulantes'),
     path('ver_postulantes_detalle/<int:postulacion_id>', admin_views.ver_postulantes_detalle, name='ver_postulantes_detalle'),
 
-]       
+    path('rechazar_perfil/<int:postulacion_id>/', admin_views.rechazar_perfil, name='rechazar_perfil'),
+    path('desistir_postulacion/<int:postulacion_id>/', admin_views.desistir_postulacion, name='desistir_postulacion'),
+
+    # Contratos
+    path('contratos/', admin_views.contratos, name='contratos'),
+
+]  
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

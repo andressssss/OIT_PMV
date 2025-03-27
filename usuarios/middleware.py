@@ -8,9 +8,7 @@ class ExpiredSessionMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            print(f"Usuario autenticado: {request.user}")
             sesion_expira = request.session.get_expiry_date()
-            print(f"Expiración de la sesión: {sesion_expira}, Ahora: {now()}")
             if sesion_expira <= now():
                 print("La sesión ha expirado")
                 messages.error(request, "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.")

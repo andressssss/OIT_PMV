@@ -174,7 +174,7 @@ class T_centro_forma(models.Model):
     class Meta:
         managed = True
         db_table = 't_centro_forma'
-    nom = models.CharField(max_length=50)
+    nom = models.CharField(max_length=100)
     cod = models.CharField(max_length=50)
     depa = models.ForeignKey(T_departa, on_delete=models.CASCADE)
 
@@ -538,6 +538,13 @@ class T_docu(models.Model):
     esta = models.CharField(
         max_length=200, choices=ESTADO_CHOICES, default='activo')
 
+# Estados de validacion de documentos:
+# 0 No cargado
+# 1 Cargado
+# 2 Rechazado
+# 3 Recargado
+# 4 Aprobado
+
 class T_insti_docu(models.Model):
     class Meta:
         managed = True
@@ -547,13 +554,32 @@ class T_insti_docu(models.Model):
     docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, blank=True, null=True)
     esta = models.CharField(max_length=200)
     vali = models.CharField(max_length=1, blank=True, null=True)
-    usr_apro = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='documentos_insti_aprobados')
-    fecha_apro = models.DateField(null=True, blank=True)
-    usr_carga = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='documentos_insti_cargados')
-    fecha_carga = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.nom}"
+    
+class T_histo_docu_insti(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_histo_docu_insti'
+
+    ACCIONES_CHOICES = [
+        ('carga', 'Carga de documento'),
+        ('aprobacion', 'Aprobación'),
+        ('rechazo', 'Rechazo'),
+        ('recarga', 'Recarga tras rechazo'),
+        ('eliminacion', 'Eliminacion del documento'),
+    ]
+
+    docu_insti = models.ForeignKey(T_insti_docu, on_delete=models.CASCADE, related_name='historial_docu')
+    usu = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    acci = models.CharField(max_length=20, choices=ACCIONES_CHOICES)
+    comen = models.TextField(blank=True, null=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.docu_insti.nom} - {self.get_accion_display()} - {self.fecha.strftime('%Y-%m-%d %H:%M')}"
+
 
 class T_prematri_docu(models.Model):
     class Meta:
@@ -564,10 +590,28 @@ class T_prematri_docu(models.Model):
     docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, blank=True, null=True)
     esta = models.CharField(max_length=200)
     vali = models.CharField(max_length=1, blank=True, null=True)
-    usr_apro = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='documentos_aprobados')
-    fecha_apro = models.DateField(null=True, blank=True)
-    usr_carga = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, related_name='documentos_cargados')
-    fecha_carga = models.DateField(null=True, blank=True)
+
+class T_histo_docu_prematri(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_histo_docu_prematri'
+
+    ACCIONES_CHOICES = [
+        ('carga', 'Carga de documento'),
+        ('aprobacion', 'Aprobación'),
+        ('rechazo', 'Rechazo'),
+        ('recarga', 'Recarga tras rechazo'),
+        ('eliminacion', 'Eliminacion del documento'),
+    ]
+
+    docu_prematri = models.ForeignKey(T_prematri_docu, on_delete=models.CASCADE, related_name='historial_docu')
+    usu = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    acci = models.CharField(max_length=20, choices=ACCIONES_CHOICES)
+    comen = models.TextField(blank=True, null=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.docu_prematri.nom} - {self.get_accion_display()} - {self.fecha.strftime('%Y-%m-%d %H:%M')}"
 
 class T_guia_docu(models.Model):
     class Meta:
@@ -750,3 +794,28 @@ class T_oferta_instru(models.Model):
     instru = models.ForeignKey(T_instru, on_delete=models.CASCADE)
     fecha_apli = models.DateTimeField(auto_now_add=True)
     esta = models.CharField(max_length=200)
+    respuesta_rh = models.CharField(max_length=750, null=True, blank=True)
+
+class T_contra(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_contra'
+    CONTRATO_CHOICES = [
+        ('en_contratacion','En Contratacion'),
+        ('activo','Activo'),
+        ('finalizado','Finalizado'),
+        ('cancelado','Cancelado')
+    ]
+    postu = models.OneToOneField(T_oferta_instru, on_delete=models.CASCADE, related_name='contrato')
+    instru = models.ForeignKey(T_instru, on_delete=models.CASCADE, related_name='contratos')
+    oferta = models.ForeignKey(T_oferta, on_delete=models.CASCADE, related_name='contratos')
+
+    fecha_inicio = models.DateField(null = True , blank = True)
+    fecha_fin = models.DateField(null = True , blank = True)
+    estado = models.CharField(max_length=20, choices = CONTRATO_CHOICES, default='en_contratacion')
+
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Contrato de {self.instru} - {self.oferta.cargo} ({self.estado})"

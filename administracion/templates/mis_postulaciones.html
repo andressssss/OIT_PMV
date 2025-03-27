@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load admin_filters %}
-
+{% load icons %}
 {% block content %}
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
@@ -8,6 +8,9 @@
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center pb-4">
                     <h1 class="display-5">Mis Postulaciones</h1>
+                    <a href="" class="btn btn-info"  data-bs-toggle="modal" data-bs-target="#estadoPostulacionModal">
+                        {% icon 'info' %}
+                    </a>
                 </div>
                 <ul class="list-group mt-4">
                     {% for postulacion in postulaciones %}
@@ -16,23 +19,42 @@
                             <strong>{{ postulacion.ofe.cargo }}</strong> - {{ postulacion.ofe.tipo_contra|traducir_tipo_contrato }}
                             <p class="text-muted">Postulado el: {{ postulacion.fecha_apli|date:"d M, Y" }}</p>
                         </div>
-                        
-                        <!-- Estado de la postulación -->
-                        <span class="badge bg-info text-light">
-                            {{ postulacion.esta }}  <!-- Asumiendo que `estado` es el campo que tiene el estado de la postulación -->
-                        </span>
                 
-                        <!-- Botón para ver el detalle de la respuesta de RH -->
-                        {% if postulacion.respuesta_rh %}
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetalle{{ postulacion.id }}">
-                            Ver respuesta RH
-                        </button>
-                        {% endif %}
+                        <!-- Estado y acciones -->
+                        <div class="d-flex align-items-center">
+                            <!-- Estado de la postulación -->
+                            <span class="badge badge-pill 
+                                {% if postulacion.esta == 'postulado' %} bg-info 
+                                {% elif postulacion.esta == 'finalizado' or postulacion.esta == 'desistido' %} bg-danger 
+                                {% endif %} me-3">
+                                {% if postulacion.esta == 'finalizado'%}
+                                Proceso finalizado
+                                {% else %}
+                                {{ postulacion.esta }}
+                                {% endif %}
+                            </span>
+                
+                            <!-- Sección de botones -->
+                            <div class="btn-group">
+                                {% if postulacion.respuesta_rh %}
+                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalDetalle{{ postulacion.id }}">
+                                        Ver respuesta RH
+                                    </button>
+                                {% else %}
+                                {% if postulacion.esta != 'desistido'%}
+                                <button class="btn btn-warning btn-sm" onclick="desistirPostulacion({{ postulacion.id }})">
+                                    Desistir
+                                </button>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
                     </li>
                     {% empty %}
                     <li class="list-group-item text-muted">No tienes postulaciones aún.</li>
                     {% endfor %}
                 </ul>
+                
             </div></div></section>
 </main>
 
@@ -46,10 +68,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <!-- Aquí puedes mostrar los detalles de la respuesta de RH -->
-                <p><strong>Comentario de RH:</strong></p>
                 <p>{{ postulacion.respuesta_rh }}</p>
-                <p><strong>Fecha de respuesta:</strong> {{ postulacion.fecha_respuesta_rh|date:"d M, Y" }}</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -59,4 +78,85 @@
 </div>
 {% endfor %}
 
+<!-- Modal de Información sobre Postulación -->
+<div class="modal fade" id="estadoPostulacionModal" tabindex="-1" aria-labelledby="estadoPostulacionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="estadoPostulacionLabel">Estado de su Postulación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Su postulación puede encontrarse en uno de los siguientes estados:</p>
+                <ul>
+                    <li><strong>Postulado:</strong> Su solicitud ha sido enviada con éxito.</li>
+                    <li><strong>CV en validación:</strong> Su currículum está siendo revisado para verificar si cumple con los requisitos.</li>
+                    <li><strong>Finalista:</strong> Ha sido seleccionado como candidato final y podría ser contactado para una entrevista.</li>
+                    <li><strong>Proceso finalizado:</strong> El proceso de selección no continua.</li>
+                </ul>
+                <p><strong>Importante:</strong> Manténgase atento a su correo electrónico, donde recibirá actualizaciones sobre su postulación.</p>
+                <p>Si tiene dudas, puede comunicarse con nuestro equipo de selección.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function desistirPostulacion(postulacionId) {
+    Swal.fire({
+        title: "¿Estás seguro?",
+        text: "Si desistes, no podrás volver a postularte a esta oferta.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, desistir",
+        cancelButtonText: "Cancelar"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/desistir_postulacion/${postulacionId}/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"), // Necesario para peticiones POST en Django
+                    "Content-Type": "application/json"
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.fire({
+                    title: data.success ? "Desistido" : "Error",
+                    text: data.message,
+                    icon: data.success ? "success" : "error"
+                }).then(() => {
+                    if (data.success) {
+                        location.reload(); // Recargar la página si fue exitoso
+                    }
+                });
+            })
+            .catch(error => {
+                Swal.fire("Error", "Ocurrió un problema al procesar la solicitud.", "error");
+                console.error("Error:", error);
+            });
+        }
+    });
+}
+
+// Función para obtener el CSRF Token de las cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+    </script>
+    
 {% endblock %}

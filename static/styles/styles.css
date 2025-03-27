@@ -33,6 +33,32 @@
     color: #6C757D !important; 
 }
 
+.btn-outline-primary {
+    color: #1E2DBE !important;
+    border-color: #1E2DBE !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: #1536A2 !important;
+    border-color: #1536A2 !important;
+    color: white !important;
+}
+
+.btn-outline-primary:focus, .btn-outline-primary:active {
+    background-color: #1E2DBE !important;
+    border-color: #1E2DBE !important;
+    color: white !important;
+    box-shadow: 0 0 0 0.25rem rgba(30, 45, 190, 0.5); 
+}
+
+.btn-outline-primary:disabled {
+    color: #6C757D !important;
+    background-color: transparent !important;
+    border-color: #C0C8D0 !important;
+}
+
+
 td.details-control {
     cursor: pointer;
 }
@@ -55,7 +81,6 @@ td.details-control {
 }
 
 #loading {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -63,12 +88,128 @@ td.details-control {
     height: 100%;
     background: rgba(255, 255, 255, 0.8);
     z-index: 9999;
+
     display: flex;
     justify-content: center;
     align-items: center;
+
+    opacity: 0;
+    pointer-events: none;  /* Evita interacciones mientras está oculto */
+    transition: opacity 0.5s ease-in-out;
 }
 
 .spinner-border {
     width: 4rem;
     height: 4rem;
+}
+
+#loading.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#loading.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.fade-transition {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    pointer-events: none; /* evita interacciones mientras está oculto */
+}
+
+.fade-transition.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.spinner-custom {
+    color: #1E2DBE !important;
+}
+
+/* Aplicar el color a los botones de paginación de DataTables */
+.dataTables_wrapper .dataTables_paginate .pagination .page-link {
+    color: #1E2DBE !important;
+}
+
+/* Hover y focus */
+.dataTables_wrapper .dataTables_paginate .pagination .page-link:hover,
+.dataTables_wrapper .dataTables_paginate .pagination .page-link:focus {
+    background-color: #1E2DBE !important;
+    color: #fff !important;
+    border-color: #1E2DBE !important;
+}
+
+/* Botón activo */
+.dataTables_wrapper .dataTables_paginate .pagination .page-item.active .page-link {
+    background-color: #1E2DBE !important;
+    border-color: #1E2DBE !important;
+    color: #fff !important;
+}
+
+/* ===== Estilo visual Bootstrap 5 para Choices.js ===== */
+
+/* Contenedor principal del input */
+.choices__inner {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    background-color: #fff;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    box-shadow: none;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+/* Hover y foco como Bootstrap */
+.choices__inner:focus,
+.choices__inner.is-focused {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+
+/* Dropdown (menú de opciones) */
+.choices__list--dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    z-index: 1000;
+}
+
+/* Opción dentro del dropdown */
+.choices__list--dropdown .choices__item--selectable {
+    padding: 0.375rem 0.75rem;
+}
+
+/* Opción resaltada al navegar con teclado o mouse */
+.choices__item--selectable.is-highlighted {
+    background-color: #0d6efd;
+    color: white;
+}
+
+/* Tags en selección múltiple (como badge Bootstrap) */
+.choices__list--multiple .choices__item {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    margin: 0.125rem;
+    font-size: 0.875rem;
+}
+
+/* Botón para borrar opción seleccionada */
+.choices__list--multiple .choices__item .choices__button {
+    color: white;
+    margin-left: 0.25rem;
+    opacity: 0.8;
+}
+.choices__list--multiple .choices__item .choices__button:hover {
+    opacity: 1;
+}
+
+/* Eliminar bordes innecesarios alrededor de select oculto */
+select.form-select.choices__input {
+    display: none !important;
 }

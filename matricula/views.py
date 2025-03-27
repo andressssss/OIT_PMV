@@ -1,5 +1,7 @@
 import json
+import logging
 from django.core.serializers.json import DjangoJSONEncoder
+from django.utils.timezone import localtime
 from django.utils.safestring import mark_safe
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseNotAllowed
 from dal import autocomplete
@@ -7,7 +9,7 @@ from django.views import generic
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from commons.models import T_ficha,T_gestor_depa, T_grupo,T_docu,T_perfil, T_insti_edu,T_insti_docu, T_centro_forma, T_munici, T_gestor_grupo, T_prematri_docu, T_apre,T_gestor, T_gestor_insti_edu
+from commons.models import T_ficha,T_gestor_depa, T_grupo,T_docu,T_perfil,T_histo_docu_insti,T_histo_docu_prematri, T_insti_edu,T_insti_docu, T_centro_forma, T_munici, T_gestor_grupo, T_prematri_docu, T_apre,T_gestor, T_gestor_insti_edu
 from .forms import AsignarAprendicesGrupoForm, GrupoForm, AsignarAprendicesMasivoForm, AsignarInstiForm
 from .scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.core.files.storage import default_storage
@@ -17,7 +19,9 @@ from django.db import transaction
 from django.db import models
 from django.contrib.auth.models import User
 import zipfile
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from django.conf import settings
+from django.core.files.base import ContentFile
 import io
 import os
 import csv
@@ -184,8 +188,6 @@ def asignar_aprendices(request, grupo_id=None):
         'grupo': grupo,
     })
 
-
-
 @login_required
 def confirmar_documentacion(request, grupo_id):
     grupo = T_grupo.objects.get(id=grupo_id)
@@ -218,6 +220,139 @@ def ver_docs_prematricula_grupo(request, grupo_id):
         'documentos_institucion': documentos_institucion,  # Documentos de la institución
         'rol': rol
     })
+
+def obtener_documentos_prematricula(request, aprendiz_id):
+    documentos = T_prematri_docu.objects.filter(apren_id=aprendiz_id).values(
+        "id", "nom", "esta", "vali", "docu__archi"
+    )
+
+    for doc in documentos:
+        archivo = doc.get("docu__archi")
+        doc["docu_url"] = default_storage.url(archivo) if archivo else None  # Generar la URL
+
+    return JsonResponse(list(documentos), safe=False)
+
+def obtener_historial_prematricula(request, aprendiz_id):
+    historial = (
+        T_histo_docu_prematri.objects
+        .filter(docu_prematri__apren_id=aprendiz_id)
+        .order_by("-fecha")
+        .values("usu__username", "acci", "docu_prematri__nom", "comen", "fecha")
+    )
+
+    historial_list = []
+    for h in historial:
+        historial_list.append({
+            "usuario": h["usu__username"] if h["usu__username"] else "Desconocido",
+            "accion": dict(T_histo_docu_prematri.ACCIONES_CHOICES).get(h["acci"], "Desconocida"),
+            "documento": h["docu_prematri__nom"],
+            "comentario": h["comen"] if h["comen"] else "N/A",
+            "fecha": localtime(h["fecha"]).strftime("%Y-%m-%d %H:%M:%S"),  # Convertir a hora local
+    })
+
+    return JsonResponse(historial_list, safe=False)
+
+def aprobar_documento_prematricula(request, doc_id):
+    if request.method == "POST":
+        try:
+            documento = T_prematri_docu.objects.get(id=doc_id)
+            documento.estado = "Aprobado"
+            documento.vali = 4
+            documento.save()
+
+            # Registrar en el historial
+            T_histo_docu_prematri.objects.create(
+                docu_prematri=documento,
+                usu=request.user,
+                acci="aprobacion",
+                comen="Documento aprobado"
+            )
+
+            return JsonResponse({"status": "success", "message": "Documento aprobado correctamente."})
+        except T_prematri_docu.DoesNotExist:
+            return JsonResponse({"status": "error", "message": "Documento no encontrado."}, status=404)
+    return JsonResponse({"status": "error", "message": "Método no permitido."}, status=405)
+
+def rechazar_documento_prematricula(request, doc_id):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            comentario = data.get("comentario", "").strip()
+
+            if not comentario:
+                return JsonResponse({"status": "error", "message": "Debe ingresar un motivo de rechazo."}, status=400)
+
+            documento = T_prematri_docu.objects.get(id=doc_id)
+            documento.esta = "Rechazado"
+            documento.vali = 2
+            documento.save()
+
+            T_histo_docu_prematri.objects.create(
+                docu_prematri=documento,
+                usu=request.user,
+                acci="rechazo",
+                comen=comentario
+            )
+
+            return JsonResponse({"status": "success", "message": "Documento rechazado correctamente."})
+        except T_prematri_docu.DoesNotExist:
+            return JsonResponse({"status": "error", "message": "Documento no encontrado."}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({"status": "error", "message": "Error en el formato de los datos."}, status=400)
+
+    return JsonResponse({"status": "error", "message": "Método no permitido."}, status=405)
+
+
+def dividir_pdf(request):
+    if request.method == 'POST':
+        if 'pdf_file' not in request.FILES:
+            return JsonResponse({"error": "No se ha subido ningún archivo PDF."}, status=400)
+        
+        pdf_file = request.FILES['pdf_file']
+
+        if not pdf_file.name.endswith('.pdf'):
+            return JsonResponse({"error": "Por favor, suba un archivo PDF válido."}, status=400)
+
+        try:
+            pdf_reader = PdfReader(pdf_file)
+
+            if len(pdf_reader.pages) == 0:
+                return JsonResponse({"error": "El archivo PDF está vacío."}, status=400)
+            
+            # Crear el ZIP en memoria
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for page_num in range(len(pdf_reader.pages)):
+                    pdf_writer = PdfWriter()
+                    pdf_writer.add_page(pdf_reader.pages[page_num])
+
+                    pdf_bytes = io.BytesIO()
+                    pdf_writer.write(pdf_bytes)
+
+                    pdf_name = f"pagina_{page_num + 1}.pdf"
+                    zip_file.writestr(pdf_name, pdf_bytes.getvalue())
+            
+            zip_buffer.seek(0)
+
+            # Guardar el ZIP en media/temp
+            zip_path = f"temp/paginas_separadas_{pdf_file.name.replace('.pdf', '')}.zip"
+            full_path = os.path.join(settings.MEDIA_ROOT, zip_path)
+            default_storage.save(zip_path, ContentFile(zip_buffer.getvalue()))
+
+            download_url = f"{settings.MEDIA_URL}{zip_path}"
+
+            return JsonResponse({
+                "success": True,
+                "message": "PDF dividido exitosamente.",
+                "total_paginas": len(pdf_reader.pages),
+                "download_url": download_url
+            })
+
+        except Exception as e:
+            print(f"Error interno: {e}")
+            return JsonResponse({"error": f"Ocurrió un error al procesar el PDF: {str(e)}"}, status=500)
+
+    return JsonResponse({"error": "Método no permitido."}, status=405)
 
 @login_required
 def descargar_documentos_grupo(request, grupo_id, documento_tipo):
@@ -298,15 +433,6 @@ def confirmar_documento(request, documento_id, grupo_id):
     documento.save()
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
-def confirmar_documento_insti(request, documento_id, institucion_id):
-    institucion = T_insti_edu.objects.get(id=institucion_id)
-    documento = T_insti_docu.objects.get(id=documento_id)    
-    documento.vali = "1"
-    documento.usr_apro = request.user
-    documento.fecha_apro = datetime.now()
-    documento.save()
-    return redirect(request.META.get('HTTP_REFERER', '/'))
-
 @login_required
 def instituciones_gestor(request):
     # Obtén el perfil del usuario autenticado
@@ -360,11 +486,10 @@ def obtener_opciones_sectores(request):
     return JsonResponse(list(sectores), safe=False)
 
 # Listado filtrado
-
-def filtrar_instituciones(request):
-    municipio = request.GET.getlist('municipio', [])
-    estado = request.GET.getlist('estado', [])
-    sector = request.GET.getlist('sector', [])
+def filtrar_instituciones_gestor(request):
+    municipio = request.GET.getlist('municipio_filtro', [])
+    estado = request.GET.getlist('estado_filtro', [])
+    sector = request.GET.getlist('sector_filtro', [])
 
     # Obtén el perfil del usuario autenticado
     perfil = getattr(request.user, 't_perfil', None)
@@ -396,6 +521,7 @@ def filtrar_instituciones(request):
             'genero': i.insti.gene,
             'zona': i.insti.zona,
             'estado_docu': i.insti.esta_docu,
+            'gestor': i.gestor.perfil.nom+" "+i.gestor.perfil.apelli,
             'detalle_url': reverse('instituciones_docs', args=[i.insti.id])  # Genera la URL
         }
         for i in instituciones
@@ -403,18 +529,16 @@ def filtrar_instituciones(request):
     return JsonResponse(resultados, safe=False)
 
 def eliminar_institucion_gestor(request, id):
-    if request.method == 'DELETE':
+    if request.method == 'POST':
         try:
-            institucion_gest = T_gestor_insti_edu.objects.get(id=id)
+            institucion_gest = get_object_or_404(T_gestor_insti_edu , id=id)
             id_institucion = institucion_gest.insti.id
 
             # Verificar si hay registros en T_grupo relacionados con la institución
             grupos_asociados = T_grupo.objects.filter(insti_id=id_institucion).exists()
 
             if grupos_asociados:
-                return JsonResponse({
-                    'error': 'No se puede eliminar la institución porque tiene grupos asociados.'
-                }, status=400)
+                return JsonResponse({'status':'error','message': 'No se puede eliminar la institución porque tiene grupos asociados.'}, status=400)
 
             # Eliminar documentos asociados en T_insti_docu
             T_insti_docu.objects.filter(insti_id=id_institucion).delete()
@@ -422,77 +546,122 @@ def eliminar_institucion_gestor(request, id):
             # Eliminar la institución gestora
             institucion_gest.delete()
 
-            return JsonResponse({'mensaje': 'Institución y documentos asociados eliminados correctamente.'}, status=200)
+            return JsonResponse({'status':'success','message': 'Institución y documentos asociados eliminados correctamente.'}, status=200)
 
         except T_gestor_insti_edu.DoesNotExist:
-            return JsonResponse({'error': 'Institución no encontrada.'}, status=404)
-    else:
-        return HttpResponseNotAllowed(['DELETE'])
+            return JsonResponse({'status':'error','message': 'Institución no encontrada.'}, status=404)
+    return JsonResponse({'status': 'error', 'message':'Método no permitido'}, status = 405)
 
-def cargar_documento_prematricula(request, documento_id, aprendiz_id, grupo_id):
-
-    # Configuración de restricciones
+def cargar_documento_prematricula(request, documento_id):
+    # Restricciones
     TAMANO_MAXIMO = 3 * 1024 * 1024  # 3 MB
-    TIPOS_PERMITIDOS = ['pdf']  # Extensiones permitidas
-    
-    documento = T_prematri_docu.objects.filter(id=documento_id, apren=aprendiz_id).first()
-    grupo = T_grupo.objects.get(id=grupo_id)
-    if not documento:
-        # Redirige si el documento no pertenece al aprendiz logueado
-        return render(request, 'grupos_prematricula.html', {
-        'grupo': grupo
-    })
+    TIPOS_PERMITIDOS = ['pdf']
 
-    if request.method == 'POST' and 'archivo' in request.FILES:
-        archivo = request.FILES['archivo']
+    # Obtener el documento
+    documento = get_object_or_404(T_prematri_docu, id=documento_id)
+
+    if request.method == 'POST':
+
+        archivo = request.FILES.get("documento")
+
+        if not archivo:
+            return JsonResponse({"status": "error", "message": "No se recibió ningún archivo."}, status=400)
 
         extension = archivo.name.split('.')[-1].lower()
-        
+
         # Validar el tipo de archivo
         if extension not in TIPOS_PERMITIDOS:
-            messages.error(request, f"Tipo de archivo no permitido. Los tipos permitidos son: {', '.join(TIPOS_PERMITIDOS)}.")
-            return redirect('ver_docs_prematricula', grupo_id= grupo.id)
-        
+            return JsonResponse({
+                "status": "error",
+                "message": f"Tipo de archivo no permitido. Solo se permiten: {', '.join(TIPOS_PERMITIDOS)}."
+            }, status=400)
+
         # Validar el tamaño del archivo
         if archivo.size > TAMANO_MAXIMO:
-            messages.error(request, f"El archivo excede el tamaño máximo permitido de {TAMANO_MAXIMO // (1024 * 1024)} MB.")
-            return redirect('ver_docs_prematricula', grupo_id= grupo.id)
+            return JsonResponse({
+                "status": "error",
+                "message": f"El archivo excede el tamaño máximo permitido de {TAMANO_MAXIMO // (1024 * 1024)} MB."
+            }, status=400)
 
+        # Generar la ruta de almacenamiento
         ruta = f'documentos/aprendices/prematricula/{documento.apren.perfil.nom}{documento.apren.perfil.apelli}{documento.apren.perfil.dni}/{archivo.name}'
 
+        # Guardar el archivo
         ruta_guardada = default_storage.save(ruta, archivo)
 
-        # Crear un registro en T_docu
+        # Crear un nuevo registro en T_docu
         t_docu = T_docu.objects.create(
             nom=archivo.name,
-            tipo= archivo.name.split('.')[-1],
+            tipo=extension,
             tama=f"{archivo.size // 1024} KB",
             archi=ruta_guardada,
             priva='No',
             esta='Activo'
         )
 
-        documento.esta = "Cargado"
-        documento.docu = t_docu
-        documento.fecha_carga = datetime.now()
-        documento.usr_carga = request.user
-        documento.save()
-        messages.success(request, "Documento cargado exitosamente.")
-        return redirect('ver_docs_prematricula', grupo_id= grupo.id)
+        print(f"Valor actual de documento.vali: {documento.vali}")
 
-    return render(request, 'detalle_docs_prematricula.html', {
-        'grupo': grupo
-        })
+        if int(documento.vali) == 2:  # Asegurar que es un entero
+            nuevo_estado_text = "recarga"
+            nuevo_estado = 3
+            accion_historial = 'recarga'
+            comentario_historial = 'Documento recargado tras rechazo.'
+        else:
+            nuevo_estado_text = "cargado"
+            nuevo_estado = 1
+            accion_historial = 'carga'
+            comentario_historial = 'Documento subido.'
+
+        # Actualizar el documento en T_prematri_docu
+        documento.esta = nuevo_estado_text
+        documento.vali = nuevo_estado
+        documento.docu = t_docu
+        documento.save()
+        print(f"Valor guardado de documento.vali: {documento.vali}")
+
+        # Registrar en el historial
+        T_histo_docu_prematri.objects.create(
+            docu_prematri=documento,
+            usu=request.user,
+            acci=accion_historial,
+            comen=comentario_historial
+        )
+
+        return JsonResponse({
+            "status": "success",
+            "message": "Documento subido y registrado en historial."
+        }, status=200)
+
+    return JsonResponse({"status": "error", "message": "Método no permitido."}, status=405)
+
 
 @login_required  # Funcion para eliminar documento de prematricula aprendiz
-def eliminar_documento_pre(request, documento_id):
-    documentot = get_object_or_404(T_docu, id = documento_id)
-    prematri_docu = T_prematri_docu.objects.filter(docu_id=documentot.id).first()
-    prematri_docu.esta = 'Pendiente'
-    prematri_docu.vali = '0'
-    prematri_docu.save()
-    documentot.delete()
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+def eliminar_documento_prematricula(request, documento_id):
+    if request.method != "DELETE":
+        return JsonResponse({"status": "error", "error": "Método no permitido"}, status=405)
+
+    documento = get_object_or_404(T_prematri_docu, id=documento_id)
+
+    T_histo_docu_prematri.objects.create(
+        docu_prematri=documento,
+        usu=request.user,
+        acci="eliminacion",
+        comen="Documento eliminado"
+    )
+
+    if documento.docu:
+        archivo_a_eliminar = documento.docu.archi.name
+        documento.docu.delete()
+        if archivo_a_eliminar:
+            default_storage.delete(archivo_a_eliminar)
+
+
+    documento.docu = None
+    documento.esta = "Pendiente"
+    documento.vali = 0
+    documento.save()
+
+    return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status = 200)
 
 def descargar_documentos_grupo_zip(request, grupo_id):
     # Obtén el grupo por su ID
@@ -627,10 +796,10 @@ def eliminar_relacion_aprendiz_grupos(request, id):
             aprendiz.grupo = None
             aprendiz.save()
 
-            return JsonResponse({'mensaje': 'Aprendiz y documentos asociados eliminados correctamente.'}, status=200)
+            return JsonResponse({"success": True, "mensaje": "Aprendiz y documentos asociados eliminados correctamente."}, status=200)
 
         except T_apre.DoesNotExist:
-            return JsonResponse({'error': 'Aprendiz no encontrado.'}, status=404)
+            return JsonResponse({"success": False, "mensaje": "Aprendiz no encontrado."}, status=404)
     else:
         return HttpResponseNotAllowed(['DELETE'])
 
@@ -646,10 +815,10 @@ def asignar_institucion_gestor(request):
             documentos_matricula = [
                         'Carta Intención',
                         'Formato de Inscripción Especial 2025',
-                        'Certificado de Aprobacion de Grado Noveno',
-                        'Acta de Compromiso de Articulacion',
-                        'Acentamiento de matricula',
-                        'Formato de diagnostico'
+                        'Certificado de Aprobación de Grado Noveno',
+                        'Acta de Compromiso de Articulación',
+                        'Acentamiento de matrícula',
+                        'Formato de diagnóstico'
                     ]
             asignar_insti_form = AsignarInstiForm(request.POST, user=request.user)
             perfil = T_perfil.objects.get(user=request.user)
@@ -816,31 +985,201 @@ def cargar_documento_institucion(request, documento_id, institucion_id):
     return render(request, 'grupos_prematricula.html', {
         })
 
+# Configurar logs para depuración
+logger = logging.getLogger(__name__)
+
+def cargar_documentos_institucion_multiples(request, institucion_id):
+    if request.method == "POST":
+        print(request.FILES)
+        print(request.POST)
+        TAMANO_MAXIMO = 3 * 1024 * 1024  # 3 MB
+        TIPOS_PERMITIDOS = ['pdf']  # Extensiones permitidas
+        archivos_subidos = 0
+        errores = []
+
+        logger.info("Recibiendo solicitud de carga múltiple...")
+
+        if not request.FILES:
+            errores.append("No se enviaron archivos.")
+            logger.warning("No se recibieron archivos en la petición.")
+            return JsonResponse({"errors": errores}, status=400)
+
+        for key, archivo in request.FILES.items():
+            logger.info(f"Procesando archivo: {archivo.name}")
+
+            if key.startswith("archivo_"):
+
+                documento_nom = request.POST.get(f"{key}_name")
+                documento_id = key.split("_")[1]
+                documento = T_insti_docu.objects.filter(id=documento_id, insti_id=institucion_id).first()
+
+                if not documento:
+                    errores.append(f"Documento con ID {documento_id} no encontrado.")
+                    logger.warning(f"Documento {documento_id} no encontrado.")
+                    continue
+
+                # Validar tipos de archivo según el nombre del documento
+                if documento_nom == "Formato de Inscripción Especial 2025":
+                    TIPOS_PERMITIDOS = ['xls', 'xlsx']
+                else:
+                    TIPOS_PERMITIDOS = ['pdf']
+
+                extension = archivo.name.split('.')[-1].lower()
+
+                if extension not in TIPOS_PERMITIDOS:
+                    errores.append(f"El archivo {archivo.name} tiene una extensión no permitida: {extension}")
+                    continue
+
+                if archivo.size > TAMANO_MAXIMO:
+                    errores.append(f"El archivo {archivo.name} excede el tamaño máximo de {TAMANO_MAXIMO // (1024 * 1024)} MB.")
+                    continue
+
+                # Construir la ruta de almacenamiento
+                ruta = f'documentos/instituciones/{documento.insti.nom}/{archivo.name}'
+
+                # Verificar si el archivo ya existe y renombrarlo
+                contador = 1
+                nombre_base, extension_archivo = os.path.splitext(archivo.name)
+                while default_storage.exists(ruta):
+                    ruta = f'documentos/instituciones/{documento.insti.nom}/{nombre_base}_{contador}{extension_archivo}'
+                    contador += 1
+
+                ruta_guardada = default_storage.save(ruta, archivo)
+                logger.info(f"Archivo {archivo.name} guardado en {ruta_guardada}")
+
+                # Crear el registro en T_docu
+                t_docu = T_docu.objects.create(
+                    nom=archivo.name,
+                    tipo=extension,
+                    tama=f"{archivo.size // 1024} KB",
+                    archi=ruta_guardada,
+                    priva='No',
+                    esta='Activo'
+                )
+
+                # Determinar nuevo estado del documento
+                if documento.vali == "2":  # Si estaba Rechazado
+                    documento.esta = "Recargado"
+                    documento.vali = "3"  # Estado "Recargado"
+                else:
+                    documento.esta = "Cargado"
+                    documento.vali = "1"  # Estado "Cargado"
+
+                # Asignar el nuevo documento
+                documento.docu = t_docu
+                documento.save()
+                archivos_subidos += 1
+
+                # Registrar en el historial
+                T_histo_docu_insti.objects.create(
+                    docu_insti=documento,
+                    usu=request.user,
+                    acci='recarga' if documento.vali == "3" else 'carga',
+                    comen='Documento recargado' if documento.vali == "3" else ''
+                )
+
+        # Verificar si todos los documentos de la institución están en estado "Cargado" o "Recargado"
+        documentos_institucion = T_insti_docu.objects.filter(insti_id=institucion_id)
+        if all(doc.esta in ["Cargado", "Recargado"] for doc in documentos_institucion):
+            institucion = documentos_institucion.first().insti
+            institucion.esta_docu = "Completo"
+            institucion.save()
+            logger.info(f"Todos los documentos de la institución {institucion.nom} han sido cargados. Estado actualizado a 'Completo'.")
+
+        response = {
+            "message": f"{archivos_subidos} archivos cargados correctamente.",
+            "errors": errores,
+            "archivos_cargados": archivos_subidos,  # Número de archivos exitosos
+        }
+
+        logger.info(f"Respuesta JSON: {response}")
+        return JsonResponse(response)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+def rechazar_documento_insti(request, docu_id, insti_id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        motivo = data.get('motivo', '')
+
+        documento = T_insti_docu.objects.get(id=docu_id, insti_id=insti_id)
+        documento.vali = 2
+        documento.esta = "Rechazado"
+        documento.save()
+
+        T_histo_docu_insti.objects.create(
+            docu_insti=documento,
+            usu=request.user,
+            acci='rechazo',
+            comen=motivo
+        )
+
+        return JsonResponse({'status': 'success', 'message': 'Registrado'})
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def confirmar_documento_insti(request, documento_id, institucion_id):
+    institucion = T_insti_edu.objects.get(id=institucion_id)
+    documento = T_insti_docu.objects.get(id=documento_id)    
+    documento.vali = "4"
+    documento.save()
+
+    T_histo_docu_insti.objects.create(
+    docu_insti=documento,
+    usu=request.user,
+    acci='aprobacion',
+    comen=''
+    )
+    
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
 @login_required
 def eliminar_documento_pre_insti(request, documento_id):
     # Obtener el documento
-    documentot = get_object_or_404(T_docu, id=documento_id)
+    documento = get_object_or_404(T_docu, id=documento_id)
 
-    # Obtener el registro de la relación entre documento e institución
-    prematri_docu = T_insti_docu.objects.filter(docu_id=documentot.id).first()
+    # Obtener la relación del documento con la institución
+    docu_insti = T_insti_docu.objects.filter(docu_id=documento.id).first()
 
-    if prematri_docu:
+    if docu_insti:
+        T_histo_docu_insti.objects.create(
+            docu_insti=docu_insti,
+            usu=request.user, 
+            acci="eliminacion",
+            comen=f"Documento '{documento.nom}' eliminado por {request.user.username}."
+        )
+
         # Marcar el documento como "Pendiente"
-        prematri_docu.esta = 'Pendiente'
-        prematri_docu.vali = '0'
-        prematri_docu.save()
+        docu_insti.esta = "Pendiente"
+        docu_insti.vali = "0"
+        docu_insti.save()
 
-        # Eliminar el documento físico
-        documentot.delete()
+        # Eliminar el archivo físico del documento
+        documento.delete()
 
-        # Verificar si hay documentos no "Cargados" en la institución
-        documentos_institucion = T_insti_docu.objects.filter(insti=prematri_docu.insti)
+        documentos_institucion = T_insti_docu.objects.filter(insti=docu_insti.insti)
         if any(doc.esta != "Cargado" for doc in documentos_institucion):
-            print("Si hay?")
-            # Si algún documento no está "Cargado", marcar la institución como "Pendiente"
-            institucion = prematri_docu.insti
+            institucion = docu_insti.insti
             institucion.esta_docu = "Pendiente"
             institucion.save()
 
     # Redirigir después de eliminar el documento
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+def obtener_historial_institucion(request, institucion_id):
+    historial = T_histo_docu_insti.objects.filter(docu_insti__insti_id=institucion_id).order_by('-id')
+    
+    data = [
+        {
+            "usuario": histo.usu.username,
+            "accion": histo.acci,
+            "documento": histo.docu_insti.nom,
+            "comentario": histo.comen if histo.comen else "Sin comentario",
+            "fecha": histo.fecha.strftime('%d/%m/%Y %H:%M:%S') 
+        }
+        for histo in historial
+    ]
+    
+    return JsonResponse({"historial": data})
+

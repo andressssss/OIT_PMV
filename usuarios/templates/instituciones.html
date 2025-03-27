@@ -6,7 +6,7 @@
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
     <div class="row">
-        <div class="col-12">
+        <div id="contenedor" class="col-12 fade-transition">
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de instituciones</h1>
                 <div>
@@ -15,13 +15,51 @@
                     </a>
                 </div>
             </div>
+            <!-- Encabezado con "Ordenar por" alineado a la derecha -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Filtrar y organizar:</h5>
+                <div class="col-md-3">
+                    <!-- <select id="ordenar_por" name="ordenar_por" class="form-select">
+                        <option value="" selected disabled>Ordenar por...</option>
+                        <option value="fecha_asc">Fecha creación (Ascendente)</option>
+                        <option value="fecha_desc">Fecha creación (Descendente)</option>
+                    </select> -->
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <form id="filtros-form" class="row mb-3">
+                <!-- Departamento -->
+                <div class="col-md-3">
+                    <select id="departamento" name="departamento" class="form-select">
+                    </select>
+                </div>
+
+                <!-- Municipio -->
+                <div class="col-md-3">
+                    <select id="municipio" name="municipio" class="form-select">
+                    </select>
+                </div>
+
+                <!-- Zona -->
+                <div class="col-md-3">
+                    <select id="zona" name="zona" class="form-select">
+                    </select>
+                </div>
+
+                <!-- Estado -->
+                <div class="col-md-3">
+                    <select id="estado" name="estado" class="form-select">
+                    </select>
+                </div>
+            </form>
             <div class="table-responsive">
                 <table id="instituciones" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                         <tr>
                         <th>Acciones</th>
                         <th>Nombre</th>
-                        <th>Direccion</th>
+                        <th>Dirección</th>
                         <th>Municipio</th>
                         <th>Departamento</th>
                         <th>Sector</th>
@@ -37,7 +75,7 @@
     </div>
     </section>
 </main>
-<!-- Modal para crear institucion!!!!!!!!!!!!!!!!!!! -->
+<!-- Modal para crear institución -->
 <div class="modal fade" id="crearInstitucionModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -47,700 +85,349 @@
             </div>
             <div class="modal-body">
                 <form id="formCrearInstitucion" action="/instituciones/crear/" method="POST">
-                    {{error}}
                     {% csrf_token %}
+                    <!-- Primera fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.nom.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.nom.label }}
-                                </label>
-                                {{ institucionForm.nom }}
-                                {% if institucionForm.nom.errors %}
-                                    <div class="text-danger">{{ institucionForm.nom.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nom" class="form-label">Nombre de la institución</label>
+                            <input type="text" id="nom" name="nom" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.esta.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.esta.label }}
-                                </label>
-                                {{ institucionForm.esta }}
-                                {% if institucionForm.esta.errors %}
-                                    <div class="text-danger">{{ institucionForm.esta.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="esta" class="form-label">Estado</label>
+                            <select name="esta" id="esta" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="articulado">Articulado</option>
+                                <option value="articulado nuevo">Articulado nuevo</option>
+                                <option value="antiguo activo">Antiguo activo</option>
+                                <option value="cierre temporal">Cierre temporal</option>
+                                <option value="nuevo activo">Nuevo activo</option>
+                                <option value="cierre definitivo">Cierre definitivo</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Segunda fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.depa.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.depa.label }}
-                                </label>
-                                {{ institucionForm.depa }}
-                                {% if institucionForm.depa.errors %}
-                                    <div class="text-danger">{{ institucionForm.depa.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="depa" class="form-label">Departamento</label>
+                            <select id="depa" name="depa" class="form-select" required>
+                                <option value="">Seleccione un departamento</option>
+                                {% for dep in departamentos %}
+                                    <option value="{{ dep.id }}">{{ dep.nombre }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.muni.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.muni.label }}
-                                </label>
-                                {{ institucionForm.muni }}
-                                {% if institucionForm.muni.errors %}
-                                    <div class="text-danger">{{ institucionForm.muni.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="muni" class="form-label">Municipio</label>
+                            <select id="muni" name="muni" class="form-select" disabled required>
+                                <option value="">Seleccione un municipio</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Tercera fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.secto.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.secto.label }}
-                                </label>
-                                {{ institucionForm.secto }}
-                                {% if institucionForm.secto.errors %}
-                                    <div class="text-danger">{{ institucionForm.secto.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="secto" class="form-label">Sector</label>
+                            <select name="secto" id="secto" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="oficial">Oficial</option>
+                                <option value="noficial">No oficial</option>
+                            </select>                        
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.vigen.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.vigen.label }}
-                                </label>
-                                {{ institucionForm.vigen }}
-                                {% if institucionForm.vigen.errors %}
-                                    <div class="text-danger">{{ institucionForm.vigen.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="dane" class="form-label">Dane</label>
+                            <input type="text" id="dane" name="dane" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Cuarta fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Tooltip on top">
-                                <label for="{{ institucionForm.coordi.id_for_label }}" class="form-label" >
-                                    {{ institucionForm.coordi.label }}
-                                </label>
-                                {{ institucionForm.coordi }}
-                                {% if institucionForm.coordi.errors %}
-                                    <div class="text-danger">{{ institucionForm.coordi.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="coordi" class="form-label">Coordinador</label>
+                            <input type="text" id="coordi" name="coordi" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.coordi_mail.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.coordi_mail.label }}
-                                </label>
-                                {{ institucionForm.coordi_mail }}
-                                {% if institucionForm.coordi_mail.errors %}
-                                    <div class="text-danger">{{ institucionForm.coordi_mail.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="coordi_mail" class="form-label">Email del coordinador</label>
+                            <input type="email" id="coordi_mail" name="coordi_mail" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Quinta fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.coordi_tele.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.coordi_tele.label }}
-                                </label>
-                                {{ institucionForm.coordi_tele }}
-                                {% if institucionForm.coordi_tele.errors %}
-                                    <div class="text-danger">{{ institucionForm.coordi_tele.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="coordi_tele" class="form-label">Teléfono del coordinador</label>
+                            <input type="text" id="coordi_tele" name="coordi_tele" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.dire.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.dire.label }}
-                                </label>
-                                {{ institucionForm.dire }}
-                                {% if institucionForm.dire.errors %}
-                                    <div class="text-danger">{{ institucionForm.dire.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="dire" class="form-label">Dirección</label>
+                            <input type="text" id="dire" name="dire" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Sexta fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.insti_mail.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.insti_mail.label }}
-                                </label>
-                                {{ institucionForm.insti_mail }}
-                                {% if institucionForm.insti_mail.errors %}
-                                    <div class="text-danger">{{ institucionForm.insti_mail.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="insti_mail" class="form-label">Email de la institución</label>
+                            <input type="email" id="insti_mail" name="insti_mail" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.recto.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.recto.label }}
-                                </label>
-                                {{ institucionForm.recto }}
-                                {% if institucionForm.recto.errors %}
-                                    <div class="text-danger">{{ institucionForm.recto.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="recto" class="form-label">Rector</label>
+                            <input type="text" id="recto" name="recto" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Séptima fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.recto_tel.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.recto_tel.label }}
-                                </label>
-                                {{ institucionForm.recto_tel }}
-                                {% if institucionForm.recto_tel.errors %}
-                                    <div class="text-danger">{{ institucionForm.recto_tel.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="recto_tel" class="form-label">Teléfono del rector</label>
+                            <input type="text" id="recto_tel" name="recto_tel" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.gene.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.gene.label }}
-                                </label>
-                                {{ institucionForm.gene }}
-                                {% if institucionForm.gene.errors %}
-                                    <div class="text-danger">{{ institucionForm.gene.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gene" class="form-label">Clasificación de la institución</label>
+                            <select name="gene" id="gene" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="mi">Mixto</option>
+                                <option value="ma">Masculino</option>
+                                <option value="fe">Femenino</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Octava fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.grados.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.grados.label }}
-                                </label>
-                                {{ institucionForm.grados }}
-                                {% if institucionForm.grados.errors %}
-                                    <div class="text-danger">{{ institucionForm.grados.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="grados" class="form-label">Grados</label>
+                            <input type="text" id="grados" name="grados" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.jorna.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.jorna.label }}
-                                </label>
-                                {{ institucionForm.jorna }}
-                                {% if institucionForm.jorna.errors %}
-                                    <div class="text-danger">{{ institucionForm.jorna.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="jorna" class="form-label">Jornada</label>
+                            <input type="text" id="jorna" name="jorna" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Novena fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.num_sedes.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.num_sedes.label }}
-                                </label>
-                                {{ institucionForm.num_sedes }}
-                                {% if institucionForm.num_sedes.errors %}
-                                    <div class="text-danger">{{ institucionForm.num_sedes.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="num_sedes" class="form-label">Número de sedes</label>
+                            <input type="number" id="num_sedes" name="num_sedes" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.zona.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.zona.label }}
-                                </label>
-                                {{ institucionForm.zona }}
-                                {% if institucionForm.zona.errors %}
-                                    <div class="text-danger">{{ institucionForm.zona.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="zona" class="form-label">Zona</label>
+                            <select name="zona" id="zona" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="r">Rural</option>
+                                <option value="u">Urbana</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Décima fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.cale.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.cale.label }}
-                                </label>
-                                {{ institucionForm.cale }}
-                                {% if institucionForm.cale.errors %}
-                                    <div class="text-danger">{{ institucionForm.cale.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cale" class="form-label">Calendario</label>
+                            <select name="cale" id="cale" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="a">A</option>
+                                <option value="b">B</option>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.dane.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.dane.label }}
-                                </label>
-                                {{ institucionForm.dane }}
-                                {% if institucionForm.dane.errors %}
-                                    <div class="text-danger">{{ institucionForm.dane.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
                         </div>
-                    </div>                    
+                    </div>
+                    <div id="formCrearInstitucionErrores" class="alert alert-danger d-none"></div>
+                    <!-- Botones -->
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
+                        <button type="submit" id="btnGuardarInstitucion" class="btn btn-primary">Guardar</button>
+
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-<!-- Modal para editar institucion!!!!!!!!!!!!!!!!!!!!!!! -->
-<div class="modal fade" id="editarInstitucionModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+<!-- Modal para editar institución -->
+<div class="modal fade" id="editarInstitucionModal" tabindex="-1" aria-labelledby="editarModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalLabel">Editar Institución</h5>
+                <h5 class="modal-title" id="editarModalLabel">Editar Institución</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <form id="formEditarInstitucion" method="POST">
-                    {{error}}
+                <form id="formEditarInstitucion" action="/instituciones/editar/{{ institucion.id }}/" method="POST">
                     {% csrf_token %}
+                    <!-- Primera fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.nom.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.nom.label }}
-                                </label>
-                                {{ institucionForm.nom }}
-                                {% if institucionForm.nom.errors %}
-                                    <div class="text-danger">{{ institucionForm.nom.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_nom" class="form-label">Nombre de la institución</label>
+                            <input type="text" id="edit_nom" name="nom" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.esta.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.esta.label }}
-                                </label>
-                                {{ institucionForm.esta }}
-                                {% if institucionForm.esta.errors %}
-                                    <div class="text-danger">{{ institucionForm.esta.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_esta" class="form-label">Estado</label>
+                            <select name="esta" id="edit_esta" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="articulado">Articulado</option>
+                                <option value="articulado nuevo">Articulado nuevo</option>
+                                <option value="antiguo activo">Antiguo activo</option>
+                                <option value="cierre temporal">Cierre temporal</option>
+                                <option value="nuevo activo">Nuevo activo</option>
+                                <option value="cierre definitivo">Cierre definitivo</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Segunda fila -->
                     <div class="row">
-                        <!-- <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.depa.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.depa.label }}
-                                </label>
-                                {{ institucionForm.depa }}
-                                {% if institucionForm.depa.errors %}
-                                    <div class="text-danger">{{ institucionForm.depa.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div> -->
-                        <div class="col-md-12">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.muni.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.muni.label }}
-                                </label>
-                                {{ institucionForm.muni }}
-                                {% if institucionForm.muni.errors %}
-                                    <div class="text-danger">{{ institucionForm.muni.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-12 mb-3">
+                            <label for="edit_muni" class="form-label">Municipio</label>
+                            <select id="edit_muni" name="muni" class="form-select" required>
+                                <option value="">Seleccione un municipio</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Tercera fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.secto.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.secto.label }}
-                                </label>
-                                {{ institucionForm.secto }}
-                                {% if institucionForm.secto.errors %}
-                                    <div class="text-danger">{{ institucionForm.secto.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_secto" class="form-label">Sector</label>
+                            <select name="secto" id="edit_secto" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="oficial">Oficial</option>
+                                <option value="noficial">No oficial</option>
+                            </select>                        
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.vigen.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.vigen.label }}
-                                </label>
-                                {{ institucionForm.vigen }}
-                                {% if institucionForm.vigen.errors %}
-                                    <div class="text-danger">{{ institucionForm.vigen.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_dane" class="form-label">Dane</label>
+                            <input type="text" id="edit_dane" name="dane" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Cuarta fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Tooltip on top">
-                                <label for="{{ institucionForm.coordi.id_for_label }}" class="form-label" >
-                                    {{ institucionForm.coordi.label }}
-                                </label>
-                                {{ institucionForm.coordi }}
-                                {% if institucionForm.coordi.errors %}
-                                    <div class="text-danger">{{ institucionForm.coordi.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_coordi" class="form-label">Coordinador</label>
+                            <input type="text" id="edit_coordi" name="coordi" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.coordi_mail.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.coordi_mail.label }}
-                                </label>
-                                {{ institucionForm.coordi_mail }}
-                                {% if institucionForm.coordi_mail.errors %}
-                                    <div class="text-danger">{{ institucionForm.coordi_mail.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_coordi_mail" class="form-label">Email del coordinador</label>
+                            <input type="email" id="edit_coordi_mail" name="coordi_mail" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Quinta fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.coordi_tele.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.coordi_tele.label }}
-                                </label>
-                                {{ institucionForm.coordi_tele }}
-                                {% if institucionForm.coordi_tele.errors %}
-                                    <div class="text-danger">{{ institucionForm.coordi_tele.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_coordi_tele" class="form-label">Teléfono del coordinador</label>
+                            <input type="text" id="edit_coordi_tele" name="coordi_tele" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.dire.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.dire.label }}
-                                </label>
-                                {{ institucionForm.dire }}
-                                {% if institucionForm.dire.errors %}
-                                    <div class="text-danger">{{ institucionForm.dire.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_dire" class="form-label">Dirección</label>
+                            <input type="text" id="edit_dire" name="dire" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Sexta fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.insti_mail.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.insti_mail.label }}
-                                </label>
-                                {{ institucionForm.insti_mail }}
-                                {% if institucionForm.insti_mail.errors %}
-                                    <div class="text-danger">{{ institucionForm.insti_mail.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_insti_mail" class="form-label">Email de la institución</label>
+                            <input type="email" id="edit_insti_mail" name="insti_mail" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.recto.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.recto.label }}
-                                </label>
-                                {{ institucionForm.recto }}
-                                {% if institucionForm.recto.errors %}
-                                    <div class="text-danger">{{ institucionForm.recto.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_recto" class="form-label">Rector</label>
+                            <input type="text" id="edit_recto" name="recto" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Séptima fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.recto_tel.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.recto_tel.label }}
-                                </label>
-                                {{ institucionForm.recto_tel }}
-                                {% if institucionForm.recto_tel.errors %}
-                                    <div class="text-danger">{{ institucionForm.recto_tel.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_recto_tel" class="form-label">Teléfono del rector</label>
+                            <input type="text" id="edit_recto_tel" name="recto_tel" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.gene.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.gene.label }}
-                                </label>
-                                {{ institucionForm.gene }}
-                                {% if institucionForm.gene.errors %}
-                                    <div class="text-danger">{{ institucionForm.gene.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_gene" class="form-label">Clasificación de la institución</label>
+                            <select name="gene" id="edit_gene" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="mi">Mixto</option>
+                                <option value="ma">Masculino</option>
+                                <option value="fe">Femenino</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Octava fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.grados.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.grados.label }}
-                                </label>
-                                {{ institucionForm.grados }}
-                                {% if institucionForm.grados.errors %}
-                                    <div class="text-danger">{{ institucionForm.grados.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_grados" class="form-label">Grados</label>
+                            <input type="text" id="edit_grados" name="grados" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.jorna.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.jorna.label }}
-                                </label>
-                                {{ institucionForm.jorna }}
-                                {% if institucionForm.jorna.errors %}
-                                    <div class="text-danger">{{ institucionForm.jorna.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_jorna" class="form-label">Jornada</label>
+                            <input type="text" id="edit_jorna" name="jorna" class="form-control" required>
                         </div>
                     </div>
+
+                    <!-- Novena fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.num_sedes.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.num_sedes.label }}
-                                </label>
-                                {{ institucionForm.num_sedes }}
-                                {% if institucionForm.num_sedes.errors %}
-                                    <div class="text-danger">{{ institucionForm.num_sedes.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_num_sedes" class="form-label">Número de sedes</label>
+                            <input type="number" id="edit_num_sedes" name="num_sedes" class="form-control" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.zona.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.zona.label }}
-                                </label>
-                                {{ institucionForm.zona }}
-                                {% if institucionForm.zona.errors %}
-                                    <div class="text-danger">{{ institucionForm.zona.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_zona" class="form-label">Zona</label>
+                            <select name="zona" id="edit_zona" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="r">Rural</option>
+                                <option value="u">Urbana</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Décima fila -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.cale.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.cale.label }}
-                                </label>
-                                {{ institucionForm.cale }}
-                                {% if institucionForm.cale.errors %}
-                                    <div class="text-danger">{{ institucionForm.cale.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_cale" class="form-label">Calendario</label>
+                            <select name="cale" id="edit_cale" class="form-select" required>
+                                <option value="">Seleccione...</option>
+                                <option value="a">A</option>
+                                <option value="b">B</option>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ institucionForm.dane.id_for_label }}" class="form-label"">
-                                    {{ institucionForm.dane.label }}
-                                </label>
-                                {{ institucionForm.dane }}
-                                {% if institucionForm.dane.errors %}
-                                    <div class="text-danger">{{ institucionForm.dane.errors }}</div>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-6 mb-3">
                         </div>
-                    </div>                    
+                    </div>
+
+                    <div id="formEditarInstitucionErrores" class="alert alert-danger d-none"></div>
+                    
+                    <!-- Botones -->
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
+                        <button type="submit" id="btnEditarInstitucion" class="btn btn-primary">Actualizar</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-<script>
-$(document).ready(function () {
-    $('#instituciones').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: 'http://127.0.0.1:8000/api/data/',
-            type: 'GET',
-        },
-        columns: [
-            { data: 'nom', orderable: true, title: 'Nombre' },
-            { data: 'dire', orderable: true, title: 'Dirección' },
-            { data: 'municipio_nombre', orderable: true, title: 'Municipio' },
-            { data: 'departamento_nombre', orderable: true, title: 'Departamento' },
-            { data: 'secto', orderable: true, title: 'Sector' },
-            { data: 'esta', orderable: true, title: 'Esta' },
-            { data: 'dane', orderable: true, title: 'DANE' },
-            { 
-                data: 'gene', 
-                orderable: true, 
-                title: 'Género',
-                render: function(data, type, row){
-                    if (data == 'mi'){
-                        return 'Mixto';
-                    }else if (data == 'ma'){
-                        return 'Masculino';
-                    }else if (data == 'fe'){
-                        return 'Femenino';
-                    }else {
-                        return 'Desconocido'
-                    }
-                }
-            },
-            {
-                data: 'zona',
-                orderable: true,
-                title: 'Zona',
-                render: function(data, type, row) {
-                    if (data === 'r') {
-                        return 'Rural';
-                    } else if (data === 'u') {
-                        return 'Urbana';
-                    } else {
-                        return 'Desconocido';
-                    }
-                }
-            },
-            {
-                data: 'id',
-                orderable: false,
-                title: 'Acciones',
-                render: function(data, type, row) {
-                    return `
-                        <button class="btn btn-sm btn-warning editar-institucion" data-id="${data}" data-bs-toggle="modal" data-bs-target="#editarInstitucionModal" data-toggle="tooltip" data-placement="top" title="Editar">
-                            {% icon 'edit' %}
-                        </button>
-                    `;
-                }
-            }
-        ],
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
-        },
-    });
-});
 
-$(document).ready(function() {
+<!-- Modal Ver Institución -->
+<div class="modal fade" id="modalVerInstitucion" tabindex="-1" role="dialog" aria-labelledby="modalVerInstitucionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content" id="contenidoInstitucion">
+            Cargando...
+        </div>
+    </div>
+</div>
 
-        var $muni = $('#muni');
-        $muni.empty(); // 🔹 Vacía los municipios al cargar la página
-        $muni.append('<option value="">Seleccione un municipio</option>');
-        $muni.prop('disabled', true); // 🔹 Deshabilita el campo de municipios inicialmente
+<div id="loading">
+    <div class="spinner-border spinner-custom" role="status">
+        <span class="sr-only"></span>
+    </div>
+</div>
+{% endblock %}
 
-        $('#id_depa').change(function() {
-            var departamentoId = $(this).val();
-            $muni.prop('disabled', true);
-            $.ajax({
-                url: "{% url 'api_municipios_form_insti' %}",
-                data: {'departamento_id': departamentoId},
-                dataType: 'json',
-                success: function(data) {
-                    var $muni = $('#muni');
-                    $muni.empty();
-                    $muni.append('<option value="">Seleccione un municipio</option>');
-
-                    if (data.length === 0) {
-                    } else {
-                        $.each(data, function(index, item) {
-                            $muni.append('<option value="' + item.id + '">' + item.nom_munici + '</option>');
-                        });
-                    }
-                    $muni.prop('disabled', false);
-                },
-                error: function(xhr, status, error) {
-                    console.log("Error en la solicitud AJAX:");
-                    console.log("Estado:", status);
-                    console.log("Error:", error);
-                    console.log("Respuesta completa:", xhr.responseText);
-                }
-            });
-        });
-    });
-
-
-    $(document).ready(function() {
-    $("#formCrearInstitucion").submit(function(event) {
-        event.preventDefault(); // Evita que la página se recargue
-
-            var formData = $(this).serialize(); // Serializa los datos del formulario
-
-            console.log("Datos del formulario serializados:", formData); // Depuración: muestra los datos del formulario
-
-            $.ajax({
-                type: "POST",
-                url: $(this).attr("action"),
-                data: formData,
-                success: function(response) {
-                    console.log("Respuesta del servidor:", response); // Depuración: muestra la respuesta del servidor
-                    alert("Institución creada correctamente.");
-                    $("#crearInstitucionModal").modal("hide");
-                    location.reload(); // Recarga la página para actualizar la tabla
-                },
-                error: function(xhr, status, error) {
-                    console.error("Error en la solicitud AJAX:"); // Depuración: muestra el error en la consola
-                    console.error("Estado:", status);
-                    console.error("Error:", error);
-                    console.error("Respuesta del servidor:", xhr.responseText); // Depuración: muestra la respuesta completa del servidor
-
-                    alert("Hubo un error al crear la institución. Revisa la consola para más detalles.");
-                }
-            });
-        });
-    });
-
-    // Evento para capturar clic en botón de edición
-$(document).on('click', '.editar-institucion', function() {
-    var institucionId = $(this).data('id'); // Obtener el ID de la institución
-    var url = `/api/institucion/${institucionId}/`; // URL de la API para obtener los datos
-    var $form = $('#formEditarInstitucion'); 
-
-    // Deshabilitar todos los inputs y selects mientras se cargan los datos
-    $form.find('input, select, button').prop('disabled', true);
-
-    $.ajax({
-        url: url,
-        type: 'GET',
-        success: function(data) {
-            // Llenar los campos del formulario con los datos obtenidos
-            $form.find('input[name="nom"]').val(data.nom);
-            $form.find('input[name="dire"]').val(data.dire);
-            $form.find('select[name="muni"]').val(data.municipio);
-            $form.find('select[name="secto"]').val(data.secto);
-            $form.find('input[name="coordi"]').val(data.coordi);
-            $form.find('input[name="coordi_mail"]').val(data.coordi_mail);
-            $form.find('input[name="coordi_tele"]').val(data.coordi_tele);
-            $form.find('select[name="esta"]').val(data.esta);
-            $form.find('input[name="insti_mail"]').val(data.insti_mail);
-            $form.find('input[name="recto"]').val(data.recto);
-            $form.find('input[name="recto_tel"]').val(data.recto_tel);
-            $form.find('input[name="vigen"]').val(data.vigen);
-            $form.find('select[name="cale"]').val(data.cale);
-            $form.find('input[name="dane"]').val(data.dane);
-            $form.find('select[name="gene"]').val(data.gene);
-            $form.find('input[name="grados"]').val(data.grados);
-            $form.find('input[name="jorna"]').val(data.jorna);
-            $form.find('input[name="num_sedes"]').val(data.num_sedes);
-            $form.find('select[name="zona"]').val(data.zona);
-
-            // Habilitar los campos después de cargar los datos
-            $form.find('input, select, button').prop('disabled', false);
-
-            // Agregar el ID al formulario para enviarlo en el POST
-            $form.attr('action', `/institucion/editar/${institucionId}/`);
-        },
-        error: function(xhr, status, error) {
-            console.error("Error al obtener los datos:", error);
-            // En caso de error, habilitar los campos para permitir otra acción
-            $form.find('input, select, button').prop('disabled', false);
-        }
-    });
-});
-
-
-    </script>
+{% block scripts %}
+<script type ="module" src="{% static 'js/usuarios/institucion.js' %}"></script>
 {% endblock %}

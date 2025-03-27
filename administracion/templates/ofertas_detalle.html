@@ -53,9 +53,13 @@
                     </li>
                 </ul>
                 <div class="mt-4">
+                    {% if usuario_postulado %}
+                    <button class="btn btn-secondary btn-sm w-100" disabled>Postulado</button>
+                    {% else %}
                     <a href="{% url 'postular_oferta' oferta.id %}" class="btn btn-primary btn-sm w-100">
                         Postularme
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

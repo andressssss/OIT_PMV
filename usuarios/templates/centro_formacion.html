@@ -6,7 +6,7 @@
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
     <div class="row">
-        <div class="col-12">
+        <div id="contenedor" class="col-12 fade-transition">
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de centros de formación</h1>
                 <div>
@@ -19,28 +19,13 @@
                 <table id="centrosformacion_table" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
-                        <th></th>
                         <th>Nombre</th>
                         <th>Codigo</th>
                         <th>Departamento</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for centroformacion in centrosformacion %}
-                    <tr data-id="{{ centroformacion.id }}">
-                        <td>
-                        <a href="{% url 'detalle_centrosformacion' centroformacion.id  %}" class="btn btn-primary btn-sm mb-1" data-toggle="tooltip" data-placement="top" title="Editar">
-                            {% icon 'edit' %}
-                        </a>
-                        <a href="{% url 'eliminar_centrosformacion' centroformacion.id  %}" class="btn btn-danger btn-sm" data-toggle="tooltip" data-placement="top" title="Eliminar">
-                            {% icon 'delete' %}
-                        </a>
-                        </td>
-                        <td>{{ centroformacion.nom  }}</td>
-                        <td>{{ centroformacion.cod }}</td>
-                        <td>{{ centroformacion.depa }}</td>
-                    </tr>
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -49,7 +34,7 @@
     </section>
 </main>
 
-<!-- Modal para agregar documento laboral-->
+<!-- Modal para crear centro de formacion-->
 <div class="modal fade" id="crearCentroModal" tabindex="-1" aria-labelledby="crearCentroModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -57,18 +42,59 @@
                 <h5 class="modal-title" id="crearCentroModalLabel">Crear Centro de Formacion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form action="/centroformacion/crear/" method="POST">
-                    {{error}}
-                    {% csrf_token %}
-                    {{ centroformacionForm.as_p }}
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Crear centro de formación</button>
+            <form id="formCrearCentro">
+                <div class="modal-body">
+                        {% csrf_token %}
+                        {{ centroformacionForm.as_p }}
+                    <div id="errorCrearCentro" class="text-danger mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="btnCrearCentro" class="btn btn-primary">Crear centro de Formación</button>
+                </div>
             </form>
-            </div>
         </div>
     </div>
 </div>
 
+<!-- Modal para editar centro de formacion-->
+<div class="modal fade" id="editarCentroModal" tabindex="-1" aria-labelledby="editarCentroModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formEditarCentro" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editarCentroModalLabel">Editar Centro de Formación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                        {% csrf_token %}
+                        <div style="margin-bottom: 1rem;">
+                            <label for="{{ centroformacionForm.nom.id_for_label }}">{{ centroformacionForm.nom.label }}</label>
+                            {{ centroformacionForm.nom }}
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label for="{{ centroformacionForm.depa.id_for_label }}">{{ centroformacionForm.depa.label }}</label>
+                            {{ centroformacionForm.depa }}
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label for="{{ centroformacionForm.cod.id_for_label }}">{{ centroformacionForm.cod.label }}</label>
+                            {{ centroformacionForm.cod }}
+                        </div>
+                </div>
+                <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div id="loading">
+    <div class="spinner-border spinner-custom" role="status">
+        <span class="sr-only"></span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{% static 'js/usuarios/centro_formacion.js' %}"></script>
 {% endblock %}
