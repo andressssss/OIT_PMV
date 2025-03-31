@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función para llenar departamentos desde la API
     function cargarDepartamentos() {
-        fetch('/api/departamentosFormInsti/')
+        fetch('/api/departamentos/')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restablecer Contraseña</title>
+    <script>
+        async function cambiarContrasena(event) {
+            event.preventDefault(); // Evita la recarga de la página
+
+            const userId = document.getElementById("user_id").value;
+            const nuevaContrasena = document.getElementById("nueva_contrasena").value;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            if (!userId || !nuevaContrasena) {
+                alert("Todos los campos son obligatorios.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/restablecer_contrasena/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        nueva_contrasena: nuevaContrasena
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Error desconocido');
+
+                alert(data.message);
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h2>Restablecer Contraseña</h2>
+    <form onsubmit="cambiarContrasena(event)">
+        {% csrf_token %}
+        <label for="user_id">ID del Usuario:</label>
+        <input type="number" id="user_id" name="user_id" required>
+        <br><br>
+
+        <label for="nueva_contrasena">Nueva Contraseña:</label>
+        <input type="password" id="nueva_contrasena" name="nueva_contrasena" required>
+        <br><br>
+
+        <button type="submit">Restablecer Contraseña</button>
+    </form>
+</body>
+</html>

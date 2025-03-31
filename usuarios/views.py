@@ -32,6 +32,7 @@ from django.db.models.functions import Lower
 import csv
 import random
 import string
+import json
 
 def home(request):
     return render(request, 'home.html')
@@ -575,70 +576,6 @@ def cuentas_detalle(request, cuentas_id):
             'perfil_form': perfil_form,
         })
 
-### REP. LEGAL ###
-
-@login_required
-def representante_legal(request):
-    representantes_legales = T_repre_legal.objects.all()
-    return render(request, 'representantesLegales.html', {
-        'representantesLegales': representantes_legales
-    })
-
-@login_required  # Funcion para crear Representante legal
-def crear_representante_legal(request):
-    if request.method == 'GET':
-
-        replegal_form = RepresanteLegalForm()
-        return render(request, 'representanteLegal_crear.html', {
-            'replegal_form': replegal_form
-        })
-    else:
-        try:
-            replegal_form = RepresanteLegalForm(request.POST)
-            if replegal_form.is_valid():
-                new_represanteLegal = replegal_form.save(commit=False)
-                new_represanteLegal.save()
-                return redirect('represantesLegales')
-        except ValueError as e:
-            return render(request, 'representanteLegal_crear.html', {
-                'replegal_form': replegal_form,
-                'error': f'Ocurrió un error: {str(e)}'
-            })
-
-@login_required  # Funcion para Actualizar Representante legal
-def detalle_representante_legal(request, repreLegal_id):
-    representante_legal = get_object_or_404(T_repre_legal, id=repreLegal_id)
-
-    if request.method == 'GET':
-
-        replegal_form = RepresanteLegalForm(instance=representante_legal)
-        return render(request, 'representanteLegal_detalle.html', {
-            'represante_legal': representante_legal,
-            'replegal_form': replegal_form
-        })
-    else:
-        try:
-            replegal_form = RepresanteLegalForm(
-                request.POST, instance=representante_legal)
-            if replegal_form.is_valid():
-                replegal_form.save()
-                return redirect('represantesLegales')
-        except ValueError:
-            return render(request, 'representanteLegal_detalle.html', {
-                'replegal_form': replegal_form,
-                'error': 'Error al actualizar el administrador. Verifique los datos'
-            })
-
-@login_required  # Funcion para eliminar  Representante legal
-def eliminar_representante_legal(request, repreLegal_id):
-    representante_legal = get_object_or_404(T_repre_legal, id=repreLegal_id)
-    if request.method == 'POST':
-        representante_legal.delete()
-        return redirect('represantesLegales')
-    return render(request, 'confirmar_eliminacion_represante_legal.html', {
-        'represante_legal': representante_legal,
-    })
-
 ### APRENDICES ###
 
 @login_required
@@ -894,104 +831,124 @@ def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
 @login_required
 def lideres(request):
     lideres = T_lider.objects.select_related('perfil__user').all()
+    perfil_form = PerfilForm()
     return render(request, 'lideres.html', {
-        'lideres': lideres
+        'lideres': lideres,
+        'perfil_form': perfil_form,
     })
 
 @login_required  # Funcion para crear lider
-def crear_lideres(request):
+def crear_lider(request):
+    if request.method == 'POST':
+        perfil_form = PerfilForm(request.POST)
 
-    if request.method == 'GET':
-        user_form = UserFormCreate()
-        perfil_form = PerfilForm()
-        lider_form = LiderForm()
-        return render(request, 'lider_crear.html', {
-            'user_form': user_form,
-            'perfil_form': perfil_form,
-            'lider_form': lider_form
-        })
-    else:
-        try:
-            # Si se envía el formulario con los datos modificados
-            user_form = UserFormCreate(request.POST)
-            perfil_form = PerfilForm(request.POST)
-            lider_form = LiderForm(request.POST)
-            if user_form.is_valid() and perfil_form.is_valid() and lider_form.is_valid():
-                new_user = user_form.save(commit=False)
-                new_user.set_password(user_form.cleaned_data['password'])
-                new_user.save()
-                new_perfil = perfil_form.save(commit=False)
-                new_perfil.user = new_user
-                new_perfil.rol = 'lider'
-                new_perfil.save()
-                new_lider = lider_form.save(commit=False)
-                new_lider.perfil = new_perfil
-                new_lider.save()
-                return redirect('lideres')
-            else:
-                # Manejo de formularios inválidos
-                return render(request, 'lider_crear.html', {
-                    'user_form': user_form,
-                    'perfil_form': perfil_form,
-                    'lider_form':  lider_form,
-                    'error': "Datos inválidos en el formulario. Corrige los errores."
-                })
-        except ValueError:
-            # Si ocurre un error al guardar, mostrar el formulario nuevamente con el mensaje de error
-            return render(request, 'lider_crear.html', {
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'lider_form': lider_form,
-                'error': "Se presenta un error al crear el lider"})
+        if perfil_form.is_valid():
+            dni = perfil_form.cleaned_data.get('dni')
+            email = perfil_form.cleaned_data.get('mail')
+            if T_perfil.objects.filter(dni__iexact = dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
+            
+            if T_perfil.objects.filter(mail__iexact = email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
+        
+            nombre = perfil_form.cleaned_data['nom']
+            apellido = perfil_form.cleaned_data['apelli']
+            base_username = (nombre[:3] + apellido[:3]).lower()
+            username = base_username
+            i = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{i}"
+                i += 1
+
+            contraseña = generar_contraseña()
+
+            new_user = User.objects.create_user(
+                username=username,
+                password=contraseña,
+                email=perfil_form.cleaned_data['mail']
+            )
+
+            new_perfil = perfil_form.save(commit=False)
+            new_perfil.user = new_user
+            new_perfil.rol = 'lider'
+            new_perfil.mail = new_user.email
+            new_perfil.save()
+                    
+            new_lider = T_lider.objects.create(
+                area = "Equipo Nacional",
+                esta = "Activo",
+                perfil = new_perfil
+            )
+            return JsonResponse({'status': 'success', 'message': 'Lider creado con exito.'})
+        else:
+            errores_dict = {perfil_form.errors.get_json_data()}
+            errores_custom = []
+
+            for field, errors_list in errores_dict.items():
+                # Obtiene el label personalizado del campo
+                nombre_campo = perfil_form.fields[field].label or field.capitalize()
+                
+                for err in errors_list:
+                    mensaje = f"{nombre_campo}: {err['message']}"
+                    errores_custom.append(mensaje)
+
+            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 
 @login_required  # Funcion para actualizar informacion de lider
-def detalle_lideres(request, lider_id):
-    lider = get_object_or_404(T_lider, id=lider_id)
-    perfil = lider.perfil
-    user = perfil.user
+def obtener_lider(request, lider_id):
+    lider = T_lider.objects.filter(id=lider_id).first()
 
-    if request.method == 'GET':
-        user_form = UserFormEdit(instance=user)
-        perfil_form = PerfilForm(instance=perfil)
-        lider_form = LiderForm(instance=lider)
-        return render(request, 'lider_detalle.html', {
-            'lider': lider,
-            'user_form': user_form,
-            'perfil_form': perfil_form,
-            'lider_form': lider_form
-        })
-    else:
-        try:
-            # Si se envía el formulario con los datos modificados
-            user_form = UserFormEdit(request.POST, instance=user)
-            perfil_form = PerfilForm(request.POST, instance=perfil)
-            lider_form = LiderForm(request.POST, instance=lider)
-            if user_form.is_valid() and perfil_form.is_valid() and lider_form.is_valid():
-
-                user_form.save()
-                perfil_form.save()
-                lider_form.save()
-                return redirect('lideres')
-
-        except ValueError:
-            # Si ocurre un error al guardar, mostrar el formulario nuevamente con el mensaje de error
-            return render(request, 'lider_detalle.html', {
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'lider_form': lider_form,
-                'error': "Error al actualizar el lider. Verifique los datos."})
-
+    if lider:
+        data = {
+            'lider-nom': lider.perfil.nom,
+            'lider-apelli': lider.perfil.apelli,
+            'lider-tipo_dni': lider.perfil.tipo_dni,
+            'lider-dni': lider.perfil.dni,
+            'lider-tele': lider.perfil.tele,
+            'lider-dire': lider.perfil.dire,
+            'lider-mail': lider.perfil.mail,
+            'lider-gene': lider.perfil.gene,
+            'lider-fecha_naci': lider.perfil.fecha_naci,
+        }
+        return JsonResponse (data)
+    return JsonResponse({'status': 'error', 'message': 'Lider no encontrado'}, status=404)
 
 @login_required
-def eliminar_lideres(request, lider_id):  # Funcion para eliminar informacion de lider
+def editar_lider(request, lider_id):
+    lider = get_object_or_404(T_lider, pk=lider_id)
+    perfil = get_object_or_404(T_perfil, pk = lider.perfil.id)
+
+    if request.method == 'POST':
+        form_perfil = PerfilForm(request.POST, instance=perfil)
+
+        if form_perfil.is_valid():
+            form_perfil.save()
+            return JsonResponse({'status': 'success', 'message': 'Lider actualizado con exito.'})
+        else:
+            errors = {
+                'perfil': form_perfil.errors,
+            }
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el lider', 'errors': errors}, status = 400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status = 405)
+
+@login_required
+def eliminar_lider(request, lider_id):
     lider = get_object_or_404(T_lider, id=lider_id)
     if request.method == 'POST':
+        perfil = lider.perfil
+        usuario = perfil.user
+        
         lider.delete()
-        return redirect('lideres')
-    return render(request, 'confirmar_eliminacion_lider.html', {
-        'lider': lider
-    })
+        perfil.delete()
+        usuario.delete()
+
+        return JsonResponse({'status': 'success', 'message': 'Lider eliminado correctamente.'}, status=200)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
 
 ### ADMINISTRADOR ###
 
@@ -999,133 +956,137 @@ def eliminar_lideres(request, lider_id):  # Funcion para eliminar informacion de
 @login_required
 def administradores(request):
     administradores = T_admin.objects.select_related('perfil__user').all()
+    perfil_form = PerfilForm()
+    admin_form = AdministradoresForm()
     return render(request, 'administradores.html', {
-        'administradores': administradores
+        'administradores': administradores,
+        'perfil_form': perfil_form,
+        'admin_form': admin_form
     })
 
-
 @login_required
-def crear_administradores(request):  # funcion para crear administradores
-
-    if request.method == 'GET':
-        user_form = UserFormCreate()
-        perfil_form = PerfilForm()
-        admin_form = AdministradoresForm()
-
-        return render(request, 'administradores_crear.html', {
-            'admin_form': admin_form,
-            'perfil_form': perfil_form,
-            'user_form':  user_form
-        })
-    else:
-        try:
-            # Si se envía el formulario con los datos modificados
-            user_form = UserFormCreate(request.POST)
-            perfil_form = PerfilForm(request.POST)
-            admin_form = AdministradoresForm(request.POST)
-            if user_form.is_valid() and perfil_form.is_valid() and admin_form.is_valid():
-                new_user = user_form.save(commit=False)
-                new_user.set_password(user_form.cleaned_data['password'])
-                new_user.save()
-                new_perfil = perfil_form.save(commit=False)
-                new_perfil.user = new_user
-                new_perfil.rol = 'admin'
-                new_perfil.save()
-                new_admin = admin_form.save(commit=False)
-                new_admin.perfil = new_perfil
-                new_admin.save()
-                return redirect('administradores')
-            else:
-                # Manejo de formularios inválidos
-                return render(request, 'administradores_crear.html', {
-                    'user_form': user_form,
-                    'perfil_form': perfil_form,
-                    'admin_form': admin_form,
-                    'error': "Datos inválidos en el formulario. Corrige los errores."
-                })
-        except ValueError:
-            # Si ocurre un error al guardar, mostrar el formulario nuevamente con el mensaje de error
-            return render(request, 'administradores_crear.html', {
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'admin_form': admin_form,
-                'error': "Error al actualizar el administrador. Verifique los datos."})
-
-
-@login_required
-# funcion para actualizar informacion de los administradores
-def detalle_administradores(request, admin_id):
-    administrador = get_object_or_404(T_admin, id=admin_id)
-    perfil = administrador.perfil
-    user = perfil.user
-
-    if request.method == 'GET':
-        user_form = UserFormEdit(instance=user)
-        perfil_form = PerfilForm(instance=perfil)
-        admin_form = AdministradoresForm(instance=administrador)
-
-        return render(request, 'administradores_detalle.html', {
-            'administrador': administrador,
-            'admin_form': admin_form,
-            'perfil_form': perfil_form,
-            'user_form':  user_form
-        })
-    else:
-        try:
-            # Si se envía el formulario con los datos modificados
-            user_form = UserFormEdit(request.POST, instance=user)
-            perfil_form = PerfilForm(request.POST, instance=perfil)
-            admin_form = AdministradoresForm(
-                request.POST, instance=administrador)
-            if user_form.is_valid() and perfil_form.is_valid() and admin_form.is_valid():
-                user_form.save()
-                perfil_form.save()
-                admin_form.save()
-
-                # Redirigir a la lista de administradores (ajusta según sea necesario)
-                return redirect('administradores')
-        except ValueError:
-            # Si ocurre un error al guardar, mostrar el formulario nuevamente con el mensaje de error
-            return render(request, 'administradores_detalle.html', {
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'admin_form': admin_form,
-                'error': "Error al actualizar el administrador. Verifique los datos."})
-
-
-@login_required
-def eliminar_admin(request, admin_id):  # Funcion para eliminar informacion del admin
-    admin = get_object_or_404(T_admin, pk=admin_id)
+def crear_administrador(request):
     if request.method == 'POST':
-        admin.delete()
-        return redirect('administradores')
-    return render(request, 'confirmar_eliminacion_administradores.html', {'admin': admin})
+        perfil_form = PerfilForm(request.POST)
+        admin_form = AdministradoresForm(request.POST)
+
+        if perfil_form.is_valid() and admin_form.is_valid():
+            dni = perfil_form.cleaned_data.get('dni')
+            email = perfil_form.cleaned_data.get('mail')
+            if T_perfil.objects.filter(dni__iexact = dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
+            
+            if T_perfil.objects.filter(mail__iexact = email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
+        
+            nombre = perfil_form.cleaned_data['nom']
+            apellido = perfil_form.cleaned_data['apelli']
+            base_username = (nombre[:3] + apellido[:3]).lower()
+            username = base_username
+            i = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{i}"
+                i += 1
+
+            contraseña = generar_contraseña()
+
+            new_user = User.objects.create_user(
+                username=username,
+                password=contraseña,
+                email=perfil_form.cleaned_data['mail']
+            )
+
+            new_perfil = perfil_form.save(commit=False)
+            new_perfil.user = new_user
+            new_perfil.rol = 'admin'
+            new_perfil.mail = new_user.email
+            new_perfil.save()
+            
+            perfil = getattr(request.user, 't_perfil', None)
+        
+            new_admin = admin_form.save(commit=False)
+            new_admin.perfil = new_perfil
+            new_admin.esta = "Activo"
+            new_admin.save()
+            return JsonResponse({'status': 'success', 'message': 'Administrador creado con exito.'})
+        else:
+            errores_dict = {**perfil_form.errors.get_json_data(), **admin_form.errors.get_json_data()}
+            errores_custom = []
+
+            for field, errors_list in errores_dict.items():
+                nombre_campo = (perfil_form.fields.get(field) or admin_form.fields.get(field)).label or field.capitalize()
+                
+                for err in errors_list:
+                    mensaje = f"{nombre_campo}: {err['message']}"
+                    errores_custom.append(mensaje)
+
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Errores en el formulario',
+                'errors': '<br>'.join(errores_custom)
+            }, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 
 @login_required
-def administrador_detalle_tabla(request, admin_id):
-    try:
-        administrador = get_object_or_404(T_admin, id=admin_id)
-        administrador_data = model_to_dict(administrador)
+def obtener_administrador(request, admin_id):
+    administrador = T_admin.objects.filter(id=admin_id).first()
 
-        # Incluimos datos relacionados del perfil
-        if hasattr(administrador, 'perfil'):
-            administrador_data = model_to_dict(administrador.perfil)
+    if administrador:
+        data = {
+            'admin-nom': administrador.perfil.nom,
+            'admin-apelli': administrador.perfil.apelli,
+            'admin-tipo_dni': administrador.perfil.tipo_dni,
+            'admin-dni': administrador.perfil.dni,
+            'admin-tele': administrador.perfil.tele,
+            'admin-dire': administrador.perfil.dire,
+            'admin-mail': administrador.perfil.mail,
+            'admin-gene': administrador.perfil.gene,
+            'admin-fecha_naci': administrador.perfil.fecha_naci,
+            'admin-area': administrador.area
+        }
+        return JsonResponse (data)
+    return JsonResponse({'status': 'error', 'message': 'Admin no encontrado'}, status=404)
 
-            # Si el perfil tiene una relación con Usuario, la agregamos
-            if hasattr(administrador.perfil, 'user'):
-                administrador_data['user'] = {
-                    'username': administrador.perfil.user.username,
-                    'email': administrador.perfil.user.email,
-                    'first_name': administrador.perfil.user.first_name,
-                    'last_name': administrador.perfil.user.last_name,
-                }
+@login_required
+def eliminar_administrador(request, admin_id):
+    admin = get_object_or_404(T_admin, pk=admin_id)
 
-        administrador_data['perfil'] = administrador_data
+    if request.method == 'POST':
+        perfil = admin.perfil
+        usuario = perfil.user
 
-        return JsonResponse({'info_adicional': administrador_data})
-    except T_instru.DoesNotExist:
-        return JsonResponse({'error': 'Registro no encontrado'}, status=404)
+        admin.delete()
+        perfil.delete()
+        usuario.delete()
+
+        return JsonResponse({'status': 'success', 'message': 'Administrador eliminado correctamente.'}, status=200)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+
+
+@login_required
+def editar_administrador(request, admin_id):
+    administrador = get_object_or_404(T_admin, pk=admin_id)
+    perfil = get_object_or_404(T_perfil, pk = administrador.perfil.id)
+
+    if request.method == 'POST':
+        form_perfil = PerfilForm(request.POST, instance=perfil)
+        form_administrador  = AdministradoresForm(request.POST, instance = administrador)
+
+        if form_perfil.is_valid() and form_administrador.is_valid():
+            form_perfil.save()
+            form_administrador.save()
+            return JsonResponse({'status': 'success', 'message': 'Administrador actualizado con exito.'})
+        else:
+            errors = {
+                'perfil': form_perfil.errors,
+                'admin': form_administrador.errors
+            }
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el aprendiz', 'errors': errors}, status = 400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status = 405)
 
 ### NOVEDADES ###
 
@@ -1871,164 +1832,155 @@ def obtener_zona_filtro_insti(request):
 
 @login_required
 def gestores(request):
-    # Obtén todos los gestores junto con sus departamentos asociados
+    perfil_form = PerfilForm()
     gestores = T_gestor.objects.prefetch_related(
         Prefetch(
-            't_gestor_depa_set',  # Nombre del related_name entre gestor y gestor-depa
+            't_gestor_depa_set', 
             queryset=T_gestor_depa.objects.select_related('depa')
         )
     )
 
-    # Añade un atributo personalizado para concatenar los departamentos
     for gestor in gestores:
         gestor.departamentos = ', '.join(
             [depa.depa.nom_departa for depa in gestor.t_gestor_depa_set.all()]
         )
 
     return render(request, 'gestores.html', {
-        'gestores': gestores
+        'gestores': gestores,
+        'perfil_form': perfil_form
     })
 
 @login_required
 def crear_gestor(request):
-    if request.method == 'GET':
-        perfil_form = PerfilForm()
-        gestor_depa_form = GestorDepaForm()
+    if request.method == 'POST':
+        perfil_form = PerfilForm(request.POST)
+        departamentos = request.POST.getlist('departamentos[]')
+        print(departamentos)
+        if perfil_form.is_valid():
+            dni = perfil_form.cleaned_data.get('dni')
+            email = perfil_form.cleaned_data.get('mail')
+            if T_perfil.objects.filter(dni__iexact = dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
+            
+            if T_perfil.objects.filter(mail__iexact = email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
+        
+            if len(departamentos) == 0:
+                return JsonResponse({'status': 'error', 'message': 'Debe seleccionar un departamento'}, status = 400)
 
-        return render(request, 'gestor_crear.html', {
-            'perfil_form': perfil_form,
-            'gestor_depa_form': gestor_depa_form
-        })
-    else:
-        try:
-            perfil_form = PerfilForm(request.POST)
-            gestor_depa_form = GestorDepaForm(request.POST)
+            nombre = perfil_form.cleaned_data['nom']
+            apellido = perfil_form.cleaned_data['apelli']
+            base_username = (nombre[:3] + apellido[:3]).lower()
+            username = base_username
+            i = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{i}"
+                i += 1
 
-            if perfil_form.is_valid() and gestor_depa_form.is_valid():
-                # Obtener datos del perfil
-                new_perfil = perfil_form.save(commit=False)
+            contraseña = generar_contraseña()
 
-                # Verificar si ya existe un gestor con la misma cédula
-                if T_perfil.objects.filter(dni=new_perfil.dni, rol="gestor").exists():
-                    messages.error(
-                    request,
-                    "Ya existe un gestor con esta cédula"
-                    )
-                    return render(request, 'gestor_crear.html', {
-                        'perfil_form': perfil_form,
-                        'gestor_depa_form': gestor_depa_form,
-                        'error': 'Ya existe un gestor con esta cédula.'
-                    })
+            # Crear el usuario con los datos generados
+            new_user = User.objects.create_user(username=username, password=contraseña, email=perfil_form.cleaned_data['mail'])
 
-                # Generar username automáticamente
-                username_base = new_perfil.nom.lower().replace(" ", "")  # Eliminar espacios
-                username = f"{username_base}g"
+            # Asignar usuario al perfil y guardarlo
+            new_perfil = perfil_form.save(commit=False)
+            new_perfil.user = new_user
+            new_perfil.rol = 'gestor'
+            new_perfil.mail = new_user.email
+            new_perfil.save()
 
-                # Asegurar que el username sea único
-                count = 1
-                while User.objects.filter(username=username).exists():
-                    username = f"{username_base}g{count}"
-                    count += 1
+            # Crear el gestor
+            new_gestor = T_gestor.objects.create(
+                perfil = new_perfil,
+                esta = "Activo"
+            )
 
-                # Generar una contraseña aleatoria
-                password = generar_contraseña()
-
-                # Crear el usuario con los datos generados
-                new_user = User.objects.create_user(username=username, password=password, email=new_perfil.mail)
-
-                # Asignar usuario al perfil y guardarlo
-                new_perfil.user = new_user
-                new_perfil.rol = 'gestor'
-                new_perfil.save()
-
-                # Crear el gestor
-                new_gestor = T_gestor(perfil=new_perfil, esta='asignado')
-                new_gestor.save()
-
-                # Crear relación con departamentos
-                departamentos = gestor_depa_form.cleaned_data['departamentos']
-                for departamento in departamentos:
-                    departai = T_departa.objects.get(nom_departa=departamento)
-                    new_gestor_depa = T_gestor_depa(
-                        gestor=new_gestor,
-                        depa=departai,
-                        fecha_crea=datetime.now(),
-                        usuario_crea=request.user
-                    )
-                    new_gestor_depa.save()
-
-                # Enviar correo de bienvenida
-                asunto = "Credenciales de acceso"
-                mensaje = (
-                    f"Hola {new_perfil.nom},\n\n"
-                    f"Su cuenta ha sido creada exitosamente.\n"
-                    f"Usuario: {username}\n"
-                    f"Contraseña: {password}\n\n"
-                    f"Por favor cambie su contraseña después de iniciar sesión."
+            for departamento in departamentos:
+                departamento_obj = T_departa.objects.get(id=departamento)
+                new_gestor_depa = T_gestor_depa(
+                    gestor=new_gestor,
+                    depa=departamento_obj,
+                    fecha_crea=datetime.now(),
+                    usuario_crea=request.user
                 )
-                send_mail(
-                    asunto,
-                    mensaje,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [new_perfil.mail],
-                    fail_silently=False,
-                )
+                new_gestor_depa.save()
 
-                return redirect('gestores')
+            # # Enviar correo de bienvenida
+            # asunto = "Credenciales de acceso"
+            # mensaje = (
+            #     f"Hola {new_perfil.nom},\n\n"
+            #     f"Su cuenta ha sido creada exitosamente.\n"
+            #     f"Usuario: {username}\n"
+            #     f"Contraseña: {password}\n\n"
+            #     f"Por favor cambie su contraseña después de iniciar sesión."
+            # )
+            # send_mail(
+            #     asunto,
+            #     mensaje,
+            #     settings.DEFAULT_FROM_EMAIL,
+            #     [new_perfil.mail],
+            #     fail_silently=False,
+            # )
 
-            else:
-                return render(request, 'gestor_crear.html', {
-                    'perfil_form': perfil_form,
-                    'gestor_depa_form': gestor_depa_form,
-                    'error': 'Por favor corrige los errores en el formulario.'
-                })
+            return JsonResponse({'status': 'success', 'message': 'Gestor creado con exito.'})
+        else:
+            errores_dict = perfil_form.errors.get_json_data()
+            errores_custom = []
 
-        except ValueError as e:
-            return render(request, 'gestor_crear.html', {
-                'perfil_form': perfil_form,
-                'gestor_depa_form': gestor_depa_form,
-                'error': f'Error: {str(e)}'
-            })
+            for field, errors_list in errores_dict.items():
+                nombre_campo = perfil_form.fields[field].label or field.capitalize()
+                
+                for err in errors_list:
+                    mensaje = f"{nombre_campo}: {err['message']}"
+                    errores_custom.append(mensaje)
+
+            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+@login_required 
+def obtener_gestor(request, gestor_id):
+    gestor = T_gestor.objects.filter(id=gestor_id).first()
+
+    if gestor:
+        departamentos = list(T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__id', 'depa__nom_departa'))
+
+        data = {
+            'gestor-nom': gestor.perfil.nom,
+            'gestor-apelli': gestor.perfil.apelli,
+            'gestor-tipo_dni': gestor.perfil.tipo_dni,
+            'gestor-dni': gestor.perfil.dni,
+            'gestor-tele': gestor.perfil.tele,
+            'gestor-dire': gestor.perfil.dire,
+            'gestor-mail': gestor.perfil.mail,
+            'gestor-gene': gestor.perfil.gene,
+            'gestor-fecha_naci': gestor.perfil.fecha_naci,
+            'departamentos': [{'id': dep[0], 'nom_departa': dep[1]} for dep in departamentos]
+        }
+        return JsonResponse(data)
+
+    return JsonResponse({'status': 'error', 'message': 'Gestor no encontrado'}, status=404)
+
 
 @login_required
-def gestor_detalle(request, gestor_id):
+def editar_gestor(request, gestor_id):
     gestor = get_object_or_404(T_gestor, pk=gestor_id)
-    perfil = gestor.perfil
-    user = perfil.user
+    perfil = get_object_or_404(T_perfil, pk = gestor.perfil.id)
 
-    if request.method == 'GET':
-        perfil_form = PerfilEditForm(instance=perfil)
+    if request.method == 'POST':
+        form_perfil = PerfilForm(request.POST, instance=perfil)
 
-        # Seleccionar los departamentos asociados al gestor
-        departamentos_asignados = T_gestor_depa.objects.filter(gestor=gestor).values_list('depa', flat=True)
-        gestor_depa_form = GestorDepaForm(
-            initial={'departamentos': departamentos_asignados}
-        )
-
-        return render(request, 'gestor_detalle.html', {
-            'gestor': gestor,
-            'perfil_form': perfil_form,
-            'gestor_depa_form': gestor_depa_form
-        })
-    elif request.method == 'POST':
-        perfil_form = PerfilEditForm(request.POST, instance=perfil)
-        gestor_depa_form = GestorDepaForm(request.POST)
-
-        if perfil_form.is_valid() and gestor_depa_form.is_valid():
-
-            # Actualizar departamentos asociados
-            nuevos_departamentos = set(
-                gestor_depa_form.cleaned_data['departamentos'].values_list('id', flat=True)
-            )
+        if form_perfil.is_valid():
+            nuevos_departamentos = set(request.POST.getlist('departamentos'))
+            if len(nuevos_departamentos) == 0:
+                return JsonResponse({'status': 'error', 'message': 'El gestor debe tener almenos un departamento asociado.'}, status = 400)
             actuales_departamentos = set(
                 T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__id', flat=True)
             )
 
             # Identificar departamentos que se intentan eliminar
             departamentos_a_eliminar = actuales_departamentos - nuevos_departamentos
-            print(nuevos_departamentos)
-            print(actuales_departamentos)
-            print(departamentos_a_eliminar)
+
             # verificar si alguno de los deparatmentos a eliminar tiene instituciones asignadas
             departamentos_con_instituciones = T_gestor_insti_edu.objects.filter(
                 gestor = gestor,
@@ -2036,19 +1988,8 @@ def gestor_detalle(request, gestor_id):
             ).exists()
 
             if departamentos_con_instituciones:
-                messages.error(
-                    request,
-                    "No se puede actualizar. Uno o mas departamentos que intenta eliminar tiene instituciones asiganadas"
-                )
-                return render(request, 'gestor_detalle.html', {
-                    'gestor': gestor,
-                    'perfil_form': perfil_form,
-                    'gestor_depa_form': gestor_depa_form,
-                })
+                return JsonResponse({'status': 'error', 'message': 'No se puede actualizar. Uno o más departamentos tienen instituciones asignadas.'}, status=400)
 
-            # Si no hay problemas, guarda el perfin
-            perfil_form.save()
-            
             T_gestor_depa.objects.filter(gestor=gestor).delete()  # Elimina los existentes
             for depa in nuevos_departamentos:
                 departamento = T_departa.objects.get(id=depa)
@@ -2059,47 +2000,39 @@ def gestor_detalle(request, gestor_id):
                     usuario_crea = request.user
                 )
 
-            return redirect('gestores')
+            form_perfil.save()
 
-        return render(request, 'gestor_detalle.html', {
-            'gestor': gestor,
-            'perfil_form': perfil_form,
-            'gestor_depa_form': gestor_depa_form,
-        })
+            return JsonResponse({'status': 'success', 'message': 'Gestor actualizado correctamente '}, status = 200)
+        else:
+            errors = {
+                'perfil': form_perfil.errors,
+            }
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el lider', 'errors': errors}, status = 400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status = 405)
 
-# @login_required
-# def instructor_detalle(request, instructor_id):
-#     instructor = get_object_or_404(T_instru, pk=instructor_id)
-#     perfil = instructor.perfil
-#     user = perfil.user
+def reset_password_view(request):
+    return render(request, 'res_con.html')
 
-#     if request.method == 'GET':
-#         user_form = UserFormEdit(instance=user)
-#         perfil_form = PerfilForm(instance=perfil)
-#         instructor_form = InstructorForm(instance=instructor)
-#         return render(request, 'instructor_detalle.html', {
-#             'instructor': instructor,
-#             'user_form': user_form,
-#             'perfil_form': perfil_form,
-#             'instructor_form': instructor_form
-#         })
-#     else:
-#         try:
-#             # Si se envía el formulario con los datos modificados
-#             user_form = UserFormEdit(request.POST, instance=user)
-#             perfil_form = PerfilForm(request.POST, instance=perfil)
-#             instructor_form = InstructorForm(request.POST, instance=instructor)
-#             if user_form.is_valid() and perfil_form.is_valid() and instructor_form.is_valid():
-#                 user_form.save()
-#                 perfil_form.save()
-#                 instructor_form.save()
-#                 # Redirigir a la lista de instructores (ajusta según sea necesario)
-#                 return redirect('instructores')
-#         except ValueError:
-#             # Si ocurre un error al guardar, mostrar el formulario nuevamente con el mensaje de error
-#             return render(request, 'instructor_detalle.html', {
-#                 'instructor': instructor,
-#                 'user_form': user_form,
-#                 'perfil_form': perfil_form,
-#                 'instructor_form': instructor_form,
-#                 'error': "Error al actualizar el instructor. Verifique los datos."})
+def restablecer_contrasena(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+            nueva_contrasena = data.get('nueva_contrasena')
+
+            if not user_id or not nueva_contrasena:
+                return JsonResponse({'status': 'error', 'message': 'Faltan datos'}, status=400)
+
+            usuario = User.objects.filter(id=user_id).first()
+            if not usuario:
+                return JsonResponse({'status': 'error', 'message': 'Usuario no encontrado'}, status=404)
+
+            usuario.set_password(nueva_contrasena)
+            usuario.save()
+
+            return JsonResponse({'status': 'success', 'message': 'Contraseña restablecida correctamente'})
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Datos inválidos'}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)

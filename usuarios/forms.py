@@ -70,7 +70,7 @@ class DocumentoLaboralForm(forms.ModelForm):
 class PerfilForm(forms.ModelForm):
     class Meta:
         model = T_perfil
-        exclude = ['user', 'rol']  # Excluir los campos que no serán editables directamente
+        exclude = ['user', 'rol']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),
             'apelli': forms.TextInput(attrs={'class': 'form-control'}),
@@ -230,15 +230,13 @@ class NovedadForm(forms.ModelForm):
 class AdministradoresForm(forms.ModelForm):
     class Meta:
         model = T_admin
-        exclude = ['perfil']
-        field = ['area', 'esta']
+        exclude = ['perfil', 'esta']
+        field = ['area']
         widgets = {
-            'area': forms.TextInput(attrs={'class': 'form-control'}),
-            'esta': forms.TextInput(attrs={'class': 'form-control'})
+            'area': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'area': 'Area',
-            'esta':  'Estado'
         }
 
 class LiderForm(forms.ModelForm):

@@ -121,6 +121,9 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'novedades' %}">Novedades</a>
                                 </li> -->
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'reset_password' %}">Pass</a>
+                                </li>
                             {% elif perfil.rol == 'instructor' %}
                                 <!-- Contenido específico de instructor -->
                                 <li class="nav-item">
@@ -153,7 +156,7 @@
                                     <a class="nav-link" href="{% url 'instituciones_gestor' %}">Instituciones</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'pre_matricula' %}">Matriculas</a>
+                                    <a class="nav-link" href="{% url 'pre_matricula' %}">Pre matricula</a>
                                 </li>
                                 <!-- <li class="nav-item">
                                     <a class="nav-link" href="{% url 'novedades' %}">Novedades</a>

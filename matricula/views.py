@@ -54,15 +54,11 @@ def asignar_aprendices(request, grupo_id=None):
 
     if request.method == 'POST':
         documentos_matricula = [
-            'Carta Intención',
-            'Documentos Identidad de los aprendices',
-            'Formato de Inscripción Especial 2025',
-            'Certificado de Afiliación de salud',
-            'Compromiso del Aprendiz',
-            'Formato de Tratamiento de Datos del Menor de Edad',
-            'Certificado de aprobación de Grado Noveno',
-            'Acta de Compromiso de Articulación',
+            'Documento de Identidad del aprendiz',
             'Registro civil'
+            'Certificado de Afiliación de salud',
+            'Formato de Tratamiento de Datos del Menor de Edad',
+            'Compromiso del Aprendiz',
         ]
 
         errores = []
@@ -90,6 +86,7 @@ def asignar_aprendices(request, grupo_id=None):
                                 continue
 
                             aprendiz.grupo = grupo
+                            aprendiz.esta_docu = "Pendiente"
                             aprendiz.save()
 
                             for documento in documentos_matricula:
@@ -143,6 +140,7 @@ def asignar_aprendices(request, grupo_id=None):
                                         continue
 
                                     aprendiz.grupo = grupo
+                                    aprendiz.esta_docu = "Pendiente"
                                     aprendiz.save()
 
                                     for documento in documentos_matricula:
@@ -268,10 +266,21 @@ def aprobar_documento_prematricula(request, doc_id):
                 comen="Documento aprobado"
             )
 
+            # Obtener el aprendiz relacionado
+            aprendiz = documento.apren
+
+            # Verificar si todos los documentos del aprendiz tienen vali = 4
+            todos_aprobados = not T_prematri_docu.objects.filter(apren=aprendiz).exclude(vali=4).exists()
+
+            if todos_aprobados:
+                aprendiz.esta_docu = "Completo"
+                aprendiz.save(update_fields=["esta_docu"])  # Guardar solo este campo
+
             return JsonResponse({"status": "success", "message": "Documento aprobado correctamente."})
         except T_prematri_docu.DoesNotExist:
             return JsonResponse({"status": "error", "message": "Documento no encontrado."}, status=404)
     return JsonResponse({"status": "error", "message": "Método no permitido."}, status=405)
+
 
 def rechazar_documento_prematricula(request, doc_id):
     if request.method == "POST":
@@ -446,7 +455,7 @@ def instituciones_gestor(request):
         instituciones = T_gestor_insti_edu.objects.all()
     total_instituciones = T_insti_edu.objects.count()
     instituciones_asignadas = T_gestor_insti_edu.objects.filter(esta='activo').values('insti').distinct().count()
-    instituciones_con_grupos = T_grupo.objects.values('insti').distinct().count()
+    total_instituciones_aprobadas = T_insti_edu.objects.filter(esta_docu="Completo").distinct().count()
     instituciones_sin_zona = T_insti_edu.objects.filter(zona__isnull=True).count()
     instituciones_con_multiples_grupos = (
         T_grupo.objects.values('insti')
@@ -457,7 +466,7 @@ def instituciones_gestor(request):
     return render(request, 'instituciones_gestor.html', {
         'total_instituciones': total_instituciones,
         'instituciones_asignadas': instituciones_asignadas,
-        'instituciones_con_grupos': instituciones_con_grupos,
+        'total_instituciones_aprobadas': total_instituciones_aprobadas,
         'instituciones_sin_zona': instituciones_sin_zona,
         'instituciones_con_multiples_grupos': instituciones_con_multiples_grupos,
         'instituciones': instituciones,
@@ -478,7 +487,7 @@ def obtener_opciones_municipios(request):
     return JsonResponse(list(municipios), safe=False)
 
 def obtener_opciones_estados(request):
-    estados = T_insti_edu.objects.values_list('esta', flat=True).distinct()
+    estados = T_insti_edu.objects.values_list('esta_docu', flat=True).distinct()
     return JsonResponse(list(estados), safe=False)
 
 def obtener_opciones_sectores(request):
@@ -504,7 +513,7 @@ def filtrar_instituciones_gestor(request):
     if municipio:
         instituciones = instituciones.filter(insti__muni__nom_munici__in=municipio)
     if estado:
-        instituciones = instituciones.filter(insti__esta__in=estado)
+        instituciones = instituciones.filter(insti__esta_docu__in=estado)
     if sector:
         instituciones = instituciones.filter(insti__secto__in=sector)
 
@@ -816,9 +825,7 @@ def asignar_institucion_gestor(request):
                         'Carta Intención',
                         'Formato de Inscripción Especial 2025',
                         'Certificado de Aprobación de Grado Noveno',
-                        'Acta de Compromiso de Articulación',
-                        'Acentamiento de matrícula',
-                        'Formato de diagnóstico'
+                        'Formato de autodiagnóstico'
                     ]
             asignar_insti_form = AsignarInstiForm(request.POST, user=request.user)
             perfil = T_perfil.objects.get(user=request.user)
@@ -916,7 +923,7 @@ def instituciones_docs(request, institucion_id):
     institucion = T_insti_edu.objects.get(id=institucion_id)
     total_documentos = 0
     for documento in documentos:
-        if  documento.esta == "Cargado":
+        if  documento.vali == "4":
             total_documentos += 1
     return render(request, 'instituciones_docs.html', { 
         'documentos': documentos, 
@@ -1123,6 +1130,7 @@ def confirmar_documento_insti(request, documento_id, institucion_id):
     institucion = T_insti_edu.objects.get(id=institucion_id)
     documento = T_insti_docu.objects.get(id=documento_id)    
     documento.vali = "4"
+    documento.esta = "Aprobado"
     documento.save()
 
     T_histo_docu_insti.objects.create(
@@ -1176,10 +1184,9 @@ def obtener_historial_institucion(request, institucion_id):
             "accion": histo.acci,
             "documento": histo.docu_insti.nom,
             "comentario": histo.comen if histo.comen else "Sin comentario",
-            "fecha": histo.fecha.strftime('%d/%m/%Y %H:%M:%S') 
+            "fecha": localtime(histo.fecha).strftime("%Y-%m-%d %H:%M:%S")
         }
         for histo in historial
     ]
     
     return JsonResponse({"historial": data})
-

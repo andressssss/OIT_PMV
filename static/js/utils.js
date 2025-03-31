@@ -83,13 +83,26 @@ export function showErrorToast(message) {
     });
 }
 
-export function confirmDeletion(message = '¿Estás seguro de que deseas eliminar este registro?') {
+export function confirmDeletion(message = '¿Está seguro de que desea eliminar este registro?') {
     return Swal.fire({
         title: 'Confirmar eliminación',
         text: message,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => result.isConfirmed);
+}
+
+export function confirmAprove(message = '¿Está seguro de que desea aprobar este registro?') {
+    return Swal.fire({
+        title: 'Confirmar aprobacion',
+        text: message,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, confirmar',
         cancelButtonText: 'Cancelar',
         reverseButtons: true,
         focusCancel: true

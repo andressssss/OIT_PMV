@@ -95,15 +95,16 @@ urlpatterns = [
     
     # Rol Administradores
     path('administradores/', usuarios_views.administradores, name='administradores'),
-    path('administradores/crear/', usuarios_views.crear_administradores,name='crear_administradores'),  # ----> Crear nuevo usuario admin
-    path('administradores/<int:admin_id>/', usuarios_views.detalle_administradores,name='administrador_detalle'),  # ----> actualizar info usuario admin
-    path('obtener_detalles/<int:admin_id>/', usuarios_views.administrador_detalle_tabla, name='obtener_detalles_admin'),
-    path('administradores/<int:admin_id>/eliminar', usuarios_views.eliminar_admin, name='eliminar_administrador'),  # ----> Eliminar info usuario admin
+    path('api/administrador/crear/', usuarios_views.crear_administrador,name='api_crear_administrador'),
+    path('api/administrador/<int:admin_id>/', usuarios_views.obtener_administrador ,name='api_obtener_administrador'),
+    path('api/administrador/editar/<int:admin_id>/', usuarios_views.editar_administrador, name='api_editar_administrador'),
+    path('api/administrador/eliminar/<int:admin_id>/', usuarios_views.eliminar_administrador, name='api_eliminar_administrador'),
     
     # ROL Gestores
     path('gestores/', usuarios_views.gestores, name='gestores'),
-    path('gestores/crear/', usuarios_views.crear_gestor, name='crear_gestor'),  # ----> Crear nuevo usuario gestor
-    path('gestores/<int:gestor_id>/', usuarios_views.gestor_detalle, name='gestor_detalle'), 
+    path('api/gestor/crear/', usuarios_views.crear_gestor, name='api_crear_gestor'),
+    path('api/gestor/<int:gestor_id>/', usuarios_views.obtener_gestor, name='api_obtener_gestor'), 
+    path('api/gestor/editar/<int:gestor_id>/', usuarios_views.editar_gestor, name='api_editar_gestor'), 
 
     # ROL Cuentas
     path('cuentas/', usuarios_views.cuentas, name='cuentas'),
@@ -112,9 +113,10 @@ urlpatterns = [
 
     # ROL Lideres
     path('lideres/', usuarios_views.lideres, name='lideres'),
-    path('lideres/crear/', usuarios_views.crear_lideres, name='crear_lideres'),
-    path('lideres/<int:lider_id>/',usuarios_views.detalle_lideres, name='detalle_lider'),
-    path('lideres/<int:lider_id>/eliminar',usuarios_views.eliminar_lideres, name='eliminar_lider'),
+    path('api/lider/crear/', usuarios_views.crear_lider, name='api_crear_lideres'),
+    path('api/lider/<int:lider_id>/',usuarios_views.obtener_lider, name='api_obtener_lider'),
+    path('api/lider/editar/<int:lider_id>/',usuarios_views.editar_lider, name='api_editar_lider'),
+    path('api/lider/eliminar/<int:lider_id>/',usuarios_views.eliminar_lider, name='api_eliminar_lider'),
 
     # ROL Departamentos
     path('departamentos/', usuarios_views.departamentos, name='departamentos'),
@@ -130,7 +132,9 @@ urlpatterns = [
     
     # Endpoint municipio
     path('api/municipiosFormInsti/', usuarios_views.obtener_municipios, name='api_municipios_form_insti'),
-    path('api/departamentosFormInsti/', usuarios_views.obtener_departamentos, name='api_departamentos_form_insti'),
+
+    # Endpoint departamento
+    path('api/departamentos/', usuarios_views.obtener_departamentos, name='api_departamentos'),
 
     # ROL Instituciones
     path('instituciones/', usuarios_views.instituciones,name='instituciones'),
@@ -155,12 +159,6 @@ urlpatterns = [
 
     # Endpoint eliminar centro
     path('api/centro/eliminar/<int:centro_id>/', usuarios_views.eliminar_centro, name='api_eliminar_centro'),
-
-    # ROL Representantes Legales
-    path('represantesLegales/', usuarios_views.representante_legal,name='represantesLegales'),
-    path('represantesLegales/crear/', usuarios_views.crear_representante_legal,name='crearRepresantesLegales'),
-    path('represantesLegales/<int:repreLegal_id>/', usuarios_views.detalle_representante_legal,name='detalleRepresanteLegal'),
-    path('represantesLegales/<int:repreLegal_id>/eliminar', usuarios_views.eliminar_representante_legal,name='eliminarRepresanteLegal'),
 
     # ROL Instructores
     path('gestion_instructor/', gestion_instructores_views.gestion_instructor,name='gestion_instructor'),
@@ -297,6 +295,10 @@ urlpatterns = [
 
     # Contratos
     path('contratos/', admin_views.contratos, name='contratos'),
+
+    path('reset-password/', usuarios_views.reset_password_view, name='reset_password'),
+    path('restablecer_contrasena/', usuarios_views.restablecer_contrasena, name='restablecer_contrasena'),
+
 
 ]  
 

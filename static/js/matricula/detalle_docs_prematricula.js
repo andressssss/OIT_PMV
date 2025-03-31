@@ -1,4 +1,4 @@
-import { confirmDeletion, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+import { confirmDeletion, confirmAprove, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -189,9 +189,9 @@ document.addEventListener("DOMContentLoaded", function () {
             historial.forEach(entry => {
                 filasHTML += `
                     <tr>
-                        <td>${entry.documento}</td>
-                        <td>${entry.accion}</td>
                         <td>${entry.usuario || "Sistema"}</td>
+                        <td>${entry.accion}</td>
+                        <td>${entry.documento}</td>
                         <td>${entry.comentario || "Sin comentarios"}</td>
                         <td>${new Date(entry.fecha).toLocaleString()}</td>
                     </tr>
@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function aprobarDocumento(docId, aprendizId) {
-        const confirmed = await confirmDeletion('¿Desea aprobar este documento?');
+        const confirmed = await confirmAprove('¿Desea aprobar este documento?');
     
         if (confirmed) {
             fetch(`/api/prematricula/aprobar_documento/${docId}/`, {
@@ -346,12 +346,19 @@ document.addEventListener("DOMContentLoaded", function () {
             cargarTablaDocumentos(aprendizId);
             cargarTablaHistorial(aprendizId);
             bootstrap.Modal.getInstance(document.getElementById("modalRechazo")).hide();
+
         })
         .catch(error => {
             console.error("Error al rechazar el documento:", error);
             showErrorToast("Ocurrió un error al rechazar el documento.");
         });
     }
+
+    document.getElementById("modalRechazo").addEventListener("hidden.bs.modal", function () {
+        document.getElementById("rejectComment").value = "";
+        document.getElementById("rejectDocId").value = "";
+        document.getElementById("rejectAprendizId").value = "";
+    });
 
     document.addEventListener("click", function (event) {
         const target = event.target;

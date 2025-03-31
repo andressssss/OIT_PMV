@@ -23,13 +23,13 @@ class T_perfil(models.Model):
         ('ti', 'Tarjeta de identidad'),
         ('cc', 'Cedula de ciudadania'),
         ('pp', 'Pasaporte'),
-        ('cc', 'Tarjeta de extranjeria'),
+        ('ce', 'Cedula de extranjeria'),
 
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     nom = models.CharField(max_length=200)
     apelli = models.CharField(max_length=200)
-    tipo_dni = models.CharField(max_length=50, choices=DNI_CHOICES, blank=True)
+    tipo_dni = models.CharField(max_length=50, choices=DNI_CHOICES)
     dni = models.BigIntegerField()
     tele = models.CharField(max_length=100)
     dire = models.CharField(max_length=200)
@@ -91,8 +91,14 @@ class T_admin(models.Model):
     class Meta:
         managed = True
         db_table = 't_admin'
+    AREA_CHOICES = [
+        ('sistemas','Sistemas'),
+        ('contable','Contable'),
+        ('direccion','Dirección'),
+        ('rrhh','RRHH')
+    ]
     perfil = models.OneToOneField(T_perfil, on_delete=models.CASCADE)
-    area = models.CharField(max_length=200)
+    area = models.CharField(max_length=200, choices=AREA_CHOICES)
     esta = models.CharField(max_length=200)
 
     def __str__(self):
@@ -414,6 +420,7 @@ class T_apre(models.Model):
     grupo = models.ForeignKey(T_grupo, on_delete= models.CASCADE, null=True, blank=True)
     repre_legal = models.ForeignKey(T_repre_legal , on_delete=models.CASCADE)
     usu_crea = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    esta_docu = models.CharField(max_length=200, blank=True, null=True)
 
     def __str__(self):
         return f"{self.perfil.nom} {self.perfil.apelli}"

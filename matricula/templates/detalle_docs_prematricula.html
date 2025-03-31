@@ -124,6 +124,7 @@
             <thead class="table-secondary text-center">
                 <tr>
                     <th>Nombre</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -132,6 +133,9 @@
                     <tr>
                         <td>
                             {{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}
+                        </td>
+                        <td>
+                            {{ aprendiz.esta_docu|default:"Desconocido"}}
                         </td>
                         <td class="text-end">
                             <a href="{% url 'descargar_documentos_zip' aprendiz.id %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Descargar documentos ZIP">{% icon 'download' %}</a>

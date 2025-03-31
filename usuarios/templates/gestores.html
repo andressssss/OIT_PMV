@@ -10,7 +10,7 @@
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de Gestores</h1>
                 <div>
-                    <a href="/gestores/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear gestor">
+                    <a class="btn btn-primary me-2" id="btnCrearGestor1" data-toggle="tooltip" data-placement="top" title="Crear gestor" data-bs-toggle="modal" data-bs-target="#crearGestorModal">
                         {% icon 'plus' %}
                     </a>
                 </div>
@@ -19,23 +19,20 @@
                 <table id="gestores_table" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
-                        <th></th>
                         <th>Nombre</th>
                         <th>Apellido</th>
-                        <th>Telefono</th>
-                        <th>Direccion</th>
+                        <th>Teléfono</th>
+                        <th>Dirección</th>
                         <th>Mail</th>
                         <th>Fecha nacimiento</th>
                         <th>Estado</th>
                         <th>Departamentos asignados</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for gestor in gestores %}
                     <tr>
-                        <td>
-                            <a href="{% url 'gestor_detalle' gestor.id %}" class="btn btn-primary btn-sm" data-toggle="tooltip" title="Editar">{% icon 'edit' %}</a>
-                        </td>
                         <td>{{ gestor.perfil.nom}}</td>
                         <td>{{ gestor.perfil.apelli}}</td>
                         <td>{{ gestor.perfil.tele}}</td>
@@ -49,7 +46,12 @@
                             {% else%}
                             Sin departamento asignado
                             {% endif %}
-
+                        </td>
+                        <td>
+                            <a class="btn btn-outline-warning btn-sm mb-1 edit-btn" data-id="{{gestor.id}}" data-toggle="tooltip" title="Editar">{% icon 'edit' %}</a>
+                            <a class="btn btn-outline-danger btn-sm mb-1 delete-btn" data-id="{{ gestor.id }}" data-toggle="tooltip" data-placement="top" title="Eliminar">
+                                {% icon 'delete' %}
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -60,4 +62,155 @@
     </div>
     </section>
 </main>
+<!-- Modal para crear Gestor -->
+<div class="modal fade" id="crearGestorModal" tabindex="-1" aria-labelledby="modalGestorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalGestorLabel">Crear Líder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCrearGestor">
+                    {% csrf_token %}
+                    <h3>Datos del Perfil</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
+                            {{ perfil_form.nom }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
+                            {{ perfil_form.apelli }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
+                            {{ perfil_form.tipo_dni }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
+                            {{ perfil_form.dni }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
+                            {{ perfil_form.tele }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
+                            {{ perfil_form.dire }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
+                            {{ perfil_form.mail }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                            {{ perfil_form.gene }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
+                            {{ perfil_form.fecha_naci }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="departamentos">Departamentos Asociados</label>
+                            <select id="departamentos" name="departamentos[]" multiple class="form-select">
+                            </select>
+                        </div>
+                    </div>
+                    <div id="errorCrearGestor" class="text-danger mt-2"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnCrearGestor" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para Editar Gestor -->
+<div class="modal fade" id="editarGestorModal" tabindex="-1" aria-labelledby="modalEditarGestorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarGestorLabel">Editar Gestor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarGestor">
+                    {% csrf_token %}                    
+                    <h3>Datos del Perfil</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
+                            {{ perfil_form.nom }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
+                            {{ perfil_form.apelli }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
+                            {{ perfil_form.tipo_dni }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
+                            {{ perfil_form.dni }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
+                            {{ perfil_form.tele }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
+                            {{ perfil_form.dire }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
+                            {{ perfil_form.mail }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                            {{ perfil_form.gene }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
+                            {{ perfil_form.fecha_naci }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="departamentosEditar">Departamentos Asociados</label>
+                            <select id="departamentosEditar" name="departamentos" multiple class="form-select">
+                            </select>
+                        </div>
+                    </div>
+                    <div id="errorEditarGestor" class="text-danger mt-2"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnEditarGestor" class="btn btn-primary">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{% static 'js/usuarios/gestor.js' %}"></script>
 {% endblock %}

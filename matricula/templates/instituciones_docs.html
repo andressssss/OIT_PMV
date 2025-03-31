@@ -19,7 +19,7 @@
                 </button>
                 
                 <!-- Contador de documentos -->
-                <h4 id="document-counter" class="mb-0">{{ total_documentos }}/6</h4>
+                <h4 id="document-counter" class="mb-0">{{ total_documentos }}/4</h4>
             </div>
         </div>
         
@@ -74,9 +74,13 @@
     
                             <!-- SECCIÓN DEL GESTOR (Carga de documentos) -->
                             {% if rol == 'gestor' %}
-                            <td>
+                            <td> 
                                 {% if documento.vali in "02" %}  {# No cargado o Rechazado #}
                                     <input type="file" data-name="{{ documento.nom }}" name="archivo_{{ documento.id }}" class="form-control file-input mb-2" data-doc-id="{{ documento.id }}" required>
+                                {% elif documento.vali == "1" %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-check2-all"></i> Cargado
+                                    </span>
                                 {% else %}
                                     <span class="text-muted">
                                         <i class="bi bi-lock"></i> No modificable
@@ -127,10 +131,8 @@
                     <ul>
                         <li><strong>Carta Intención	:</strong> Formato PDF (.pdf) que debe incluir los datos completos de los participantes.</li>
                         <li><strong>Formato de Inscripción Especial 2025:</strong> Formato Excel (.xls, .xlsx) que debe incluir los datos completos de los participantes.</li>
-                        <li><strong>Certificado de Aprobación de Grado Noveno:</strong> Formato PDF (.pdf) del certificado oficial emitido por la autoridad competente.</li>
-                        <li><strong>Acta de Compromiso de Articulación:</strong> Formato PDF (.pdf) que certifique la aprobación oficial del programa de formación.</li>
-                        <li><strong>Acertamiento de matricula:</strong> Formato PDF (.pdf) del documento de identidad del representante legal.</li>
-                        <li><strong>Formato de diagnostico:</strong> Formato PDF (.pdf) de los programas educativos registrados.</li>
+                        <li><strong>Certificado de Aprobación de Grado Noveno:</strong> Formato PDF (.pdf) del certificado oficial emitido por la entidad competente.</li>
+                        <li><strong>Formato de autodiagnostico:</strong> Formato PDF (.pdf) de los programas educativos registrados.</li>
                     </ul>
                 </div>
                 <div class="modal-footer">

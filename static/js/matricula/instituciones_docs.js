@@ -79,7 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadBtn.addEventListener("click", function () {
             const formData = new FormData();
             const institucionId = uploadBtn.dataset.id;
-    
+            const originalBtnContent = uploadBtn.innerHTML;
+
+            showSpinner(uploadBtn);
+
             document.querySelectorAll(".file-input").forEach(function (fileInput) {
                 if (fileInput.files.length > 0) {
                     const docName = fileInput.dataset.name;
@@ -132,9 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     text: "Error al cargar los archivos.",
                     confirmButtonText: "Cerrar"
                 });
+            })
+            .finally(()=>{
+                hideSpinner(uploadBtn, originalBtnContent);
             });
         });
     }
+
     // ======= Boton historial ========
     btnHistorial.addEventListener("click", function () {
         const institucionId = btnHistorial.getAttribute("data-institucion");
@@ -145,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/api/institucion/obtener-historial/${institucionId}/`)
             .then(response => response.json())
             .then(data => {
-                historialBody.innerHTML = ""; // Limpiar para nuevos datos
+                historialBody.innerHTML = "";
 
                 if (data.historial.length === 0) {
                     historialBody.innerHTML = '<tr><td colspan="4" class="text-center">No hay historial disponible.</td></tr>';
@@ -159,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td>${item.accion}</td>
                             <td>${item.documento}</td>
                             <td>${item.comentario}</td>
-                            <td>${item.fecha}</td>
+                            <td>${new Date(item.fecha).toLocaleString()}</td>
                         </tr>
                     `;
                     historialBody.innerHTML += row;
@@ -170,5 +177,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 historialBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar historial.</td></tr>';
             });
     });
+
+    //== indicador de documentos aprobados
+    function actualizarContadorDocumentos(nuevoTotal) {
+        const contador = document.getElementById("document-counter");
+        if (contador) {
+            contador.textContent = `${nuevoTotal}/6`;
+        }
+    }
 
 });
