@@ -213,3 +213,101 @@ td.details-control {
 select.form-select.choices__input {
     display: none !important;
 }
+
+.folder-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.95rem;
+}
+
+/* Estilos base para items */
+.folder-item {
+    display: block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+/* Alineación de elementos internos */
+.folder-item > i,
+.folder-item > span,
+.folder-item > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    vertical-align: middle;
+    line-height: 1.5;
+}
+
+/* Estilos para subcarpetas y animación */
+.folder-children {
+    padding-left: 1rem;
+    margin-top: 4px;
+    border-left: 2px dashed #dee2e6;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: 
+        max-height 0.3s ease-in-out, 
+        opacity 0.3s ease-in-out,
+        padding 0.3s ease-in-out,
+        margin 0.3s ease-in-out;
+    display: none;
+    
+}
+
+.folder-children.visible {
+    display: block;
+    max-height: 1000px;
+    opacity: 1;
+    padding: 0 0 0 1rem;
+    margin-top: 4px;
+}
+
+/* Botón de carga de documentos */
+.upload-item {
+    padding-left: 22px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    list-style: none;
+}
+
+/* Espaciado para iconos */
+.folder-item i.bi-folder2,
+.folder-item i.bi-folder2-open,
+.upload-item .bi {
+    margin-right: 6px;
+}
+
+/* Colores */
+/* Carpetas */
+.bi-folder2,
+.bi-folder2-open {
+    color: #ffc107; /* Amarillo dorado */
+}
+
+/* Tipos de documentos */
+.bi-file-earmark-pdf { color: #dc3545; } /* Rojo para PDF */
+.bi-image { color: #0d6efd; } /* Azul para imágenes */
+.bi-file-earmark-spreadsheet { color: #198754; } /* Verde para hojas de cálculo */
+.bi-file-earmark-richtext { color: #6f42c1; } /* Morado para documentos de texto */
+.bi-file-earmark { color: #6c757d; } /* Gris para otros tipos */
+
+/* ESTILOS PARA ENCABEZADO DE NAV PILLS - Portafolio ficha*/
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: #1E2DBE !important;
+    color: white;
+}
+
+.nav-pills .nav-link {
+    color: #1E2DBE;
+}
+
+.nav-pills .nav-link:hover {
+    color: #16219cb2; /* un tono más oscuro si deseas */
+}

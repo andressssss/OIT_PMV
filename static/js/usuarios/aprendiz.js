@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.estado,
                 item.dni,
                 `<button class="btn btn-outline-warning btn-sm mb-1 edit-btn" 
-                    data-id="${item.id}" 
+                    data-id="${item.id}"
                     title="Editar"
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">

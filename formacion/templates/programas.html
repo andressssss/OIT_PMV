@@ -19,19 +19,19 @@
                 <table id="instructores_table" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
-                        <th></th>
                         <th>Nombre</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for programa in programas %}
-                    <tr data-id="{{ programa.id }}">
-                        <td><a href="/" class="btn btn-primary btn-sm " data-toggle="tooltip" data-placement="top" title="Editar">
-                            {% icon 'edit' %}
-    
-                        </a></td>
+                    <tr>
                         <td>{{ programa.nom}}</td>
-
+                        <td>
+                            <!-- <a class="btn btn-outline-warning btn-sm " data-toggle="tooltip" data-placement="top" title="Editar"><i class="bi bi-pencil-square"></i></a> -->
+                            <a class="btn btn-outline-primary btn-sm btn-detalle-programa" data-id="{{ programa.id }}" data-toggle="tooltip" data-placement="top" title="Detalle"><i class="bi bi-plus-lg"></i></a>
+                            <!-- <a class="btn btn-outline-danger btn-sm " data-toggle="tooltip" data-placement="top" title="Eliminar"><i class="bi bi-trash3"></i></a> -->
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -40,4 +40,63 @@
         </div>
     </div>
 </main>
+<!-- Modal detalle programa -->
+<div id="detalleProgramaModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalle del Programa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+
+                    <!-- Información del Programa -->
+                    <div class="col-lg-6">
+                        <div class="card mb-4 shadow">
+                            <div class="card-header">Información del Programa</div>
+                            <div class="card-body">
+                                <p><strong>Código:</strong> <span id="prog-cod"></span></p>
+                                <p><strong>Nombre:</strong> <span id="prog-nom"></span></p>
+                                <p><strong>Nombre detallado:</strong> <span id="prog-nomd"></span></p>
+                            </div>
+                        </div>
+
+                        <!-- Competencias asociadas -->
+                        <div class="card mb-4 shadow">
+                            <div class="card-header">Competencias</div>
+                            <div class="card-body">
+                                <ul id="prog-competencias" class="list-group list-group-flush"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Guías y RAPs -->
+                    <div class="col-lg-6">
+                        <div class="card mb-4 shadow">
+                            <div class="card-header">Guías Asociadas</div>
+                            <div class="card-body">
+                                <ul id="prog-guias" class="list-group list-group-flush"></ul>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4 shadow">
+                            <div class="card-header">RAPs Asociados</div>
+                            <div class="card-body">
+                                <ul id="prog-raps" class="list-group list-group-flush"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- /.row -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script type ="module" src="{% static 'js/formacion/programa.js' %}"></script>
 {% endblock %}

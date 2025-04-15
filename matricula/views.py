@@ -1,6 +1,8 @@
 import json
 import logging
+from django.utils import timezone 
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import IntegrityError
 from django.utils.timezone import localtime
 from django.utils.safestring import mark_safe
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponseNotAllowed
@@ -9,8 +11,30 @@ from django.views import generic
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from commons.models import T_ficha,T_gestor_depa, T_grupo,T_docu,T_perfil,T_histo_docu_insti,T_histo_docu_prematri, T_insti_edu,T_insti_docu, T_centro_forma, T_munici, T_gestor_grupo, T_prematri_docu, T_apre,T_gestor, T_gestor_insti_edu
+from commons.models import (
+    T_ficha,
+    T_fase_ficha,
+    T_raps,
+    T_raps_ficha,
+    T_compe,
+    T_gestor_depa,
+    T_grupo,
+    T_docu,
+    T_perfil,
+    T_histo_docu_insti,
+    T_histo_docu_prematri,
+    T_insti_edu,
+    T_insti_docu,
+    T_centro_forma,
+    T_munici,
+    T_gestor_grupo,
+    T_prematri_docu,
+    T_apre,
+    T_gestor,
+    T_gestor_insti_edu
+)
 from .forms import AsignarAprendicesGrupoForm, GrupoForm, AsignarAprendicesMasivoForm, AsignarInstiForm
+from .scripts.cargar_tree import crear_datos_prueba 
 from .scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.core.files.storage import default_storage
 from datetime import datetime
@@ -55,7 +79,7 @@ def asignar_aprendices(request, grupo_id=None):
     if request.method == 'POST':
         documentos_matricula = [
             'Documento de Identidad del aprendiz',
-            'Registro civil'
+            'Registro civil',
             'Certificado de Afiliación de salud',
             'Formato de Tratamiento de Datos del Menor de Edad',
             'Compromiso del Aprendiz',
@@ -438,7 +462,7 @@ def confirmar_documento(request, documento_id, grupo_id):
     documento = T_prematri_docu.objects.get(id=documento_id)    
     documento.vali = "1"
     documento.usr_apro = request.user
-    documento.fecha_apro = datetime.now()
+    documento.fecha_apro = timezone.now()
     documento.save()
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
@@ -719,7 +743,7 @@ def crear_grupo(request):
             if grupo_form.is_valid():
                 new_grupo = grupo_form.save(commit=False)
                 new_grupo.esta = 'Pre matricula'
-                new_grupo.fecha_crea = datetime.now()
+                new_grupo.fecha_crea = timezone.now()
                 new_grupo.autor = request.user
 
                 # Validar que el centro esté seleccionado
@@ -735,7 +759,7 @@ def crear_grupo(request):
                 perfil = getattr(request.user, 't_perfil', None)
                 gestor = T_gestor.objects.get(perfil=perfil)
                 T_gestor_grupo.objects.create(
-                    fecha_crea=datetime.now(),
+                    fecha_crea=timezone.now(),
                     autor=request.user,
                     gestor=gestor,
                     grupo=new_grupo
@@ -849,9 +873,9 @@ def asignar_institucion_gestor(request):
                     })
 
                 new_gestor_insti = T_gestor_insti_edu(
-                    fecha_regi = datetime.now(),
+                    fecha_regi = timezone.now(),
                     esta = "activo",
-                    ano = datetime.now().year,
+                    ano = timezone.now().year,
                     insti = asignar_insti_form.cleaned_data['insti'],
                     seme = '1',
                     gestor = gestor,
@@ -975,7 +999,7 @@ def cargar_documento_institucion(request, documento_id, institucion_id):
 
         documento.esta = "Cargado"
         documento.docu = t_docu
-        documento.fecha_carga = datetime.now()
+        documento.fecha_carga = timezone.now()
         documento.usr_carga = request.user
         documento.save()
 
@@ -1190,3 +1214,69 @@ def obtener_historial_institucion(request, institucion_id):
     ]
     
     return JsonResponse({"historial": data})
+
+def formalizar_ficha(request):
+    if request.method == "POST":
+        try:
+            print(request.POST)
+            data = json.loads(request.body)
+            grupo_id = data.get("grupo_id")
+            numero_ficha = data.get("numero_ficha")
+
+            if T_ficha.objects.filter(num=numero_ficha).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe una ficha con el número ingresado.'}, status=400)
+            
+            grupo = T_grupo.objects.get(id=grupo_id)
+            grupo.esta = "Formalizado"
+            grupo.save()
+
+
+            total_aprendices = T_apre.objects.filter(grupo=grupo).count()
+            total_formalizados = T_apre.objects.filter(grupo=grupo, esta_docu="Completo").count()
+            total_pendientes = T_apre.objects.filter(grupo=grupo, esta_docu="Pendiente").count()
+
+            ficha = T_ficha.objects.create(
+                num=numero_ficha,
+                grupo=grupo,
+                fecha_aper=timezone.now(),
+                fecha_cierre=None,
+                insti=grupo.insti,
+                centro=grupo.centro,
+                progra=grupo.progra,
+                num_apre_proce=total_aprendices,
+                num_apre_forma=total_formalizados,
+                num_apre_pendi_regi=total_pendientes,
+                esta="Activo"
+            )
+
+            T_fase_ficha.objects.create(
+                fase = "analisis",
+                ficha = ficha,
+                fecha_ini = timezone.now(),
+                instru = None,
+                vige  = 1
+            )
+
+            raps = T_raps.objects.filter(compe__in = T_compe.objects.filter(progra = ficha.progra))
+            T_raps_ficha.objects.bulk_create([T_raps_ficha(ficha = ficha, rap = rap) for rap in raps])
+
+            T_apre.objects.filter(grupo=grupo).update(ficha=ficha)
+
+            crear_datos_prueba(ficha.id)
+
+            aprendices = T_apre.objects.filter(ficha=ficha)
+            for aprendiz in aprendices:
+                crear_datos_prueba_aprendiz(aprendiz.id)
+
+            return JsonResponse({'status': 'success', 'message': 'Ficha creada con éxito.'})
+
+        except T_grupo.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'El grupo no existe.'}, status=404)
+
+        except IntegrityError as e:
+            return JsonResponse({'status': 'error', 'message': 'Error de integridad: ' + str(e)}, status=400)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)

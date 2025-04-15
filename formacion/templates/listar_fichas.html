@@ -9,48 +9,46 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de fichas</h1>
-                <div>
+                <!-- <div>
                     <a href="/fichas_adm/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear ficha">
                         {% icon 'plus' %}
                     </a>
-                </div>
+                </div> -->
             </div>
             <div class="table-responsive">
                 <table id="listado_fichas" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
-                        <th></th>
-                        <th></th>
                         <th>Numero ficha</th>
                         <th>Estado</th>
                         <th>Fecha apertura</th>
                         <th>Fecha cierre</th>
                         <th>Centro</th>
-                        <th>Institucion</th>
+                        <th>Institución</th>
                         <th>Instructor</th>
                         <th>Matriculados</th>
                         <th>Programa</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for ficha in fichas %}
-                    <tr data-id="{{ programa.id }}">
-                        <td class="details-control">    <i class="bi bi-chevron-right"></i>
-                        </td>
-                        <td><a href="/" class="btn btn-primary btn-sm ">
-                            {% icon 'edit' %}
-    
-                        </a></td>
+                    <tr>
                         <td>{{ ficha.num }}</td>
                         <td>{{ ficha.esta }}</td>
                         <td>{{ ficha.fecha_aper}}</td>
-                        <td>{{ ficha.fecha_cierre}}</td>
+                        <td>{{ ficha.fecha_cierre|default:"Pendiente"}}</td>
                         <td>{{ ficha.centro.nom }}</td>
                         <td>{{ ficha.insti.nom }}</td>
-                        <td>{{ ficha.instru.perfil.nom }}</td>
+                        <td>{{ ficha.instru.perfil.nom|default:"No asignado" }}</td>
                         <td>{{ ficha.num_apre_pendi_regi }}</td>
                         <td>{{ ficha.progra.nom }}</td>
-
+                        <td>
+                            <a href="{% url 'panel_ficha' ficha.id %}" class="btn btn-outline-primary btn-sm" data-toggle="tooltip" title="ver ficha">
+                                <i class="bi bi-journals"></i>
+                            </a>
+                        </td>
+                        
                     </tr>
                     {% endfor %}
                 </tbody>

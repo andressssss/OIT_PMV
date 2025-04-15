@@ -1,4 +1,6 @@
+import re
 from django.forms import ValidationError
+from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.files.storage import default_storage
@@ -6,7 +8,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from commons.models import T_instru,T_cuentas, T_gestor_insti_edu, T_apre,T_docu_labo, T_gestor_depa, T_gestor,T_docu, T_perfil, T_admin, T_lider, T_nove, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
+from django.utils import timezone
+from commons.models import T_instru,T_ficha, T_cuentas, T_gestor_insti_edu, T_apre,T_docu_labo, T_gestor_depa, T_gestor,T_docu, T_perfil, T_admin, T_lider, T_nove, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
 from .forms import InstructorForm, PerfilEForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, NovedadForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
@@ -70,7 +73,7 @@ def signin(request):
                     return redirect('instituciones_gestor')
                 elif perfil.rol == 'instructor':
                     print("3")
-                    return redirect('ofertas_show')
+                    return redirect('listar_fichas')
             except T_perfil.DoesNotExist:
                 pass  # Si no se encuentra el perfil, no hacer nada adicional
 
@@ -376,117 +379,184 @@ def dashboard_admin(request):
 @login_required
 def instructores(request):
     instructores = T_instru.objects.select_related('perfil').all()
+    fichas = T_ficha.objects.all()
+    perfil_form = PerfilForm()
+    instructor_form = InstructorForm()
     return render(request, 'instructor.html', {
-        'instructores': instructores
+        'instructores': instructores,
+        'perfil_form': perfil_form,
+        'instructor_form': instructor_form,
+        'fichas': fichas
     })
-
+        
 @login_required
 def crear_instructor(request):
+    if request.method == 'POST':
+        perfil_form = PerfilForm(request.POST)
+        instructor_form = InstructorForm(request.POST)
+        ficha_id = request.POST.get('ficha_id')
+        ficha = None
 
-    if request.method == 'GET':
+        if perfil_form.is_valid() and instructor_form.is_valid():
+            dni = perfil_form.cleaned_data.get('dni')
+            email = perfil_form.cleaned_data.get('mail')
+            
+            if T_perfil.objects.filter(dni__iexact = dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
+            
+            if T_perfil.objects.filter(mail__iexact = email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
 
-        user_form = UserFormCreate()
-        perfil_form = PerfilForm()
-        instructor_form = InstructorForm()
+            if ficha_id:
+                try:
+                    ficha = T_ficha.objects.get(id=ficha_id)
+                    if ficha.instru is not None:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'Esta ficha ya tiene un instructor asignado.'
+                        }, status=409)
+                except T_ficha.DoesNotExist:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'La ficha seleccionada no existe.'
+                    }, status=404)
 
-        return render(request, 'instructor_crear.html', {
-            'user_form': user_form,
-            'perfil_form': perfil_form,
-            'instructor_form': instructor_form
-        })
-    else:
-        try:
-            user_form = UserFormCreate(request.POST)
-            perfil_form = PerfilForm(request.POST)
-            instructor_form = InstructorForm(request.POST)
-            if user_form.is_valid() and perfil_form.is_valid() and instructor_form.is_valid():
-                # Creacion del usuario
-                new_user = user_form.save(commit=False)
-                new_user.set_password(user_form.cleaned_data['password'])
-                new_user.save()
+            nombre = perfil_form.cleaned_data['nom']
+            apellido = perfil_form.cleaned_data['apelli']
+            base_username = (nombre[:3] + apellido[:3]).lower()
+            username = base_username
+            i = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{i}"
+                i += 1
 
-                # creacion del perfil
-                new_perfil = perfil_form.save(commit=False)
-                new_perfil.user = new_user
-                new_perfil.rol = 'instructor'
-                new_perfil.mail = new_user.email
-                new_perfil.save()
+            contraseña = generar_contraseña()
 
-                # creacion del instructor
-                new_instructor = instructor_form.save(commit=False)
-                new_instructor.perfil = new_perfil
-                new_instructor.save()
-                return redirect('instructores')
+            new_user = User.objects.create_user(
+                username=username,
+                password=contraseña,
+                email=perfil_form.cleaned_data['mail']
+            )
 
-        except ValueError as e:
-            return render(request, 'crear_instructor.html', {
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'instructor_form': instructor_form,
-                'error': f'Ocurrió un error: {str(e)}'
-            })
+            new_perfil = perfil_form.save(commit=False)
+            new_perfil.user = new_user
+            new_perfil.rol = 'instructor'
+            new_perfil.mail = new_user.email
+            new_perfil.save()
+                    
+                    
+            new_instructor = instructor_form.save(commit=False)
+            new_instructor.perfil = new_perfil
+            new_instructor.esta = "Activo"
+            new_instructor.save()
+
+            if ficha:
+                ficha.instru = new_instructor
+                ficha.save()
+
+            return JsonResponse({'status': 'success', 'message': 'Instructor creado con exito.'})
+        else:
+            errores_dict = {
+                **perfil_form.errors.get_json_data(),
+                **instructor_form.errors.get_json_data()
+            }
+            errores_custom = []
+
+            for field, errors_list in errores_dict.items():
+                if field in perfil_form.fields:
+                    nombre_campo = perfil_form.fields[field].label or field.capitalize()
+                elif field in instructor_form.fields:
+                    nombre_campo = instructor_form.fields[field].label or field.capitalize()
+                else:
+                    nombre_campo = field.capitalize()
+
+                for err in errors_list:
+                    mensaje = f"{nombre_campo}: {err['message']}"
+                    errores_custom.append(mensaje)
+
+
+            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+def obtener_instructor(request, instructor_id):
+    instructor = T_instru.objects.filter(id=instructor_id).select_related('perfil').first()
+
+    if instructor:
+        ficha = T_ficha.objects.filter(instru=instructor).first()
+        data = {
+            'id': instructor.id,
+            'perfil': {
+                'nom': instructor.perfil.nom,
+                'apelli': instructor.perfil.apelli,
+                'tipo_dni': instructor.perfil.tipo_dni,
+                'dni': instructor.perfil.dni,
+                'tele': instructor.perfil.tele,
+                'dire': instructor.perfil.dire,
+                'mail': instructor.perfil.mail,
+                'gene': instructor.perfil.gene,
+                'fecha_naci': instructor.perfil.fecha_naci.isoformat() if instructor.perfil.fecha_naci else ''
+            },
+            'contra': instructor.contra,
+            'profe': instructor.profe,
+            'fecha_ini': instructor.fecha_ini.isoformat() if instructor.fecha_ini else '',
+            'fecha_fin': instructor.fecha_fin.isoformat() if instructor.fecha_fin else '',
+            'tipo_vincu': instructor.tipo_vincu,
+            'ficha_id': ficha.id if ficha else None,
+        }
+        return JsonResponse (data)
+    return JsonResponse({'status': 'error', 'message': 'Instructor no encontrado'}, status=404)
 
 @login_required
-def instructor_detalle(request, instructor_id):
+def editar_instructor(request, instructor_id):
+    print(request.POST)
     instructor = get_object_or_404(T_instru, pk=instructor_id)
-    perfil = instructor.perfil
-    user = perfil.user
+    perfil = get_object_or_404(T_perfil, pk=instructor.perfil.id)
 
-    if request.method == 'GET':
-        user_form = UserFormEdit(instance=user)
-        perfil_form = PerfilForm(instance=perfil)
-        instructor_form = InstructorForm(instance=instructor)
-        return render(request, 'instructor_detalle.html', {
-            'instructor': instructor,
-            'user_form': user_form,
-            'perfil_form': perfil_form,
-            'instructor_form': instructor_form
-        })
-    else:
-        try:
-            # Si se envía el formulario con los datos modificados
-            user_form = UserFormEdit(request.POST, instance=user)
-            perfil_form = PerfilForm(request.POST, instance=perfil)
-            instructor_form = InstructorForm(request.POST, instance=instructor)
-            if user_form.is_valid() and perfil_form.is_valid() and instructor_form.is_valid():
-                user_form.save()
-                perfil_form.save()
-                instructor_form.save()
-                # Redirigir a la lista de instructores (ajusta según sea necesario)
-                return redirect('instructores')
-        except ValueError:
-            # Si ocurre un error al guardar, mostrar el formulario nuevamente con el mensaje de error
-            return render(request, 'instructor_detalle.html', {
-                'instructor': instructor,
-                'user_form': user_form,
-                'perfil_form': perfil_form,
-                'instructor_form': instructor_form,
-                'error': "Error al actualizar el instructor. Verifique los datos."})
+    if request.method == 'POST':
+        form_perfil = PerfilForm(request.POST, instance=perfil)
+        form_instructor = InstructorForm(request.POST, instance=instructor)
 
-@login_required
-def instructor_detalle_tabla(request, instructor_id):
-    try:
-        instructor = get_object_or_404(T_instru, pk=instructor_id)
-        instructor_data = model_to_dict(instructor)
+        if form_perfil.is_valid() and form_instructor.is_valid():
+            ficha_id = request.POST.get('ficha_id')
+            if ficha_id:
+                try:
+                    ficha = T_ficha.objects.get(pk=ficha_id)
+                    if ficha.instru is not None:
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': 'Esta ficha ya tiene un instructor asignado.'
+                        }, status=409)
+                    ficha.instru = instructor
+                    ficha.save()
 
-        # Incluimos datos relacionados del perfil
-        if hasattr(instructor, 'perfil'):
-            perfil_data = model_to_dict(instructor.perfil)
+                except T_ficha.DoesNotExist:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Ficha no válida seleccionada.'
+                    }, status=400)
 
-            # Si el perfil tiene una relación con Usuario, la agregamos
-            if hasattr(instructor.perfil, 'user'):
-                perfil_data['user'] = {
-                    'username': instructor.perfil.user.username,
-                    'email': instructor.perfil.user.email,
-                    'first_name': instructor.perfil.user.first_name,
-                    'last_name': instructor.perfil.user.last_name,
-                }
+            form_perfil.save()
+            form_instructor.save()
 
-        instructor_data['perfil'] = perfil_data
+            instructor.save()
 
-        return JsonResponse({'info_adicional': instructor_data})
-    except T_instru.DoesNotExist:
-        return JsonResponse({'error': 'Registro no encontrado'}, status=404)
+            return JsonResponse({'status': 'success', 'message': 'Instructor actualizado con éxito.'})
+        else:
+            errors = {
+                'perfil': form_perfil.errors,
+                'admin': form_instructor.errors
+            }
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Error al actualizar el instructor',
+                'errors': errors
+            }, status=400)
+
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Método no permitido',
+    }, status=405)
 
 ### CUENTAS ###
 
@@ -726,7 +796,7 @@ def crear_aprendices(request):
 
                 fecha_nacimiento = perfil_form.cleaned_data['fecha_naci']
                 if fecha_nacimiento:
-                    edad = (datetime.now().date() - fecha_nacimiento).days // 365
+                    edad = (timezone.now().date() - fecha_nacimiento).days // 365
                     if edad < 14:
                         raise ValueError("El aprendiz debe tener al menos 14 años para registrarse.")
                 else:
@@ -1317,7 +1387,7 @@ def crear_instituciones(request):
                     return JsonResponse({'status': 'error', 'message': 'Institución duplicada.', 'errors': errors}, status=400)
 
                 new_institucion = institucionForm.save(commit=False)
-                new_institucion.vigen = datetime.now().year
+                new_institucion.vigen = timezone.now().year
                 new_institucion.save()
 
                 return JsonResponse({'status':'success', 'message': 'Institución creada correctamente.'}, status=200)
@@ -1571,7 +1641,7 @@ def cargar_aprendices_masivo(request):
                             if fecha_naci_str:
                                 try:
                                     # Intentar convertir la fecha en formato "1/01/1980"
-                                    fecha_naci = datetime.strptime(fecha_naci_str, '%d/%m/%Y')
+                                    fecha_naci = timezone.strptime(fecha_naci_str, '%d/%m/%Y')
                                     # Convertirla al formato YYYY-MM-DD
                                     fecha_naci = fecha_naci.strftime('%Y-%m-%d')
                                 except ValueError as e:
@@ -1900,7 +1970,7 @@ def crear_gestor(request):
                 new_gestor_depa = T_gestor_depa(
                     gestor=new_gestor,
                     depa=departamento_obj,
-                    fecha_crea=datetime.now(),
+                    fecha_crea=timezone.now(),
                     usuario_crea=request.user
                 )
                 new_gestor_depa.save()
@@ -1996,7 +2066,7 @@ def editar_gestor(request, gestor_id):
                 T_gestor_depa.objects.create(
                     gestor=gestor, 
                     depa=departamento, 
-                    fecha_crea = datetime.now(),
+                    fecha_crea = timezone.now(),
                     usuario_crea = request.user
                 )
 
@@ -2013,26 +2083,51 @@ def editar_gestor(request, gestor_id):
 def reset_password_view(request):
     return render(request, 'res_con.html')
 
+## GESTION DE USUARIOS ###
+@login_required
+def usuarios(request):
+    usuarios = T_perfil.objects.all()
+    return render(request, 'usuarios.html', {
+        'usuarios': usuarios,
+    })
+
 def restablecer_contrasena(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             user_id = data.get('user_id')
-            nueva_contrasena = data.get('nueva_contrasena')
+            nueva_contrasena = data.get('new_password')
 
             if not user_id or not nueva_contrasena:
                 return JsonResponse({'status': 'error', 'message': 'Faltan datos'}, status=400)
 
-            usuario = User.objects.filter(id=user_id).first()
-            if not usuario:
+            perfil = T_perfil.objects.filter(id=user_id).first()
+            usuario = perfil.user
+            if not perfil:
                 return JsonResponse({'status': 'error', 'message': 'Usuario no encontrado'}, status=404)
 
-            usuario.set_password(nueva_contrasena)
+            if not validar_contrasena_segura(nueva_contrasena):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales.'
+                }, status=400)
+
+            usuario.password = make_password(nueva_contrasena)
             usuario.save()
+            return JsonResponse({'status': 'success', 'message': 'Contraseña actualizada correctamente'}, status = 200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
 
-            return JsonResponse({'status': 'success', 'message': 'Contraseña restablecida correctamente'})
-        
-        except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Datos inválidos'}, status=400)
-
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+def validar_contrasena_segura(password):
+    if len(password) < 8:
+        return False
+    if not re.search(r'[A-Z]', password):
+        return False
+    if not re.search(r'[a-z]', password):
+        return False
+    if not re.search(r'\d', password):
+        return False
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=/\\[\]`~%$]', password):
+        return False
+    return True

@@ -19,23 +19,22 @@
                 <table id="competencias_table" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
-                        <th></th>
                         <th>Nombre</th>
                         <th>Programa asociado</th>
                         <th>Fase</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for competencia in competencias %}
-                    <tr data-id="{{ competencia.id }}">
-                        <td><a href="/" class="btn btn-primary btn-sm " data-toggle="tooltip" data-placement="top" title="Editar">
-                            {% icon 'edit' %}
-    
-                        </a></td>
+                    <tr>
                         <td>{{ competencia.nom}}</td>
                         <td>{{ competencia.progra.nom}}</td>
                         <td>{{ competencia.fase}}</td>
-
+                        <td>
+                            <a href="/" class="btn btn-outline-warning btn-sm " data-toggle="tooltip" data-placement="top" title="Editar">
+                            <i class="bi bi-pencil-square"></i></a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

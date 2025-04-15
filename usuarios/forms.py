@@ -158,12 +158,11 @@ class PerfilEditForm(forms.ModelForm):
 class InstructorForm(forms.ModelForm):
     class Meta:
         model = T_instru
-        exclude = ['perfil']  # El perfil se asignará automáticamente
+        exclude = ['perfil', 'esta']  # El perfil se asignará automáticamente
         widgets = {
             'contra': forms.TextInput(attrs={'class': 'form-control'}),
             'fecha_ini': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'esta': forms.TextInput(attrs={'class': 'form-control'}),
             'profe': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_vincu': forms.Select(attrs={'class': 'form-select'}),
         }
@@ -171,7 +170,6 @@ class InstructorForm(forms.ModelForm):
             'contra': 'Número de contrato',
             'fecha_ini': 'Fecha de inicio',
             'fecha_fin': 'Fecha de finalización',
-            'esta': 'Estado',
             'profe': 'Profesión',
             'tipo_vincu': 'Tipo de vinculación'
         }

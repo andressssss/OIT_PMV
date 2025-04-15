@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load icons %}
+
+{% block content %}
+<main class="container py-5">
+    <section class="card card-body shadow-sm p-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center pb-4">
+                <h1 class="display-5">Gestión de Usuarios</h1>
+            </div>
+            <div class="table-responsive">
+                <table id="lideres" class="table table-hover table-bordered align-middle">
+                    <thead class="table-secondary text-center">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Teléfono</th>
+                        <th>Mail</th>
+                        <th>Fecha nacimiento</th>
+                        <th>Username</th>
+                        <th>Ultima vez</th>
+                        <th>Rol</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.nom}}</td>
+                        <td>{{ usuario.apelli}}</td>
+                        <td>{{ usuario.tele}}</td>
+                        <td>{{ usuario.user.email}}</td>
+                        <td>{{ usuario.fecha_naci}}</td>
+                        <td>{{ usuario.user.username}}</td>
+                        <td>{{ usuario.user.last_login|default:"Nunca"}}</td>
+                        <td>{{ usuario.rol }}</td>
+                        <td>
+                        <a class="btn btn-outline-warning btn-sm mb-1 btn-establecer-contra" data-id="{{ usuario.id }}" data-usuario="{{ usuario.nom }} {{ usuario.apelli }}" data-toggle="tooltip" data-placement="top" title="Establecer contraseña" data-bs-toggle="modal" data-bs-target="#modalReset">
+                            <i class="bi bi-asterisk"></i>
+                        </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        </div>
+    </div>
+    </section>
+</main>
+
+<!-- Modal Restablecer Contraseña -->
+<div class="modal fade" id="modalReset" tabindex="-1" aria-labelledby="modalResetLabel" aria-hidden="true">
+    <div class="modal-dialog">
+    <div class="modal-content">
+        <form id="form-reset">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalResetLabel">Restablecer contraseña <span id="nombre-usr-restablecer"></span></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+            <label for="new-password" class="form-label">Coloque la nueva contraseña:</label>
+            <input type="password" id="new-password" class="form-control" placeholder="Nueva contraseña" required>
+            <div class="mt-2" id="password-help" style="font-size: 0.9em;">
+                <p class="mb-1">La contraseña debe contener:</p>
+                <ul class="list-unstyled mb-0">
+                <li id="rule-length" class="text-danger">🔴 Al menos 8 caracteres</li>
+                <li id="rule-uppercase" class="text-danger">🔴 Una letra mayúscula</li>
+                <li id="rule-lowercase" class="text-danger">🔴 Una letra minúscula</li>
+                <li id="rule-number" class="text-danger">🔴 Un número</li>
+                <li id="rule-special" class="text-danger">🔴 Un carácter especial</li>
+                </ul>
+            </div>
+            <input type="hidden" id="user-id-reset">
+        </div>
+        <div class="modal-footer">
+            <button type="submit" id="btn-submit-contra" class="btn btn-success">Guardar</button>
+        </div>
+        </form>
+    </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{% static 'js/usuarios/usuario.js' %}"></script>
+{% endblock %}

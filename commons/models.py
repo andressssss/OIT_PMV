@@ -74,10 +74,11 @@ class T_instru(models.Model):
 
     VINCULACION_CHOICES = [
         ('termino indefinido', 'Termino indefinido'),
-        ('colaborador externo', 'Colaborador externo')
+        ('colaborador externo', 'Colaborador externo'),
+        ('sindefinir', 'Sin definir')
     ]
     perfil = models.OneToOneField(T_perfil, on_delete=models.CASCADE)
-    contra = models.CharField(max_length=200)
+    contra = models.CharField(max_length=200, blank=True, null=True)
     fecha_ini = models.DateField(null=True, blank=True)
     fecha_fin = models.DateField(null=True, blank=True)
     esta = models.CharField(max_length=200)
@@ -268,25 +269,6 @@ class T_progra(models.Model):
     def __str__(self):
         return f"{self.nom}"
 
-class T_ficha(models.Model):
-    class Meta:
-        managed = True
-        db_table = 't_ficha'
-    fecha_aper = models.DateTimeField(null=True, blank=True)
-    fecha_cierre = models.DateTimeField(null=True, blank=True)
-    insti = models.ForeignKey(T_insti_edu, on_delete=models.CASCADE)
-    centro = models.ForeignKey(T_centro_forma, on_delete=models.CASCADE)
-    num = models.CharField(max_length=100)
-    instru = models.ForeignKey(T_instru, on_delete=models.CASCADE)
-    progra = models.ForeignKey(T_progra, on_delete=models.CASCADE)
-    num_apre_proce = models.CharField(max_length=100)
-    num_apre_forma = models.CharField(max_length=100)
-    num_apre_pendi_regi = models.CharField(max_length=100)
-    esta = models.CharField(max_length=100)
-
-    def __str__(self):
-        return f"{self.num}"
-
 class T_grupo(models.Model):
     class Meta:
         managed: True
@@ -302,6 +284,26 @@ class T_grupo(models.Model):
 
     def __str__(self):
         return f"{self.id} - {self.insti}"
+
+class T_ficha(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_ficha'
+    fecha_aper = models.DateTimeField(null=True, blank=True)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    insti = models.ForeignKey(T_insti_edu, on_delete=models.CASCADE)
+    centro = models.ForeignKey(T_centro_forma, on_delete=models.CASCADE)
+    num = models.CharField(max_length=100)
+    instru = models.ForeignKey(T_instru, on_delete=models.CASCADE, blank=True, null=True)
+    progra = models.ForeignKey(T_progra, on_delete=models.CASCADE)
+    num_apre_proce = models.CharField(max_length=100)
+    num_apre_forma = models.CharField(max_length=100)
+    num_apre_pendi_regi = models.CharField(max_length=100)
+    esta = models.CharField(max_length=100)
+    grupo = models.ForeignKey(T_grupo, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.num}"
 
 class T_gestor_grupo(models.Model):
     class Meta:
@@ -327,7 +329,7 @@ class T_fase_ficha(models.Model):
     ficha = models.ForeignKey(T_ficha, on_delete=models.CASCADE)
     fecha_ini = models.DateTimeField(null=True, blank=True)
     fecha_fin = models.DateTimeField(null=True, blank=True)
-    instru = models.ForeignKey(T_instru, on_delete=models.CASCADE)
+    instru = models.ForeignKey(T_instru, on_delete=models.CASCADE, null=True, blank=True)
     vige = models.CharField(max_length=100, default='No')
 
     def __str__(self):
@@ -338,10 +340,10 @@ class T_crono(models.Model):
         managed = True
         db_table = 't_crono'
     nove = models.CharField(max_length=200)
-    fecha_ini_acti = models.DateTimeField(null=True, blank=True)
-    fecha_fin_acti = models.DateTimeField(null=True, blank=True)
-    fecha_ini_cali = models.DateTimeField(null=True, blank=True)
-    fecha_fin_cali = models.DateTimeField(null=True, blank=True)
+    fecha_ini_acti = models.DateTimeField(null=False, blank=False)
+    fecha_fin_acti = models.DateTimeField(null=False, blank=False)
+    fecha_ini_cali = models.DateTimeField(null=False, blank=False)
+    fecha_fin_cali = models.DateTimeField(null=False, blank=False)
 
 class T_tipo_acti(models.Model):
     class Meta:
@@ -375,12 +377,9 @@ class T_acti(models.Model):
         db_table = 't_acti'
     nom = models.CharField(max_length=200)
     descri = models.CharField(max_length=500)
-    horas_auto = models.CharField(max_length=200)
-    horas_dire = models.CharField(max_length=200)
     tipo = models.ManyToManyField(T_tipo_acti)
     guia = models.ForeignKey(T_guia, on_delete=models.CASCADE)
     fase = models.CharField(max_length=100)
-    raps = models.ManyToManyField('T_raps', related_name='acti', blank=True)
 
 class T_descri(models.Model):
     class Meta:
@@ -439,16 +438,15 @@ class T_encu(models.Model):
         managed = True
         db_table = 't_encu'
     FASE_CHOICES = [
-        ('fase analisis', 'Fase Analisis'),
-        ('fase planeacion', 'Fase Planeacion'),
-        ('fase ejecucion', 'Fase Ejecucion'),
-        ('fase evaluacion', 'Fase Evaluacion'),
+        ('analisis', 'Fase Analisis'),
+        ('planeacion', 'Fase Planeacion'),
+        ('ejecucion', 'Fase Ejecucion'),
+        ('evaluacion', 'Fase Evaluacion'),
     ]
     fecha = models.DateTimeField(null=True, blank=True)
     tema = models.CharField(max_length=200)
     fase = models.CharField(max_length=200, choices=FASE_CHOICES)
     lugar = models.CharField(max_length=200)
-    guia = models.ForeignKey(T_guia, on_delete=models.CASCADE)
     ficha = models.ForeignKey(T_ficha, on_delete=models.CASCADE)
 
 class T_encu_apre(models.Model):
@@ -458,17 +456,16 @@ class T_encu_apre(models.Model):
     encu = models.ForeignKey(T_encu, on_delete=models.CASCADE)
     apre = models.ForeignKey(T_apre, on_delete= models.CASCADE)
     prese = models.CharField(max_length=200)
-    ficha = models.ForeignKey(T_ficha, on_delete=models.CASCADE)
 
 class T_compe(models.Model):
     class Meta:
         managed = True
         db_table = 't_compe'
     FASE_CHOICES = [
-        ('fase analisis', 'Fase Analisis'),
-        ('fase planeacion', 'Fase Planeacion'),
-        ('fase ejecucion', 'Fase Ejecucion'),
-        ('fase evaluacion', 'Fase Evaluacion')
+        ('analisis', 'Fase Analisis'),
+        ('planeacion', 'Fase Planeacion'),
+        ('ejecucion', 'Fase Ejecucion'),
+        ('evaluacion', 'Fase Evaluacion')
     ]
     nom = models.CharField(max_length=200)
     progra = models.ForeignKey(T_progra, on_delete=models.CASCADE)
@@ -481,15 +478,9 @@ class T_raps(models.Model):
     class Meta:
         managed = True
         db_table = 't_raps'
-    FASE_CHOICES = [
-        ('fase analisis', 'Fase Analisis'),
-        ('fase planeacion', 'Fase Planeacion'),
-        ('fase ejecucion', 'Fase Ejecucion'),
-        ('fase evaluacion', 'Fase Evaluacion')
-    ]
+
     nom = models.CharField(max_length=200)
     compe = models.ForeignKey(T_compe, on_delete=models.CASCADE)
-    fase = models.CharField(max_length=100, choices=FASE_CHOICES)
     comple = models.CharField(max_length=100, default='No')
 
     def __str__(self):
@@ -504,7 +495,7 @@ class T_raps_ficha(models.Model):
     agre = models.CharField(max_length=100, default='No')
 
     def __str__(self):
-        return f"RAP: {self.rap.nom} - Ficha: {self.ficha.num}"
+        return f"{self.rap.nom}"
 
 class T_raps_acti(models.Model):
     class Meta:
@@ -542,8 +533,7 @@ class T_docu(models.Model):
     archi = models.FileField(upload_to='documentos', null=True, blank=True, max_length=500 )
     tama = models.CharField(max_length=200)
     priva = models.CharField(max_length=200)
-    esta = models.CharField(
-        max_length=200, choices=ESTADO_CHOICES, default='activo')
+    esta = models.CharField(max_length=200, choices=ESTADO_CHOICES, default='activo')
 
 # Estados de validacion de documentos:
 # 0 No cargado
@@ -710,24 +700,29 @@ class T_nove_ficha(models.Model):
     nove = models.ForeignKey(T_nove, on_delete=models.CASCADE)
 
 class T_DocumentFolder(MPTTModel):
+    TIPO_CHOICES = [
+        ('documento', 'Documento'),
+        ('carpeta', 'Carpeta')
+    ]
     name = models.CharField(max_length=255) #Nombre de la carpeta o doc
     parent = TreeForeignKey('self', on_delete = models.CASCADE, null=True, blank=True, related_name='children')
-    tipo = models.CharField(max_length=50, choices=[('documento', 'Documento'), ('link', 'Enlace'), ('carpeta', 'Carpeta')], default='carpeta')
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, default='carpeta')
     ficha = models.ForeignKey(T_ficha, on_delete=models.CASCADE)
-    url = models.URLField(blank=True, null=True)
-    iden = models.CharField(max_length=200, blank=True, null=True)
+    documento = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
     
 class T_DocumentFolderAprendiz(MPTTModel):
+    TIPO_CHOICES = [
+    ('documento', 'Documento'),
+    ('carpeta', 'Carpeta')
+    ]
     name = models.CharField(max_length=200)
     parent = TreeForeignKey('self', on_delete = models.CASCADE, null=True, blank=True, related_name='children')
-    tipo = models.CharField(max_length=50, choices=[('documento', 'Documento'), ('link', 'Enlace'), ('carpeta', 'Carpeta')], default='carpeta')
-    ficha = models.ForeignKey(T_ficha, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, default='carpeta')
     aprendiz = models.ForeignKey(T_apre, on_delete=models.CASCADE)
-    url = models.URLField(blank=True, null=True)
-    iden = models.CharField(max_length=200, blank=True, null=True)
+    documento = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -826,3 +821,12 @@ class T_contra(models.Model):
 
     def __str__(self):
         return f"Contrato de {self.instru} - {self.oferta.cargo} ({self.estado})"
+
+class T_cali(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_cali'
+    acti = models.ForeignKey(T_acti_ficha, on_delete=models.CASCADE)
+    apre = models.ForeignKey(T_apre, on_delete=models.CASCADE)
+    cali = models.CharField(max_length=5)
+    fecha_calificacion = models.DateTimeField(auto_now_add=True)

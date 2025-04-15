@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from commons.models import T_acti, T_centro_forma, T_docu,T_departa, T_insti_edu, T_munici, T_DocumentFolder, T_encu,T_apre, T_raps_ficha, T_acti_docu, T_acti_ficha, T_acti_apre, T_acti_descri, T_crono, T_progra, T_compe, T_raps, T_ficha
+from commons.models import T_acti,T_guia, T_centro_forma,T_fase_ficha, T_docu,T_departa, T_insti_edu, T_munici, T_DocumentFolder, T_encu,T_apre, T_raps_ficha, T_acti_docu, T_acti_ficha, T_acti_apre, T_acti_descri, T_crono, T_progra, T_compe, T_raps, T_ficha
+from django.db.models import Subquery
 
 
 
@@ -47,20 +48,16 @@ class CascadaMunicipioInstitucionForm(forms.Form):
 class ActividadForm(forms.ModelForm):
     class Meta:
         model = T_acti
-        fields = ['nom', 'descri', 'horas_auto', 'horas_dire', 'tipo', 'guia']
+        fields = ['nom', 'descri', 'tipo', 'guia']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Escriba el nombre'}),
-            'descri': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Escriba la descripcion de la actividad'}),
-            'horas_auto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Escriba las horas autonomas'}),
-            'horas_dire': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Escriba las horas directas'}),
-            'tipo': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la actividad'}),
+            'descri': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Descripción de la actividad'}),
+            'tipo': forms.SelectMultiple(attrs={'class': 'form-select tomselect-multiple', 'placeholder': 'Seleccione los tipos de actividad'}),
             'guia': forms.Select(attrs={'class': 'form-select'})
         }
         labels = {
             'nom': 'Nombre',
             'descri': 'Descripcion',
-            'horas_auto': 'Horas autonomas',
-            'horas_dire': 'Horas directas',
             'tipo': 'Tipo de actividad',
             'guia': 'Guia relacionada'
         }
@@ -79,17 +76,30 @@ class DocumentosForm(forms.ModelForm):
 
 class RapsFichaForm(forms.Form):
     raps = forms.ModelMultipleChoiceField(
-        queryset=T_raps_ficha.objects.none(),  # Inicialmente vacío
-        widget=forms.CheckboxSelectMultiple,  # Widget de checkboxes
-        required=False  # No es obligatorio seleccionar RAPs
+        queryset=T_raps_ficha.objects.none(),
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select tomselect-raps',
+            'placeholder': 'Seleccione los RAPs asociados'
+        }),
+        required=True
     )
 
     def __init__(self, *args, **kwargs):
-        ficha = kwargs.pop('ficha', None)  # Extraer 'ficha' de los argumentos
-        super().__init__(*args, **kwargs)  # Llamar al constructor de la clase base
+        ficha = kwargs.pop('ficha', None)
+        super().__init__(*args, **kwargs)
+
         if ficha:
-            # Si se pasó una ficha, ajustar el queryset para incluir los RAPs de la ficha
-            self.fields['raps'].queryset = T_raps_ficha.objects.filter(ficha=ficha, agre='No')
+            fase_activa = T_fase_ficha.objects.filter(
+                ficha=ficha,
+                vige='1'
+            ).first()
+
+            if fase_activa:
+                fase_nom = fase_activa.fase
+                self.fields['raps'].queryset = T_raps_ficha.objects.filter(
+                    ficha=ficha,
+                    rap__compe__fase=fase_nom
+                )
 
 class CronogramaForm(forms.ModelForm):
     class Meta:
@@ -147,31 +157,40 @@ class RapsForm(forms.ModelForm):
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control', 'label': 'Ingrese el nombre'}),
             'compe': forms.Select(attrs={'class': 'form-control'}),
-            'fase': forms.Select(attrs={'class': 'form-control'})
         }
         labels = {
             'nom': 'Nombre',
             'compe': 'Competencia',
-            'fase': 'Fase'
+        }
+
+class GuiaForm(forms.ModelForm):
+    class Meta:
+        model = T_guia
+        fields = ['nom', 'horas_auto', 'horas_dire', 'progra']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'label': 'Ingrese el nombre'}),
+            'horas_auto': forms.TextInput(attrs={'class': 'form-control'}),
+            'horas_dire': forms.TextInput(attrs={'class': 'form-control'}),
+            'progra': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'nom': 'Nombre',
+            'horas_auto': 'Horas autonomas',
+            'horas_dire': 'Horas directas',
+            'progra': 'Programa',
         }
 
 class EncuentroForm(forms.ModelForm):
     class Meta:
         model = T_encu
-        fields = ['fase', 'tema', 'guia', 'lugar', 'fecha']
+        fields = ['tema', 'lugar']
         widgets = {
-            'fase': forms.Select(attrs={'class': 'form-control'}),
             'tema': forms.TextInput(attrs={'class': 'form-control'}),
-            'guia': forms.Select(attrs={'class': 'form-control'}),
             'lugar': forms.TextInput(attrs={'class': 'form-control'}),
-            'fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
         labels = {
-            'fase': 'Fase',
             'tema': 'Tema del encuentro',
-            'guia': 'Guia asociada al encuentro',
-            'lugar': 'Lugar de encuentro',
-            'fecha': 'Fecha',
+            'lugar': 'Lugar de encuentro'
         }
 
 class EncuApreForm(forms.Form):

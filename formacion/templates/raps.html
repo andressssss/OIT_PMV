@@ -19,25 +19,24 @@
                 <table id="instructores" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
-                        <th></th>
-                        <th>Programa</th>
-                        <th>Competencia</th>
                         <th>RAP</th>
                         <th>Fase</th>
+                        <th>Competencia</th>
+                        <th>Programa</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for rap in raps %}
-                    <tr data-id="{{ rap.id }}">
-                        <td><a href="/" class="btn btn-primary btn-sm " data-toggle="tooltip" data-placement="top" title="Editar">
-                            {% icon 'edit' %}
-
-                        </a></td>
-                        <td>{{ rap.compe.progra.nom}}</td>
-                        <td>{{ rap.compe.nom}}</td>
+                    <tr>
                         <td>{{ rap.nom}}</td>
-                        <td>{{ rap.fase}}</td>
-
+                        <td>{{ rap.compe.fase}}</td>
+                        <td>{{ rap.compe.nom}}</td>
+                        <td>{{ rap.compe.progra.nom}}</td>
+                        <td>
+                            <a href="/" class="btn btn-outline-warning btn-sm " data-toggle="tooltip" data-placement="top" title="Editar">
+                            <i class="bi bi-pencil-square"></i></a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

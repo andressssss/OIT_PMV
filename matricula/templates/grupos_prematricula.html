@@ -15,7 +15,6 @@
                         {% icon 'plus' %}
                     </a>
                     {% endif %}
-                    
                 </div>
             </div>
 
@@ -47,40 +46,72 @@
                     <td>
                         <div class="d-flex flex-wrap gap-1">
                             {% if grupo.grupo.esta == 'Pre matricula' %}
-                                <a href="{% url 'asignar_aprendices' grupo.grupo.id %}" class="btn btn-info btn-sm" data-toggle="tooltip" title="Asignar aprendices">
+                                <a href="{% url 'asignar_aprendices' grupo.grupo.id %}" class="btn btn-outline-info btn-sm" data-toggle="tooltip" title="Asignar aprendices">
                                     {% icon 'asignarapre' %}
+                                </a>
+                                <a class="btn btn-outline-danger btn-sm delete-btn" data-id="{{grupo.grupo.id}}" data-toggle="tooltip" title="Eliminar">
+                                    {% icon 'delete' %}
                                 </a>
                             {% elif grupo.grupo.esta == 'Validacion matriculas' %}
-                                <a href="{% url 'asignar_aprendices' grupo.grupo.id %}" class="btn btn-info btn-sm" data-toggle="tooltip" title="Asignar aprendices">
+                                <a href="{% url 'asignar_aprendices' grupo.grupo.id %}" class="btn btn-outline-info btn-sm" data-toggle="tooltip" title="Asignar aprendices">
                                     {% icon 'asignarapre' %}
                                 </a>
-                                <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-warning btn-sm" data-toggle="tooltip" title="ver detalle">
+                                <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-outline-warning btn-sm" data-toggle="tooltip" title="ver detalle">
                                     {% icon 'detalle' %}
                                 </a>
+                                
                                 {% if rol == 'lider' %}
-                                    <a href="{% url 'confirmar_documentacion' grupo.grupo.id %}" class="btn btn-success btn-sm confirmar-doc" data-toggle="tooltip" title="Confirmar documentación">
+                                    <a href="{% url 'confirmar_documentacion' grupo.grupo.id %}" class="btn btn-outline-success btn-sm confirmar-doc" data-toggle="tooltip" title="Confirmar documentación">
                                         {% icon 'confirmar' %}
+                                    </a>
+                                    <a class="btn btn-outline-danger btn-sm delete-btn" data-id="{{grupo.grupo.id}}" data-toggle="tooltip" title="Eliminar">
+                                        {% icon 'delete' %}
                                     </a>
                                 {% endif %}
                             {% elif grupo.grupo.esta == 'En radicacion' %}
-                                <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-warning btn-sm" data-toggle="tooltip" title="ver detalle">
+                                <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-outline-warning btn-sm" data-toggle="tooltip" title="ver detalle">
                                     {% icon 'detalle' %}
                                 </a>
-                                <a href="" class="btn btn-warning btn-sm" data-toggle="tooltip" title="Formalizar ficha">
+                                <a href="" class="btn btn-outline-success btn-sm formaBtn" data-id="{{ grupo.grupo.id }}" data-toggle="tooltip" title="Formalizar ficha" data-bs-toggle="modal" data-bs-target="#formalizarFichaModal">
                                     {% icon 'ficha' %}
                                 </a>
+                            {% elif grupo.grupo.esta == 'Formalizado' %}
+                                <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-outline-warning btn-sm" data-toggle="tooltip" title="ver detalle">
+                                    {% icon 'detalle' %}
+                                </a>
+                                <a href="/" class="btn btn-outline-primary btn-sm" data-toggle="tooltip" title="ver ficha">
+                                    <i class="bi bi-journals"></i>
+                                </a>
                             {% endif %}
-                            <a class="btn btn-danger btn-sm delete-btn" data-id="{{grupo.grupo.id}}" data-toggle="tooltip" title="Eliminar">
-                                {% icon 'delete' %}
-                            </a>
+
                         </div>
-                    </td>                    
-                </tr>           
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
     </section>
 </main>
+<!-- Modal para Formalizar Ficha -->
+<div class="modal fade" id="formalizarFichaModal" tabindex="-1" aria-labelledby="formalizarFichaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="formalizarFichaLabel">Formalizar Ficha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="grupo-id">
+                <label for="numeroFicha">Número de Ficha</label>
+                <input type="text" id="numeroFicha" class="form-control" placeholder="Ingrese el número de ficha">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmarFormalizar">Formalizar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

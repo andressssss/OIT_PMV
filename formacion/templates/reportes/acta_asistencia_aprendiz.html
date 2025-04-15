@@ -1,0 +1,19 @@
+<h2>Reporte de asistencia - {{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}</h2>
+<table border="1" cellspacing="0" cellpadding="5">
+    <thead>
+        <tr>
+        <th>Fecha</th>
+        <th>Lugar</th>
+        <th>Asistió</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in asistencias %}
+        <tr>
+        <td>{{ a.encu.fecha }}</td>
+        <td>{{ a.encu.lugar }}</td>
+        <td>{{ a.prese }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

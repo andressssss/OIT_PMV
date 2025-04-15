@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<main class="container">
+    <div class="row">
+        <div class="col-12 offset-md-12">
+            <form action="/guia/crear/" method="POST" class="card card-body mt-5">
+                <h1 class="text-center">Crear guia</h1>
+                {{error}}
+                {% csrf_token %}
+                <h3>Datos de la guia</h3>
+                {{ guia_form.as_p }}
+                <button type="submit" class="btn btn-primary">Crear guia</button>
+            </form>
+        </div>
+    </div>
+</main>
+{% endblock %}

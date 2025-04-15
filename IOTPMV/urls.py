@@ -89,10 +89,10 @@ urlpatterns = [
     # Instructores
     
     path('instructores/', usuarios_views.instructores, name='instructores'),
-    path('instructores/crear/', usuarios_views.crear_instructor,name='crear_instructor'),
-    path('instructores/<int:instructor_id>/',usuarios_views.instructor_detalle, name='instructor_detalle'),
-    path('obtener_detalles/<int:instructor_id>/',usuarios_views.instructor_detalle_tabla, name='obtener_detalles'),
-    
+    path('api/instructor/crear/', usuarios_views.crear_instructor,name='crear_instructor'),
+    path('api/instructor/<int:instructor_id>/', usuarios_views.obtener_instructor ,name='api_obtener_instructor'),
+    path('api/instructor/editar/<int:instructor_id>/', usuarios_views.editar_instructor, name='api_editar_instructor'),
+
     # Rol Administradores
     path('administradores/', usuarios_views.administradores, name='administradores'),
     path('api/administrador/crear/', usuarios_views.crear_administrador,name='api_crear_administrador'),
@@ -165,10 +165,34 @@ urlpatterns = [
     path('get_tree_instructor/', formacion_views.tree_detalle,name='get_tree_instructor'),
 
     # Panel instructor
-    path('fichas/', formacion_views.listar_fichas, name='listar_fichas'),
-    path('fichas/<int:ficha_id>/', formacion_views.panel_ficha, name='panel_ficha'),
-    path('fichas/<int:ficha_id>/crear_actividad/', formacion_views.crear_actividad, name='crear_actividad'),
+    path('fichas_inst/', formacion_views.listar_fichas, name='listar_fichas'),
     path('fichas/<int:ficha_id>/crear_encuentro/', formacion_views.crear_encuentro, name='crear_encuentro'),
+
+    # Tree
+    path("api/tree/obtener_carpetas/<int:ficha_id>/", formacion_views.obtener_carpetas, name="api_obtener_carpetas"),
+    path("api/tree/cargar_doc/", formacion_views.cargar_documento, name="api_cargar_documento"),
+    path('api/tree/eliminar_documento/<int:documento_id>', formacion_views.eliminar_documento_portafolio_ficha, name='api_eliminar_documento_portafolio_ficha'),
+    path('api/tree/obtener_hijos_carpeta/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta, name='api_obtener_hijos_carpeta'),
+
+    # Tree aprendiz
+    path("api/tree/obtener_carpetas_aprendiz/<int:aprendiz_id>/", formacion_views.obtener_carpetas_aprendiz, name="api_obtener_carpetas_aprendiz"),
+    path("api/tree/cargar_doc_aprendiz/", formacion_views.cargar_documento_aprendiz, name="api_cargar_documento_aprendiz"),
+    path('api/tree/eliminar_documento_aprendiz/<int:documento_id>', formacion_views.eliminar_documento_portafolio_aprendiz, name='api_eliminar_documento_portafolio_aprendiz'),
+    path('api/tree/obtener_hijos_carpeta_aprendiz/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta_aprendiz, name='api_obtener_hijos_carpeta_aprendiz'),
+
+    #Fichas
+    path('ficha/<int:ficha_id>/', formacion_views.panel_ficha, name='panel_ficha'),
+    path('api/ficha/crear_actividad/<int:ficha_id>/', formacion_views.crear_actividad, name='api_crear_actividad'),
+    path('api/ficha/calificar_actividad/', formacion_views.calificarActividad, name='api_calificar_actividad_ficha'),
+    path('api/ficha/ver_cronograma/<int:ficha_id>/', formacion_views.listar_actividades_ficha, name='api_listar_actividades_ficha'),
+    path('api/ficha/obtener_aprendices_calificacion/<int:ficha_id>/<int:actividad_id>/', formacion_views.obtener_aprendices_calificacion, name='api_obtener_aprendices_calificacion'),
+    path('api/ficha/detalle_actividad/<int:actividad_id>', formacion_views.detalle_actividad, name='api_detalle_actividad'),
+    path('api/ficha/cerrar_fase/<int:ficha_id>/', formacion_views.cerrar_fase_ficha, name='api_cerrar_fase_ficha'),
+    path('api/ficha/encuentro_detalle/<int:encuentro_id>/', formacion_views.detalle_encuentro, name='api_detalle_encuentro'),
+
+    # Reportes ficha
+    path('api/reporte/ficha/generar_acta_asistencia/', formacion_views.generar_acta_asistencia, name='generar_acta_asistencia'),
+    path('api/reporte/ficha/generar_acta_asistencia_aprendiz/', formacion_views.generar_acta_asistencia_aprendiz, name='generar_acta_asistencia_aprendiz'),
 
     # ROL Aprendices
     path('panel_aprendiz/', formacion_views.panel_aprendiz, name='panel_aprendiz'),
@@ -178,12 +202,13 @@ urlpatterns = [
     path('novedades/crear/', usuarios_views.crear_novedad , name='crear_novedad'),
 
     # Fichas
-    path('fichas_adm/', formacion_views.listar_fichas_adm, name='fichas_adm'), 
-    path('fichas_adm/crear/', formacion_views.crear_ficha, name='fichas_adm_crear'), 
+    path('fichas/', formacion_views.fichas, name='fichas'), 
+    path('api/formalizar_ficha/', matricula_views.formalizar_ficha, name='api_formalizar_ficha'), 
 
     # Programas
     path('programas/', formacion_views.listar_programas, name='programas'),
     path('programas/crear/', formacion_views.crear_programa, name='crear_programas'),
+    path('api/programa/detalle/<int:programa_id>/', formacion_views.detalle_programa, name='api_detalle_programa'),
 
     # Competencias
     path('competencias/', formacion_views.listar_competencias, name='competencias'),
@@ -193,12 +218,12 @@ urlpatterns = [
     path('raps/', formacion_views.listar_raps, name = 'raps'),
     path('raps/crear/', formacion_views.crear_raps, name='crear_raps'),
 
+    # Guias
+    path('guias/', formacion_views.listar_guias, name = 'guias'),
+    path('guia/crear/', formacion_views.crear_guia, name='crear_guia'),
+
     # Tree
     path('api/carpetas/<int:ficha_id>/', formacion_views.obtener_carpetas, name='obtener_carpetas'),
-    path('api/carpetas/<int:ficha_id>/<int:aprendiz_id>', formacion_views.obtener_carpetas_aprendiz, name='obtener_carpetas_aprendiz'),
-    path('prueba_tree/', formacion_views.prueba_tree, name='prueba_tree'),
-    path('fichas/<int:ficha_id>/cargar_documento/', formacion_views.cargar_documento, name='cargar_documento'),
-    path('fichas/<int:ficha_id>/<str:carpeta>/cargar_link_folders/', formacion_views.cargar_link_folders, name='cargar_link_folders'),
     path('api/estudiantes/<int:ficha_id>/', formacion_views.listar_estudiantes, name='listar_estudiantes'),
 
     # Eliminar documentos
@@ -297,8 +322,10 @@ urlpatterns = [
     path('contratos/', admin_views.contratos, name='contratos'),
 
     path('reset-password/', usuarios_views.reset_password_view, name='reset_password'),
-    path('restablecer_contrasena/', usuarios_views.restablecer_contrasena, name='restablecer_contrasena'),
 
+    # Gestion de usuarios
+    path('usuarios/', usuarios_views.usuarios, name='usuarios'),
+    path('api/usuario/restablecer_contrasena/', usuarios_views.restablecer_contrasena, name='api_restablecer_contrasena'),
 
 ]  
 
