@@ -25,3 +25,13 @@ Thumbs.db
 
 # Archivos guardados por la app
 media/
+
+.env*
+
+.env.dev
+.env.pre
+.env.prod
+
+*.env
+*.log
+*.sqlite3

@@ -57,10 +57,13 @@ def grupos_prematricula(request):
     if perfil.rol == 'gestor':
         gestor = T_gestor.objects.get(perfil=perfil)
         grupos = T_gestor_grupo.objects.filter(gestor=gestor)
-    
+
     if perfil.rol == 'lider':
         grupos = T_gestor_grupo.objects.all()
-    
+    for grupo in grupos: 
+        ficha = T_ficha.objects.filter(grupo=grupo.grupo).first()
+        grupo.ficha = ficha
+
     return render(request, 'grupos_prematricula.html', {
         'grupos': grupos,
         'rol': rol

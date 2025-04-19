@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+import openpyxl
 from django.http import FileResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
@@ -130,23 +131,105 @@ def cerrar_fase_ficha(request, ficha_id):
 
         siguiente_fase = FASES[idx_actual + 1]
 
-        # Crear nueva fase activa
-        T_fase_ficha.objects.create(
+        # Verificar si la siguiente fase ya existe
+        fase_siguiente_existente = T_fase_ficha.objects.filter(
             ficha_id=ficha_id,
-            fase=siguiente_fase,
-            vige='1',
-            fecha_ini=timezone.now(),
-            instru=None,
-        )
+            fase=siguiente_fase
+        ).first()
+
+        if fase_siguiente_existente:
+            # Reactivar la fase existente
+            fase_siguiente_existente.vige = '1'
+            fase_siguiente_existente.fecha_ini = timezone.now()
+            fase_siguiente_existente.save()
+        else:
+            # Crear nueva fase activa
+            T_fase_ficha.objects.create(
+                ficha_id=ficha_id,
+                fase=siguiente_fase,
+                vige='1',
+                fecha_ini=timezone.now(),
+                instru=None,
+            )
 
         return JsonResponse({
             "success": True,
             "siguiente_fase": siguiente_fase,
-            "message": f"Fase '{fase_actual.fase}' cerrada y nueva fase '{siguiente_fase}' creada."
+            "message": f"Fase '{fase_actual.fase}' cerrada y nueva fase '{siguiente_fase}' activada."
         })
 
     except T_fase_ficha.DoesNotExist:
         return JsonResponse({"success": False, "error": "No se encontró la fase activa."}, status=404)
+
+def devolver_fase_ficha(request, ficha_id):
+    if not ficha_id:
+        return JsonResponse({"status": "error", "message": "Falta el ID de la ficha."}, status=400)
+
+    try:
+        fase_actual = T_fase_ficha.objects.get(ficha_id=ficha_id, vige='1')
+        FASES = ['analisis', 'planeacion', 'ejecucion', 'evaluacion']
+
+        try:
+            idx_actual = FASES.index(fase_actual.fase)
+        except ValueError:
+            return JsonResponse({"status": "error", "message": "Fase actual no reconocida."}, status=400)
+
+        if idx_actual == 0:
+            return JsonResponse({
+                "status": "error",
+                "message": "Ya está en la primera fase, no se puede devolver más."
+            }, status=400)
+
+        fase_anterior = FASES[idx_actual - 1]
+
+        # Buscar fase anterior ya creada
+        try:
+            fase_anterior_reg = T_fase_ficha.objects.get(ficha_id=ficha_id, fase=fase_anterior)
+        except T_fase_ficha.DoesNotExist:
+            return JsonResponse({
+                "status": "error",
+                "message": f"No se encontró un registro previo para la fase '{fase_anterior}'."
+            }, status=404)
+
+        # Cerrar fase actual
+        fase_actual.vige = '0'
+        fase_actual.save()
+
+        # Activar fase anterior
+        fase_anterior_reg.vige = '1'
+        fase_anterior_reg.save()
+
+        return JsonResponse({
+            "success": True,
+            "fase_actual": fase_anterior,
+            "message": f"Fase actual revertida a '{fase_anterior}'."
+        })
+
+    except T_fase_ficha.DoesNotExist:
+        return JsonResponse({"success": False, "error": "No se encontró la fase activa."}, status=404)
+
+def obtener_actividad(request, actividad_id):
+    try:
+        actividad_ficha = get_object_or_404(T_acti_ficha, id=actividad_id)
+        actividad = actividad_ficha.acti
+        raps_ids = list(T_raps_acti.objects.filter(acti=actividad).values_list('rap_id', flat=True))
+
+        data = {
+            'nom': actividad.nom,
+            'tipo': list(actividad.tipo.values_list('id', flat=True)),
+            'descri': actividad.descri,
+            'guia': actividad.guia_id,
+            'fecha_ini_acti': actividad_ficha.crono.fecha_ini_acti.strftime('%Y-%m-%d'),
+            'fecha_fin_acti': actividad_ficha.crono.fecha_fin_acti.strftime('%Y-%m-%d'),
+            'fecha_ini_cali': actividad_ficha.crono.fecha_ini_cali.strftime('%Y-%m-%d'),
+            'fecha_fin_cali': actividad_ficha.crono.fecha_fin_cali.strftime('%Y-%m-%d'),
+            'nove': actividad_ficha.crono.nove,
+            'raps': raps_ids,
+        }
+
+        return JsonResponse({'status': 'success', 'data': data})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
 def obtener_carpetas(request, ficha_id):
     # Obtener todas las carpetas y documentos asociados a la ficha
@@ -889,22 +972,72 @@ def detalle_programa(request, programa_id):
     })
 
 def generar_acta_asistencia(request):
-    encuentro_id = request.GET.get('encuentro_id')
     ficha_id = request.GET.get('ficha_id')
+    formato  = request.GET.get('formato')
 
-    encuentro = T_encu.objects.get(id=encuentro_id)
-    asistentes = T_encu_apre.objects.filter(encu=encuentro, apre__ficha__id=ficha_id)
+    ficha = T_ficha.objects.get(id=ficha_id)
+    encuentros = T_encu.objects.filter(ficha=ficha).order_by('fecha')
+    aprendices = T_apre.objects.filter(ficha=ficha)
 
-    template = get_template("reportes/acta_asistencia.html")
-    html = template.render({
-        'encuentro': encuentro,
-        'asistentes': asistentes,
-    })
+    asistencias = {
+        apre.id: {
+            encu.id: "No"
+            for encu in encuentros
+        } for apre in aprendices
+    }
 
-    buffer = BytesIO()
-    pisa.CreatePDF(html, dest=buffer)
-    buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename=f"Acta_Asistencia_{encuentro.fecha.strftime('%Y%m%d')}.pdf")
+    registros = T_encu_apre.objects.filter(encu__in=encuentros, apre__in=aprendices)
+
+    for reg in registros:
+        asistencias[reg.apre.id][reg.encu.id] = reg.prese
+
+    if formato == 'pdf':
+        template = get_template("reportes/acta_asistencia_general.html")
+        tabla = []
+        for apre in aprendices:
+            fila = {
+                'apre': apre,
+                'asistencias': []
+            }
+            for encu in encuentros:
+                prese = asistencias.get(apre.id, {}).get(encu.id, "No")
+                fila['asistencias'].append("Sí" if prese == "Si" else "No")
+            tabla.append(fila)
+        html = template.render({
+            'logo_url': request.build_absolute_uri('/static/images/imagenhome.png'),
+            'tabla': tabla,
+            'ficha': ficha,
+            'encuentros': encuentros,
+            'aprendices': aprendices,
+            'asistencias': asistencias,
+        })
+        buffer = BytesIO()
+        pisa.CreatePDF(html, dest=buffer)
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename=f"Acta_Asistencia_{ficha.id}.pdf")
+
+    elif formato == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Asistencia"
+
+        # Encabezado
+        ws.cell(row=1, column=1).value = "Aprendiz"
+        for col, encu in enumerate(encuentros, start=2):
+            ws.cell(row=1, column=col).value = encu.fecha.strftime('%d/%m/%Y')
+
+        # Filas
+        for row, apre in enumerate(aprendices, start=2):
+            ws.cell(row=row, column=1).value = f"{apre.perfil.nom} {apre.perfil.apelli}"
+            for col, encu in enumerate(encuentros, start=2):
+                valor = asistencias[apre.id][encu.id]
+                ws.cell(row=row, column=col).value = "Sí" if valor == "Si" else "No"
+        # Descargar
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename=f"Asistencia_{ficha.id}.xlsx")
+    return HttpResponse("Formato no válido", status=400)
 
 def generar_acta_asistencia_aprendiz(request):
     aprendiz_id = request.GET.get('aprendiz_id')

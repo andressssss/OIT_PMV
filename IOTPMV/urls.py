@@ -187,9 +187,11 @@ urlpatterns = [
     path('api/ficha/ver_cronograma/<int:ficha_id>/', formacion_views.listar_actividades_ficha, name='api_listar_actividades_ficha'),
     path('api/ficha/obtener_aprendices_calificacion/<int:ficha_id>/<int:actividad_id>/', formacion_views.obtener_aprendices_calificacion, name='api_obtener_aprendices_calificacion'),
     path('api/ficha/detalle_actividad/<int:actividad_id>', formacion_views.detalle_actividad, name='api_detalle_actividad'),
-    path('api/ficha/cerrar_fase/<int:ficha_id>/', formacion_views.cerrar_fase_ficha, name='api_cerrar_fase_ficha'),
     path('api/ficha/encuentro_detalle/<int:encuentro_id>/', formacion_views.detalle_encuentro, name='api_detalle_encuentro'),
-
+    path('api/ficha/cerrar_fase/<int:ficha_id>/', formacion_views.cerrar_fase_ficha, name='api_cerrar_fase_ficha'),
+    path('api/ficha/devolver_fase/<int:ficha_id>/', formacion_views.devolver_fase_ficha, name='api_devolver_fase_ficha'),
+    path('api/ficha/actividad/<int:actividad_id>/', formacion_views.obtener_actividad, name='api_obtener_actividad'),
+    
     # Reportes ficha
     path('api/reporte/ficha/generar_acta_asistencia/', formacion_views.generar_acta_asistencia, name='generar_acta_asistencia'),
     path('api/reporte/ficha/generar_acta_asistencia_aprendiz/', formacion_views.generar_acta_asistencia_aprendiz, name='generar_acta_asistencia_aprendiz'),

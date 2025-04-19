@@ -79,7 +79,7 @@
                                 <a href="{% url 'ver_docs_prematricula' grupo.grupo.id %}" class="btn btn-outline-warning btn-sm" data-toggle="tooltip" title="ver detalle">
                                     {% icon 'detalle' %}
                                 </a>
-                                <a href="/" class="btn btn-outline-primary btn-sm" data-toggle="tooltip" title="ver ficha">
+                                <a href="{% url 'panel_ficha' grupo.ficha.id %}" class="btn btn-outline-primary btn-sm" data-toggle="tooltip" title="ver ficha">
                                     <i class="bi bi-journals"></i>
                                 </a>
                             {% endif %}

@@ -37,6 +37,9 @@ import random
 import string
 import json
 
+from django.conf import settings
+print("TEMPLATES_DIR:", settings.TEMPLATES[0]['DIRS'])
+
 def home(request):
     return render(request, 'home.html')
 

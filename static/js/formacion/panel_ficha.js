@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const loadingDiv = document.getElementById('loading');
     const tableAprendicesElement = document.getElementById('tabla_aprendices_ficha')
     
+    const userRole = document.body.dataset.userRole;
+
     // ======= Inicialización de DataTable =======
     const table = new DataTable(tableAprendicesElement, {
         language: {
@@ -19,12 +21,13 @@ document.addEventListener("DOMContentLoaded", function () {
         create: false,
         placeholder: 'Seleccione tipos de actividad'
     });
-
+    
     new TomSelect(".tomselect-raps", {
         plugins: ['remove_button'],
         maxItems: null,
         placeholder: 'Seleccione los RAPs asociados'
     });
+
 
     // *******************************************************************
     // *                                                                 *
@@ -105,22 +108,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 subFolderContainer.classList.add("folder-children");
                 subFolderContainer.id = `folder-${node.id}`;
 
-                // Botón de carga (solo para carpetas)
-                const uploadLi = document.createElement("li");
-                uploadLi.classList.add("upload-item");
-                uploadLi.style.listStyle = "none";
-                uploadLi.dataset.folderId = node.id;
+                if (userRole === "instructor"){
+                    // Botón de carga (solo para carpetas)
+                    const uploadLi = document.createElement("li");
+                    uploadLi.classList.add("upload-item");
+                    uploadLi.style.listStyle = "none";
+                    uploadLi.dataset.folderId = node.id;
 
-                const uploadIcon = document.createElement("i");
-                uploadIcon.classList.add("bi", "bi-plus-circle");
+                    const uploadIcon = document.createElement("i");
+                    uploadIcon.classList.add("bi", "bi-plus-circle");
 
-                const uploadSpan = document.createElement("span");
-                uploadSpan.textContent = "Cargar documento";
+                    const uploadSpan = document.createElement("span");
+                    uploadSpan.textContent = "Cargar documento";
 
-                uploadLi.appendChild(uploadIcon);
-                uploadLi.appendChild(uploadSpan);
-                subFolderContainer.appendChild(uploadLi);
-
+                    uploadLi.appendChild(uploadIcon);
+                    uploadLi.appendChild(uploadSpan);
+                    subFolderContainer.appendChild(uploadLi);
+                }
                 // Procesar hijos recursivamente si existen
                 if (node.children && node.children.length > 0) {
                     subFolderContainer.appendChild(renderTree(node.children));
@@ -154,29 +158,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 link.appendChild(span);
                 li.appendChild(link);
 
-                const deleteBtn = document.createElement("button");
-                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                deleteBtn.title = "Eliminar documento";
-                deleteBtn.style.cssText = `
-                    background: none;
-                    border: none;
-                    color: #dc3545;
-                    padding: 2px 8px;
-                    margin-left: auto;
-                    transition: opacity 0.2s;
-                `;
+                if (userRole === "instructor"){
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    deleteBtn.title = "Eliminar documento";
+                    deleteBtn.style.cssText = `
+                        background: none;
+                        border: none;
+                        color: #dc3545;
+                        padding: 2px 8px;
+                        margin-left: auto;
+                        transition: opacity 0.2s;
+                    `;
 
-                // Efecto hover para mejor feedback visual
-                deleteBtn.addEventListener('mouseenter', () => {
-                    deleteBtn.style.opacity = '0.8';
-                    deleteBtn.style.cursor = 'pointer';
-                });
-                deleteBtn.addEventListener('mouseleave', () => {
-                    deleteBtn.style.opacity = '1';
-                });
+                    // Efecto hover para mejor feedback visual
+                    deleteBtn.addEventListener('mouseenter', () => {
+                        deleteBtn.style.opacity = '0.8';
+                        deleteBtn.style.cursor = 'pointer';
+                    });
+                    deleteBtn.addEventListener('mouseleave', () => {
+                        deleteBtn.style.opacity = '1';
+                    });
 
-                li.dataset.folderId = node.parent_id;
-                li.appendChild(deleteBtn);
+                    li.dataset.folderId = node.parent_id;
+                    li.appendChild(deleteBtn);
+                }
             }
 
             ul.appendChild(li);
@@ -256,50 +262,66 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function uploadFile() {
-
         const folderId = document.getElementById("uploadButton").dataset.folderId;
-        const fileInputElement = document.getElementById("fileInput"); 
+        const fileInputElement = document.getElementById("fileInput");
         const btnElement = document.getElementById("uploadButton");
-
         const uploadModal = document.getElementById("uploadModal");
         const inputs = uploadModal.querySelectorAll('input, select, button');
-        inputs.forEach(el => el.disabled = true);
-        const originalBtnContent = btnElement.innerHTML;
-        showSpinner(btnElement);
+    
         const file = fileInputElement.files[0];
         if (!file) {
             toastError("Seleccione un archivo para subir.");
             return;
         }
-
+    
+        // Validación de tipo de archivo
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png'];
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(extension)) {
+            toastError("Tipo de archivo no permitido. Solo se permiten PDF, Excel o imágenes.");
+            return;
+        }
+    
+        // Validación de tamaño
+        const maxSize = 3 * 1024 * 1024; // 3MB
+        if (file.size > maxSize) {
+            toastError("El archivo supera el tamaño máximo permitido (3 MB).");
+            return;
+        }
+    
+        inputs.forEach(el => el.disabled = true);
+        const originalBtnContent = btnElement.innerHTML;
+        showSpinner(btnElement);
+    
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder_id", folderId);
-
+    
         try {
             const response = await fetch("/api/tree/cargar_doc/", {
                 method: "POST",
                 headers: { 'X-CSRFToken': csrfToken },
                 body: formData
             });
-
+    
             if (response.ok) {
                 toastSuccess("Documento subido con éxito.");
                 const modal = bootstrap.Modal.getInstance(document.getElementById("uploadModal"));
                 modal.hide();
                 fileInputElement.value = '';
-                await actualizarCarpeta(folderId); 
+                await actualizarCarpeta(folderId);
             } else {
                 toastError("Error al subir el documento.");
             }
         } catch (error) {
             console.error("Error al subir el archivo:", error);
+            toastError("Ocurrió un error inesperado.");
         } finally {
             inputs.forEach(el => el.disabled = false);
             hideSpinner(btnElement, originalBtnContent);
         }
     }
-
+    
     async function deleteFile(fileId, folderId){
 
         try {
@@ -503,22 +525,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 subFolderContainer.classList.add("folder-children");
                 subFolderContainer.id = `portafolio-folder-${node.id}`;
 
-                // Botón de carga (solo para carpetas)
-                const uploadLi = document.createElement("li");
-                uploadLi.classList.add("upload-item");
-                uploadLi.style.listStyle = "none";
-                uploadLi.dataset.folderId = node.id;
-                
-                const uploadIcon = document.createElement("i");
-                uploadIcon.classList.add("bi", "bi-plus-circle");
+                if (userRole === "instructor"){
+                    // Botón de carga (solo para carpetas)
+                    const uploadLi = document.createElement("li");
+                    uploadLi.classList.add("upload-item");
+                    uploadLi.style.listStyle = "none";
+                    uploadLi.dataset.folderId = node.id;
+                    
+                    const uploadIcon = document.createElement("i");
+                    uploadIcon.classList.add("bi", "bi-plus-circle");
 
-                const uploadSpan = document.createElement("span");
-                uploadSpan.textContent = "Cargar documento";
+                    const uploadSpan = document.createElement("span");
+                    uploadSpan.textContent = "Cargar documento";
 
-                uploadLi.appendChild(uploadIcon);
-                uploadLi.appendChild(uploadSpan);
-                subFolderContainer.appendChild(uploadLi);
-
+                    uploadLi.appendChild(uploadIcon);
+                    uploadLi.appendChild(uploadSpan);
+                    subFolderContainer.appendChild(uploadLi);
+                }
                 if (node.children && node.children.length > 0) {
                     subFolderContainer.appendChild(renderPortafolioTree(node.children));
                 }
@@ -548,29 +571,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 link.append(icon, span);
                 li.appendChild(link);
 
-                const deleteBtn = document.createElement("button");
-                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                deleteBtn.title = "Eliminar documento";
-                deleteBtn.style.cssText = `
-                    background: none;
-                    border: none;
-                    color: #dc3545;
-                    padding: 2px 8px;
-                    margin-left: auto;
-                    transition: opacity 0.2s;
-                `;
+                if (userRole === "instructor"){
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    deleteBtn.title = "Eliminar documento";
+                    deleteBtn.style.cssText = `
+                        background: none;
+                        border: none;
+                        color: #dc3545;
+                        padding: 2px 8px;
+                        margin-left: auto;
+                        transition: opacity 0.2s;
+                    `;
 
-                // Efecto hover para mejor feedback visual
-                deleteBtn.addEventListener('mouseenter', () => {
-                    deleteBtn.style.opacity = '0.8';
-                    deleteBtn.style.cursor = 'pointer';
-                });
-                deleteBtn.addEventListener('mouseleave', () => {
-                    deleteBtn.style.opacity = '1';
-                });
+                    // Efecto hover para mejor feedback visual
+                    deleteBtn.addEventListener('mouseenter', () => {
+                        deleteBtn.style.opacity = '0.8';
+                        deleteBtn.style.cursor = 'pointer';
+                    });
+                    deleteBtn.addEventListener('mouseleave', () => {
+                        deleteBtn.style.opacity = '1';
+                    });
 
-                li.dataset.folderId = node.parent_id;
-                li.appendChild(deleteBtn);
+                    li.dataset.folderId = node.parent_id;
+                    li.appendChild(deleteBtn);
+                }
             }
 
             ul.appendChild(li);
@@ -658,54 +683,67 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function uploadFileAprendiz() {
-
         const folderId = document.getElementById("uploadButtonAprendiz").dataset.folderId;
-        const fileInputElement = document.getElementById("fileInputAprendiz"); 
+        const fileInputElement = document.getElementById("fileInputAprendiz");
         const btnElement = document.getElementById("uploadButtonAprendiz");
-
         const uploadModal = document.getElementById("uploadModalAprendiz");
         const inputs = uploadModal.querySelectorAll('input, select, button');
-        inputs.forEach(el => el.disabled = true);
-        const originalBtnContent = btnElement.innerHTML;
-        showSpinner(btnElement);
+    
         const file = fileInputElement.files[0];
         if (!file) {
             toastError("Seleccione un archivo para subir.");
-            inputs.forEach(el => el.disabled = false);
-            hideSpinner(btnElement, originalBtnContent);    
             return;
         }
-
+    
+        // Validación de tipo de archivo
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png'];
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(extension)) {
+            toastError("Tipo de archivo no permitido. Solo se permiten PDF, Excel o imágenes.");
+            return;
+        }
+    
+        // Validación de tamaño
+        const maxSize = 3 * 1024 * 1024; // 3MB
+        if (file.size > maxSize) {
+            toastError("El archivo supera el tamaño máximo permitido (3 MB).");
+            return;
+        }
+    
+        inputs.forEach(el => el.disabled = true);
+        const originalBtnContent = btnElement.innerHTML;
+        showSpinner(btnElement);
+    
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder_id", folderId);
-
+    
         try {
             const response = await fetch("/api/tree/cargar_doc_aprendiz/", {
                 method: "POST",
                 headers: { 'X-CSRFToken': csrfToken },
                 body: formData
             });
-
+    
             if (response.ok) {
                 toastSuccess("Documento subido con éxito.");
                 const modal = bootstrap.Modal.getInstance(document.getElementById("uploadModalAprendiz"));
                 modal.hide();
                 fileInputElement.value = '';
-
-                await actualizarCarpetaAprendiz(folderId); 
+    
+                await actualizarCarpetaAprendiz(folderId);
             } else {
                 toastError("Error al subir el documento.");
             }
         } catch (error) {
-            fileInputElement.value = '';
             console.error("Error al subir el archivo:", error);
+            toastError("Ocurrió un error inesperado.");
         } finally {
             inputs.forEach(el => el.disabled = false);
             hideSpinner(btnElement, originalBtnContent);
         }
     }
-
+    
     async function deleteFileAprendiz(fileId, folderId){
 
         try {
@@ -785,6 +823,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const formCrearActividad = document.getElementById('formCrearActividad');
     const errorDiv = document.getElementById('errorCrearActividad');
     const tableCaliElement = document.getElementById('actividades_ficha');
+    const formEditarActividad = document.getElementById('formEditarActividad');
+
 
     //== Boton crear actividad
     btnCrearActividad.addEventListener('click', async () => {
@@ -819,7 +859,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     //== Boton ver calendario
     const calendarModal = document.getElementById('calendarioActividadModal');
-
     let calendar = null;
 
     calendarModal.addEventListener('shown.bs.modal', async()=> {
@@ -888,122 +927,69 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    tableCaliElement.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button');
 
-    const modalCali = new bootstrap.Modal(document.getElementById('modalCalificacion'));
+        if (!btn) return;
 
-    //== renderizar tabla con estudiantes a calificar
-    async function renderTablaCalificaciones(fichaId, actividad_id) {
-        try {
-            const response = await fetch(`/api/ficha/obtener_aprendices_calificacion/${fichaId}/${actividad_id}/`);
-    
-            if (response.ok) {
-                const data = await response.json();
-                const tbody = document.getElementById('tablaAprendicesCali');
-                tbody.innerHTML = '';
-    
-                data.forEach(estudiante => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${estudiante.nombre} ${estudiante.apellido}
-                            <input type="hidden" name="aprendiz_id[]" value="${estudiante.id}">
-                        </td>
-                    <td>
-                        <input type="number" name="nota[]" class="form-control" step="0.1" min="0" max="5" value="${estudiante.nota || ''}" required>
-                    </td>                    `;
-                    //== <td><textarea name="observaciones[]" class="form-control" rows="1"></textarea></td>
-                    tbody.appendChild(row);
+        if (btn.classList.contains('btn-editar-actividad')){
+            const actividadId = btn.dataset.id;
+
+            try {
+                const response = await fetch(`/api/ficha/actividad/${actividadId}`);
+                if (!response.ok) throw new Error("Error al obtener la actividad.");
+                const result = await response.json();
+                const data = result.data;
+                const modal = new bootstrap.Modal(document.getElementById("editarActividadModal"));
+                modal.show();
+        
+                // Cargar los datos en el modal
+                formEditarActividad.querySelector('#id_nom').value = data.nom;
+                formEditarActividad.querySelector('#id_tipo').value = data.tipo;
+                formEditarActividad.querySelector('#id_descri').value = data.descri;
+                formEditarActividad.querySelector('#id_guia').value = data.guia;
+                formEditarActividad.querySelector('#id_fecha_ini_acti').value = data.fecha_ini_acti;
+                formEditarActividad.querySelector('#id_fecha_fin_acti').value = data.fecha_fin_acti;
+                formEditarActividad.querySelector('#id_fecha_ini_cali').value = data.fecha_ini_cali;
+                formEditarActividad.querySelector('#id_fecha_fin_cali').value = data.fecha_fin_cali;
+                formEditarActividad.querySelector('#id_nove').value = data.nove;
+        
+                // Inicializar TomSelect y guardar las instancias
+                const rapsSelectEl = formEditarActividad.querySelector('.tomselect-raps');
+                const tipoSelectEl = formEditarActividad.querySelector('.tomselect-multiple');
+
+                const rapsTomSelect = new TomSelect(rapsSelectEl, {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: 'Seleccione los RAPs asociados'
                 });
-            } else {
-                toastError("Error al cargar los aprendices.");
-            }
-        } catch (error) {
-            console.error("Error al cargar los aprendices:", error);
-        }
-    }
-    
-    //== Boton calificar
-    document.querySelectorAll('.btn-calificar').forEach(el => {
-        el.addEventListener('click', async () => {
-            const btnElement = el;
-            const originalBtnContent = btnElement.innerHTML;
-            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
-            showSpinner(btnElement);
-    
-            const actividadId = btnElement.dataset.actividadId;
-            const nombre = btnElement.dataset.nombre;
-            const fase = btnElement.dataset.fase;
-            const fechaInicio = btnElement.dataset.fechaInicio;
-            const fechaFin = btnElement.dataset.fechaFin;
-            const fechaInicioCali = btnElement.dataset.fechaInicioCali;
-            const fechaFinCali = btnElement.dataset.fechaFinCali;
 
-            document.getElementById('modalNombre').innerText = nombre;
-            document.getElementById('modalFase').innerText = fase;
-            document.getElementById('modalFechaInicio').innerText = fechaInicio;
-            document.getElementById('modalFechaFin').innerText = fechaFin;
-            document.getElementById('modalFechaInicioCali').innerText = fechaInicioCali;
-            document.getElementById('modalFechaFinCali').innerText = fechaFinCali;
-    
-            document.getElementById('inputActividadId').value = actividadId;
+                const tipoTomSelect = new TomSelect(tipoSelectEl, {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    persist: false,
+                    create: false,
+                    placeholder: 'Seleccione tipos de actividad'
+                });
 
-            await renderTablaCalificaciones(fichaId, actividadId);
+                // Luego, cargar los valores directamente en las instancias TomSelect
+                rapsTomSelect.setValue(data.raps); // <- Aquí colocas los valores correctamente
+                tipoTomSelect.setValue(data.tipo); // <- Si tipo es múltiple, asegúrate de que sea un array
 
-            const modalCali = new bootstrap.Modal(document.getElementById('modalCalificacion'));
-            modalCali.show();
-    
-            hideSpinner(btnElement, originalBtnContent);
-            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
-        });
-    });
-
-    //== Boton guardar calificaciones
-    const formularioCalificacion = document.getElementById('formularioCalificacion');
-    const tabla_cali = document.getElementById('tabla_cali');
-
-    formularioCalificacion.addEventListener('submit', async (e) =>{
-        e.preventDefault();
-        const form = e.target;
-        const submitBtn = document.getElementById('guardarCaliBtn');
-        const originalBtnContent = submitBtn.innerHTML;
-        showSpinner(submitBtn);
+                // Guardar el ID para enviarlo al backend después
+                document.getElementById("formEditarActividad").dataset.id = actividadId;
         
-        const formData = new FormData(form);
-        tabla_cali.querySelectorAll('input').forEach(el => el.disabled = true);
-
-        try {
-            const response = await fetch(`/api/ficha/calificar_actividad/`,{
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken },
-                body: formData
-            });
         
-            if (response.ok){
-                const data = await response.json();
-                toastSuccess(data.message)
-                await renderTablaCalificaciones(fichaId, data.actividad_id);
-            } else {
-                const error =  await response.json();
-                toastError("Error al guardar: "+ error.message);
+            } catch (error) {
+                toastError("No se pudo cargar la actividad.");
+                console.error(error);
             }
-
-        } catch (error) {
-            console.error("Error al enviar formulario:", error);
-            toastError("Ocurrió un error al guardar.");
-        } finally {
-            hideSpinner(submitBtn, originalBtnContent);
-            tabla_cali.querySelectorAll('input').forEach(el => el.disabled = false);
-        }
-    });
-    
-    //== Boton ver detalle actividad
-    document.querySelectorAll('.btn-detalle-actividad').forEach(el => {
-        el.addEventListener('click', async () =>{
-            const actividadId = el.dataset.id;
-            const btn = el;
+        } else if (btn.classList.contains('btn-detalle-actividad')){
+            const actividadId = btn.dataset.id;
             const modalElement = document.getElementById('detalleActividadModal');
             const contenido = document.getElementById('contenidoDetalleActividad');
             const modal = new bootstrap.Modal(modalElement);
-            const originalBtnContent = el.innerHTML; 
+            const originalBtnContent = btn.innerHTML; 
             showSpinner(btn);
             tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
 
@@ -1049,7 +1035,145 @@ document.addEventListener("DOMContentLoaded", function () {
                 hideSpinner(btn, originalBtnContent);
                 tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
             }
+        } else if (btn.classList.contains('btn-calificar')){
+            const originalBtnContent = btn.innerHTML;
+            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
+            showSpinner(btn);
+    
+            const actividadId = btn.dataset.actividadId;
+            const nombre = btn.dataset.nombre;
+            const fase = btn.dataset.fase;
+            const fechaInicio = btn.dataset.fechaInicio;
+            const fechaFin = btn.dataset.fechaFin;
+            const fechaInicioCali = btn.dataset.fechaInicioCali;
+            const fechaFinCali = btn.dataset.fechaFinCali;
+
+            document.getElementById('modalNombre').innerText = nombre;
+            document.getElementById('modalFase').innerText = fase;
+            document.getElementById('modalFechaInicio').innerText = fechaInicio;
+            document.getElementById('modalFechaFin').innerText = fechaFin;
+            document.getElementById('modalFechaInicioCali').innerText = fechaInicioCali;
+            document.getElementById('modalFechaFinCali').innerText = fechaFinCali;
+    
+            document.getElementById('inputActividadId').value = actividadId;
+
+            await renderTablaCalificaciones(fichaId, actividadId);
+
+            const modalCali = new bootstrap.Modal(document.getElementById('modalCalificacion'));
+            modalCali.show();
+    
+            hideSpinner(btn, originalBtnContent);
+            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
+        }
+    });
+
+    function reiniciarTomSelect(id) {
+        const el = document.getElementById(id);
+        if (el.tomselect) {
+            el.tomselect.destroy();
+        }
+    
+        return new TomSelect(el, {
+            plugins: ['remove_button'],
+            maxItems: null,
+            placeholder: 'Seleccione los RAPs asociados'
         });
+    }
+
+    //== Enviar formulario editar actividad
+    document.getElementById("formEditarActividad").addEventListener("submit", async function (e) {
+        e.preventDefault();
+    
+        const form = this;
+        const actividadId = form.dataset.id;
+        const formData = new FormData(form);
+    
+        try {
+            const response = await fetch(`/api/actividad/${actividadId}/editar/`, {
+                method: "POST",
+                headers: { "X-CSRFToken": csrfToken },
+                body: formData,
+            });
+    
+            if (!response.ok) throw new Error("Error al editar la actividad.");
+            
+            toastSuccess("Actividad actualizada correctamente.");
+            bootstrap.Modal.getInstance(document.getElementById("editarActividadModal")).hide();
+            form.reset();
+            // Actualizar tabla o vista si es necesario
+        } catch (error) {
+            toastError("Error al guardar los cambios.");
+            console.error(error);
+        }
+    });
+    
+    //== renderizar tabla con estudiantes a calificar
+    async function renderTablaCalificaciones(fichaId, actividad_id) {
+        try {
+            const response = await fetch(`/api/ficha/obtener_aprendices_calificacion/${fichaId}/${actividad_id}/`);
+    
+            if (response.ok) {
+                const data = await response.json();
+                const tbody = document.getElementById('tablaAprendicesCali');
+                tbody.innerHTML = '';
+    
+                data.forEach(estudiante => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${estudiante.nombre} ${estudiante.apellido}
+                            <input type="hidden" name="aprendiz_id[]" value="${estudiante.id}">
+                        </td>
+                    <td>
+                        <input type="number" name="nota[]" class="form-control" step="0.1" min="0" max="5" value="${estudiante.nota || ''}" required>
+                    </td>                    `;
+                    //== <td><textarea name="observaciones[]" class="form-control" rows="1"></textarea></td>
+                    tbody.appendChild(row);
+                });
+            } else {
+                toastError("Error al cargar los aprendices.");
+            }
+        } catch (error) {
+            console.error("Error al cargar los aprendices:", error);
+        }
+    }
+
+    //== Boton guardar calificaciones
+    const formularioCalificacion = document.getElementById('formularioCalificacion');
+    const tabla_cali = document.getElementById('tabla_cali');
+
+    formularioCalificacion.addEventListener('submit', async (e) =>{
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = document.getElementById('guardarCaliBtn');
+        const originalBtnContent = submitBtn.innerHTML;
+        showSpinner(submitBtn);
+        
+        const formData = new FormData(form);
+        tabla_cali.querySelectorAll('input').forEach(el => el.disabled = true);
+
+        try {
+            const response = await fetch(`/api/ficha/calificar_actividad/`,{
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+        
+            if (response.ok){
+                const data = await response.json();
+                toastSuccess(data.message)
+                await renderTablaCalificaciones(fichaId, data.actividad_id);
+            } else {
+                const error =  await response.json();
+                toastError("Error al guardar: "+ error.message);
+            }
+
+        } catch (error) {
+            console.error("Error al enviar formulario:", error);
+            toastError("Ocurrió un error al guardar.");
+        } finally {
+            hideSpinner(submitBtn, originalBtnContent);
+            tabla_cali.querySelectorAll('input').forEach(el => el.disabled = false);
+        }
     });
 
     // Formato de fecha
@@ -1081,6 +1205,41 @@ document.addEventListener("DOMContentLoaded", function () {
                     toastError("Ocurrió un error al cerrar la fase.");
                 } finally {
                     hideSpinner(btnFase, originalBtnContent);
+                }
+            }
+        });
+    }
+
+    //== Boton devolver ficha
+    const btnDevolverFase = document.querySelector(".btn-devolver-fase");
+
+    if (btnDevolverFase) {
+        btnDevolverFase.addEventListener("click", async () => {
+            const confirmed = await confirmAction("¿devolver la fase?");
+            if(confirmed){
+                const originalBtnContent = btnDevolverFase.innerHTML;
+                showSpinner(btnDevolverFase);
+                try {
+                    const response = await fetch(`/api/ficha/devolver_fase/${fichaId}/`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": csrfToken,
+                        }
+                    });
+        
+                    const data = await response.json();
+        
+                    if (data.success) {
+                        toastSuccess(data.message);
+                        this.location.reload();
+                    } else {
+                        toastError(data.message || "Error al devolver la fase.");
+                    }
+                } catch (error) {
+                    toastError("Error al conectar con el servidor.");
+                    console.error(error);
+                } finally {
+                    hideSpinner(btnDevolverFase, originalBtnContent);
                 }
             }
         });

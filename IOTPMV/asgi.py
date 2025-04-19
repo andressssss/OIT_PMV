@@ -1,25 +1,23 @@
-"""
-ASGI config for IOTPMV project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
-"""
-
 import os
-
+import django
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'IOTPMV.settings')
+env = os.getenv('DJANGO_ENV', 'dev')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'IOTPMV.settings.{env}')
+
+# Asegúrate de configurar Django antes de importar otros módulos
+django.setup()
+
+try:
+    from usuarios.routing import websocket_urlpatterns
+except ImportError:
+    websocket_urlpatterns = []
 
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),  # Manejo de solicitudes HTTP
-    "websocket": AuthMiddlewareStack(  # Manejo de WebSockets
-        URLRouter(
-            __import__('usuarios.routing').routing.websocket_urlpatterns
-        )
+    "http": get_asgi_application(),
+    "websocket": AuthMiddlewareStack(
+        URLRouter(websocket_urlpatterns)
     ),
 })

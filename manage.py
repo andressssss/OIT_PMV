@@ -3,10 +3,12 @@
 import os
 import sys
 
-
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'IOTPMV.settings')
+    # Cargar el archivo de settings adecuado según DJANGO_ENV
+    django_env = os.getenv('DJANGO_ENV', 'dev')  # Por defecto carga dev
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'IOTPMV.settings.{django_env}')
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -16,7 +18,6 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
-
 
 if __name__ == '__main__':
     main()

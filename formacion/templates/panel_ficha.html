@@ -199,7 +199,9 @@
                                             data-fecha-inicio-cali="{{ actividad.crono.fecha_ini_cali|date:'d/m/Y' }}"
                                             data-fecha-fin-cali="{{ actividad.crono.fecha_fin_cali|date:'d/m/Y' }}">
                                             <i class="bi bi-clipboard-check"></i>
-                                        </button>
+                                            </button>
+                                            <button class="btn btn-outline-warning btn-sm btn-editar-actividad" data-id="{{ actividad.id }}"><i class="bi bi-pencil-square"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -209,9 +211,14 @@
                 
                         <!-- Botón inferior y etiquetas -->
                         <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
                             {% if raps_count == 0 %}
-                            <button class="btn btn-danger btn-sm btn-cerrar-fase">Cerrar fase</button>
+                            <button class="btn btn-warning btn-sm btn-cerrar-fase">Cerrar fase</button>
                             {% endif %}
+                            {% if perfil.rol == 'admin' %}
+                            <button class="btn btn-danger btn-sm btn-devolver-fase">Devolver fase</button>
+                            {% endif %}
+                            </div>
                             <div>
                                 {% if raps_count > 0 %}
                                 <span class="text-danger" data-toggle="tooltip" data-bs-html="true" data-placement="top" title="{{ raps_pendientes }}">Faltan {{ raps_count }} RAPS para la fase {{ fase }}</span><br>
@@ -278,7 +285,7 @@
                     <div class="card-body">
                 <div class="row row-cols-1 row-cols-md-2 g-4">
                     <!-- Reporte 2 -->
-                    <div class="col">
+                    <!-- <div class="col">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
                                 <h5 class="card-title">Asistencia por aprendiz</h5>
@@ -286,7 +293,7 @@
                                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActaAsistenciaAprendiz">Generar</button>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
                     
                     <!-- Reporte 2 -->
                     <div class="col">
@@ -512,6 +519,83 @@
     </div>
 </div>
 
+<!-- Modal para editar actividad -->
+<div class="modal fade" id="editarActividadModal" tabindex="-1" aria-labelledby="editarActividadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="editarActividadModalLabel">Editar Actividad</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="formEditarActividad" autocomplete="off">
+        <div class="modal-body">
+            {% csrf_token %}
+            <input type="hidden" name="actividad_id" id="actividadIdEditar">
+
+            <h5 class="mb-3">Datos de la actividad:</h5>
+            <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ actividad_form.nom.id_for_label }}" class="form-label">Nombre</label>
+                {{ actividad_form.nom }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">Tipo de actividad</label>
+                {{ actividad_form.tipo }}
+            </div>
+            <div class="col-md-12 mb-3">
+                <label for="{{ actividad_form.descri.id_for_label }}" class="form-label">Descripción</label>
+                {{ actividad_form.descri }}
+            </div>
+            <div class="col-md-12 mb-3">
+                <label for="{{ actividad_form.guia.id_for_label }}" class="form-label">Guía relacionada</label>
+                {{ actividad_form.guia }}
+            </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">Cronograma asociado:</h5>
+            <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ cronograma_form.fecha_ini_acti.id_for_label }}" class="form-label">Fecha inicio actividad</label>
+                {{ cronograma_form.fecha_ini_acti }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ cronograma_form.fecha_fin_acti.id_for_label }}" class="form-label">Fecha fin actividad</label>
+                {{ cronograma_form.fecha_fin_acti }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ cronograma_form.fecha_ini_cali.id_for_label }}" class="form-label">Fecha inicio calificación</label>
+                {{ cronograma_form.fecha_ini_cali }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ cronograma_form.fecha_fin_cali.id_for_label }}" class="form-label">Fecha fin calificación</label>
+                {{ cronograma_form.fecha_fin_cali }}
+            </div>
+            <div class="col-md-12 mb-3">
+                <label for="{{ cronograma_form.nove.id_for_label }}" class="form-label">Novedades</label>
+                {{ cronograma_form.nove }}
+            </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">Seleccione los RAP asociados:</h5>
+            <div class="mb-3">
+            {{ raps_form.raps }}
+            </div>
+
+            <div id="errorEditarActividad" class="text-danger mt-2"></div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="submit" id="btnEditarActividad" class="btn btn-success">Guardar cambios</button>
+        </div>
+        </form>
+    </div>
+    </div>
+</div>
+
 <!-- Modal del calendario -->
 <div class="modal fade" id="calendarioActividadModal" tabindex="-1" aria-labelledby="calendarioActividadModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -664,30 +748,28 @@
     <div class="modal-content">
         <form method="get" action="{% url 'generar_acta_asistencia' %}">
         <div class="modal-header">
-            <h5 class="modal-title" id="modalActaAsistenciaLabel">Seleccionar Encuentro</h5>
+            <h5 class="modal-title" id="modalActaAsistenciaLabel">Seleccionar Formato</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-            <label for="encuentro_id" class="form-label">Encuentro:</label>
-            <select class="form-select" name="encuentro_id" id="encuentro_id" required>
-            {% for encuentro in encuentros %}
-                <option value="{{ encuentro.id }}">
-                {{ encuentro.fecha|date:"d/m/Y" }} - {{ encuentro.tema }}
-                </option>
-            {% endfor %}
-            </select>
             <input type="hidden" name="ficha_id" value="{{ ficha.id }}">
+            <label for="formato" class="form-label">Formato del reporte:</label>
+            <select class="form-select" name="formato" id="formato" required>
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+            </select>
         </div>
         <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Generar PDF</button>
+            <button type="submit" class="btn btn-success">Generar reporte</button>
         </div>
         </form>
     </div>
     </div>
 </div>
 
+
 <!-- Modal aprendiz Asistencia -->
-<div class="modal fade" id="modalActaAsistenciaAprendiz" tabindex="-1" aria-labelledby="modalActaAsistenciaAprendizLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="modalActaAsistenciaAprendiz" tabindex="-1" aria-labelledby="modalActaAsistenciaAprendizLabel" aria-hidden="true">
     <div class="modal-dialog">
     <div class="modal-content">
         <form method="get" action="{% url 'generar_acta_asistencia_aprendiz' %}">
@@ -711,7 +793,7 @@
         </form>
     </div>
     </div>
-</div>
+</div> -->
 {% endblock %}
 
 {% block scripts %}
