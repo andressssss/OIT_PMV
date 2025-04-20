@@ -9,7 +9,7 @@ services:
     environment:
       - DJANGO_ENV=${DJANGO_ENV}  # Cargar el archivo .env correspondiente
     volumes:
-      - /app/static  # Volumen para los archivos estáticos, siempre necesario
+      - ./static:/var/www/iotpmv/static  # Volumen para los archivos estáticos
     depends_on:
       - redis
 
