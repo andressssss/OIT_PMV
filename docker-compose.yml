@@ -1,37 +1,20 @@
 version: '3.8'
 
 services:
-  web:
+  app:
     build: .
+    container_name: oitpmv
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-    command: gunicorn IOT_PMV.asgi:application -c gunicorn.conf.py
     environment:
-      - DATABASE_URL=mysql://oit_app:N7t5kecjWs55FT1@192.168.208.1:3306/oit_senatic
-    depends_on:
-      - redis
-
-  websocket:
-    build: .
-    command: daphne -b 0.0.0.0 -p 8001 IOT_PMV.asgi:application
-    ports:
-      - "8001:8001"
+      - DJANGO_ENV=${DJANGO_ENV}  # Cargar el archivo .env correspondiente
+    volumes:
+      - /app/static  # Volumen para los archivos estáticos, siempre necesario
     depends_on:
       - redis
 
   redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
+    image: redis:alpine
 
-  nginx:
-    image: nginx:latest
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - web
-      - websocket
+volumes:
+  db_data:

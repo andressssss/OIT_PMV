@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.staticfiles import finders
 import openpyxl
 from django.http import FileResponse
 from django.template.loader import get_template
@@ -971,6 +972,12 @@ def detalle_programa(request, programa_id):
         'raps': raps,
     })
 
+def link_callback(uri, rel):
+    result = finders.find(uri.replace(settings.STATIC_URL, ""))
+    if result:
+        return result
+    raise Exception(f"Media URI must start with {settings.STATIC_URL}")
+
 def generar_acta_asistencia(request):
     ficha_id = request.GET.get('ficha_id')
     formato  = request.GET.get('formato')
@@ -1004,7 +1011,7 @@ def generar_acta_asistencia(request):
                 fila['asistencias'].append("Sí" if prese == "Si" else "No")
             tabla.append(fila)
         html = template.render({
-            'logo_url': request.build_absolute_uri('/static/images/imagenhome.png'),
+            'logo_url': settings.STATIC_URL + 'images/imagenhome.png',
             'tabla': tabla,
             'ficha': ficha,
             'encuentros': encuentros,
@@ -1012,7 +1019,7 @@ def generar_acta_asistencia(request):
             'asistencias': asistencias,
         })
         buffer = BytesIO()
-        pisa.CreatePDF(html, dest=buffer)
+        pisa.CreatePDF(html, dest=buffer, link_callback=link_callback)
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename=f"Acta_Asistencia_{ficha.id}.pdf")
 
