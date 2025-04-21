@@ -36,12 +36,16 @@ import csv
 import random
 import string
 import json
+import socket
+
 
 from django.conf import settings
 print("TEMPLATES_DIR:", settings.TEMPLATES[0]['DIRS'])
 
 def home(request):
-    return render(request, 'home.html')
+    return render(request, 'home.html',{
+        'server_name': socket.gethostname()
+    })
 
 def signin(request):
     if request.user.is_authenticated:
