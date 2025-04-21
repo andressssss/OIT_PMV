@@ -7,9 +7,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DJANGO_ENV=${DJANGO_ENV}  # Cargar el archivo .env correspondiente
+      - DJANGO_ENV=${DJANGO_ENV}
     volumes:
-      - ./static:/var/www/iotpmv/static  # Volumen para los archivos estáticos
+      - ./static:/var/www/iotpmv/static
+      - /var/www/iotpmv/media:/var/www/iotpmv/media
     depends_on:
       - redis
 
