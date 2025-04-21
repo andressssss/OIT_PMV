@@ -9,7 +9,7 @@ services:
     environment:
       - DJANGO_ENV=${DJANGO_ENV}
     volumes:
-      - ./static:/var/www/iotpmv/static
+      - /var/www/iotpmv/static:/var/www/iotpmv/static
       - /var/www/iotpmv/media:/var/www/iotpmv/media
     depends_on:
       - redis
