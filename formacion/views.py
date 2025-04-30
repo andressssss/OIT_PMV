@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.staticfiles import finders
 import openpyxl
+import logging
 from django.http import FileResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
@@ -21,6 +22,8 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import F
+
+logger = logging.getLogger(__name__)
 
 def fichas(request):
     fichas = T_ficha.objects.all()
@@ -45,10 +48,32 @@ def listar_fichas(request):
 @login_required
 def panel_ficha(request, ficha_id):
     ficha = get_object_or_404(T_ficha, id=ficha_id)
-    actividades = T_acti_ficha.objects.filter(ficha=ficha)
     fase = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
     aprendices = T_apre.objects.filter(ficha=ficha_id)
-    encuentros = T_encu.objects.filter(ficha=ficha.id)
+
+    if request.method == 'GET':
+        encuentro_form = EncuentroForm()
+        actividad_form = ActividadForm()
+        cronograma_form = CronogramaForm()
+        raps_form = RapsFichaForm(ficha=ficha)
+        encuentro_form = EncuentroForm()
+        encuapre_form = EncuApreForm(ficha=ficha)
+    
+    return render(request, 'panel_ficha.html', {
+        'ficha': ficha,
+        'fase': fase,
+        'aprendices': aprendices,
+        'encuentro_form': encuentro_form,
+        'actividad_form': actividad_form,
+        'cronograma_form': cronograma_form,
+        'raps_form': raps_form,
+        'encuapre_form': encuapre_form
+
+    })
+
+@login_required
+def obtener_estado_fase(request, ficha_id):
+    fase = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
 
     fase_vigente_subquery = T_fase_ficha.objects.filter(
         ficha_id=OuterRef('ficha_id'),
@@ -66,7 +91,7 @@ def panel_ficha(request, ficha_id):
         agre='Si'
     ).values('rap_id')
 
-    raps_pendientes = T_raps_ficha.objects.filter(
+    raps_pendientes_qs = T_raps_ficha.objects.filter(
         ficha_id=ficha_id,
         rap__compe__fase=Subquery(fase_vigente_subquery)
     ).exclude(
@@ -77,35 +102,16 @@ def panel_ficha(request, ficha_id):
             ).values('rap_id')
         )
     )
-    tooltip_text = "<br>".join(f"{i+1}. {rap.rap.nom}" for i, rap in enumerate(raps_pendientes))
 
-    if request.method == 'POST':
-        encuentro_form = EncuentroForm(request.POST)
-        if encuentro_form.is_valid():
-            encuentro_form.save()
-            return redirect('panel_ficha', ficha_id=ficha.id)
-    else:
-        encuentro_form = EncuentroForm()
-        actividad_form = ActividadForm()
-        cronograma_form = CronogramaForm()
-        raps_form = RapsFichaForm(ficha=ficha)
+    tooltip_text = "<br>".join(f"{i+1}. {rap.rap.nom}" for i, rap in enumerate(raps_pendientes_qs))
 
-    
-    return render(request, 'panel_ficha.html', {
-        'ficha': ficha,
-        'actividades': actividades,
-        'fase': fase,
+    response = {
         'raps_count': raps_count,
-        'aprendices': aprendices,
-        'encuentro_form': encuentro_form,
-        'encuentros': encuentros,
-        'encuentro_form': encuentro_form,
-        'actividad_form': actividad_form,
-        'cronograma_form': cronograma_form,
-        'raps_form': raps_form,
         'raps_pendientes': tooltip_text,
+        'fase': fase.fase,
+    }
+    return JsonResponse(response)
 
-    })
 
 def cerrar_fase_ficha(request, ficha_id):
     if not ficha_id:
@@ -213,8 +219,11 @@ def obtener_actividad(request, actividad_id):
     try:
         actividad_ficha = get_object_or_404(T_acti_ficha, id=actividad_id)
         actividad = actividad_ficha.acti
-        raps_ids = list(T_raps_acti.objects.filter(acti=actividad).values_list('rap_id', flat=True))
-
+        raps_ids = list(
+            T_raps_ficha.objects
+            .filter(rap__t_raps_acti__acti=actividad)
+            .values_list('id', flat=True)
+            )
         data = {
             'nom': actividad.nom,
             'tipo': list(actividad.tipo.values_list('id', flat=True)),
@@ -512,16 +521,17 @@ def obtener_hijos_carpeta_aprendiz(request, carpeta_id):
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
-
+@login_required
 def crear_encuentro(request, ficha_id):
-    ficha = get_object_or_404(T_ficha, id=ficha_id)  # Obtener la ficha seleccionada
+    logger.warning(request.POST)
+    ficha = get_object_or_404(T_ficha, id=ficha_id)
     if request.method == 'POST':
         encuentro_form = EncuentroForm(request.POST)
         encuapre_form = EncuApreForm(request.POST, ficha=ficha)
         if encuentro_form.is_valid() and encuapre_form.is_valid():
 
             new_encuentro = encuentro_form.save(commit=False)
-            new_encuentro. fecha = timezone.now()
+            new_encuentro.fecha = timezone.now()
 
             fase_ficha = T_fase_ficha.objects.filter(ficha=ficha, vige='1').first()
 
@@ -532,43 +542,74 @@ def crear_encuentro(request, ficha_id):
             aprendices_ficha = T_apre.objects.filter(ficha=ficha)
             aprendices_seleccionados_set = set(aprendices_seleccionados)
 
-            # Iteramos sobre los estudiantes de la ficha
             for aprendiz in aprendices_ficha:
-                # Verificamos si el estudiante está en los seleccionados
                 if aprendiz in aprendices_seleccionados_set:
-                    # Si está en los seleccionados, aseguramos que el campo 'prese' sea 'Si'
                     T_encu_apre.objects.update_or_create(
                         encu=new_encuentro,  
                         apre=aprendiz,
                         defaults={'prese': 'No'}
                     )
                 else:
-                    # Si no está en los seleccionados, aseguramos que el campo 'prese' sea 'No'
                     T_encu_apre.objects.update_or_create(
                         encu=new_encuentro,  
                         apre=aprendiz,
                         defaults={'prese': 'Si'}
                     )
 
-            # Ahora creamos los registros para los estudiantes seleccionados
             for aprendiz_encu in aprendices_seleccionados:
-                # Verificamos si el estudiante ya existe en la tabla T_encu_apre
                 T_encu_apre.objects.update_or_create(
                     encu=new_encuentro,
                     apre=aprendiz_encu,
                     defaults={'prese': 'No'}
                 )
 
-            return redirect('panel_ficha', ficha_id=ficha.id)
-    else:
-        # Pasa 'ficha' al formulario en GET también
-        encuentro_form = EncuentroForm()
-        encuapre_form = EncuApreForm(ficha=ficha)
-    return render(request, 'crear_encuentro.html', {
-        'encuentro_form': encuentro_form, 
-        'encuapre_form': encuapre_form,
-        'ficha': ficha
-        })
+            return JsonResponse ({'status': 'success', 'message': 'Encuentro creado con exito'}, status = 200)
+        else: 
+            errores_custom = []
+
+            for field, errors_list in encuentro_form.errors.get_json_data().items():
+                nombre_campo = encuentro_form.fields[field].label or field.capitalize()
+                for err in errors_list:
+                    errores_custom.append(f"<strong>{nombre_campo}</strong>: {err['message']}")
+
+            for field, errors_list in encuapre_form.errors.get_json_data().items():
+                nombre_campo = encuapre_form.fields[field].labels or field.capitalize()
+                for err in errors_list:
+                    errores_custom.append(f"<strong>{nombre_campo}</strong>: {err['message']}")
+
+            return JsonResponse({'status': 'error', 'message': 'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status=400)
+    return JsonResponse ({'status':'error', 'message': 'Metodo no permitido'}, status = 405)
+
+def obtener_encuentros(request, ficha_id):
+    encuentros = T_encu.objects.filter(ficha_id = ficha_id)
+    data = [
+        {
+            'id': encu.id,
+            'fecha': encu.fecha,
+            'tema': encu.tema,
+            'lugar': encu.lugar
+        } for encu in encuentros
+    ]
+    return JsonResponse(data, safe=False)
+
+def obtener_actividades(request, ficha_id):
+    actividades = T_acti_ficha.objects.filter(ficha_id = ficha_id)
+    fase = T_fase_ficha.objects.filter(ficha_id = ficha_id, vige = 1).first()
+    data = [
+        {
+            'id': actividad.id,
+            'nom': actividad.acti.nom,
+            'fecha_ini_acti': actividad.crono.fecha_ini_acti.strftime('%d/%m/%Y') if actividad.crono.fecha_ini_acti else '',
+            'fecha_fin_acti': actividad.crono.fecha_fin_acti.strftime('%d/%m/%Y') if actividad.crono.fecha_fin_acti else '',
+            'fecha_ini_cali': actividad.crono.fecha_ini_cali.strftime('%d/%m/%Y') if actividad.crono.fecha_ini_cali else '',
+            'fecha_fin_cali': actividad.crono.fecha_fin_cali.strftime('%d/%m/%Y') if actividad.crono.fecha_fin_cali else '',
+            'fase': actividad.acti.fase,
+            'fase_ficha': fase.fase
+        }
+        for actividad in actividades
+    ]
+
+    return JsonResponse(data, safe=False)
 
 @login_required
 def crear_actividad(request, ficha_id):
@@ -629,16 +670,15 @@ def crear_actividad(request, ficha_id):
                 )
 
             raps_seleccionados = raps_form.cleaned_data['raps']
-            print(raps_seleccionados)
 
             # Crear los registros de raps seleccionados en T_raps_acti
             raps_seleccionados = raps_form.cleaned_data['raps']
             for rap_ficha in raps_seleccionados:
                 T_raps_acti.objects.create(
-                    rap=rap_ficha.rap,  # RAP seleccionado
-                    acti=new_actividad  # Actividad recién creada
+                    rap=rap_ficha.rap,
+                    acti=new_actividad
                 )
-                rap_ficha.agre = 'Si'  # Marcar como asignado
+                rap_ficha.agre = 'Si'
                 rap_ficha.save()
             
             return JsonResponse({'status': 'success', 'message': 'Actividad creado con exito.'}, status = 200)
@@ -687,6 +727,50 @@ def listar_actividades_ficha(request, ficha_id):
         })
 
     return JsonResponse(data, safe=False)
+
+def editar_actividad(request, actividad_id):
+    actividad = get_object_or_404(T_acti_ficha, pk=actividad_id)
+
+    if request.method == 'POST':
+        form_actividad = ActividadForm(request.POST, instance=actividad.acti)
+        form_cronograma = CronogramaForm(request.POST, instance=actividad.crono)
+        form_raps = RapsFichaForm(request.POST, ficha = actividad.ficha)
+
+        if form_actividad.is_valid() and form_cronograma.is_valid() and form_raps.is_valid():
+            form_actividad.save()
+            form_cronograma.save()
+
+            raps_seleccionados = form_raps.cleaned_data['raps']
+
+            T_raps_acti.objects.filter(acti=actividad.acti).delete()
+
+            for rap_ficha in raps_seleccionados:
+                T_raps_acti.objects.create(
+                    rap=rap_ficha.rap,
+                    acti=actividad.acti
+                )
+
+            raps_ficha = T_raps_ficha.objects.filter(ficha=actividad.ficha)
+
+            for rap_ficha in raps_ficha:
+                relaciones = T_raps_acti.objects.filter(rap=rap_ficha.rap, acti__t_acti_ficha__ficha=actividad.ficha)
+                
+                if relaciones.exists():
+                    rap_ficha.agre = 'Si'
+                else:
+                    rap_ficha.agre = 'No'
+                rap_ficha.save()
+
+            return JsonResponse({'success': True, 'message': 'Actividad actualizada correctamente.'})
+        else:
+            errores = {
+                'actividad': form_actividad.errors,
+                'cronograma': form_cronograma.errors,
+                'raps': form_raps.errors
+            }
+            return JsonResponse({'success': False, 'message': 'Error al actualizar la actividad.', 'errors': errores}, status=400)
+    
+    return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
 
 @login_required
 def panel_aprendiz(request):
@@ -871,20 +955,16 @@ def calificarActividad(request):
         for i in range(len(ids)):
             aprendiz_id = ids[i]
             nota = notas[i]
-    
+
             aprendiz = T_apre.objects.get(id=aprendiz_id)
 
             T_cali.objects.update_or_create(
                 apre=aprendiz,
                 acti=actividad,
-                defaults={
-                    'cali': nota
-                }
+                defaults={'cali': nota}
             )
         return JsonResponse({'status': 'success', 'message': 'Calificado!', 'actividad_id': actividad_id}, status = 200)
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status = 405)
-
-
 
 def obtener_aprendices_calificacion(request, ficha_id, actividad_id):
     
@@ -900,7 +980,7 @@ def obtener_aprendices_calificacion(request, ficha_id, actividad_id):
             'id': aprendiz.id,
             'nombre': aprendiz.perfil.nom,
             'apellido': aprendiz.perfil.apelli,
-            'nota': cali.cali if cali else ''
+            'nota': cali.cali if cali else None
         })
 
     return JsonResponse(respuesta, safe=False)
@@ -1066,6 +1146,73 @@ def generar_acta_asistencia_aprendiz(request):
     pisa.CreatePDF(html, dest=buffer)
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"Acta_Asistencia_{aprendiz.perfil.nom}_{aprendiz.perfil.apelli}.pdf")
+
+def generar_informe_calificaciones(request):
+    ficha_id = request.GET.get('ficha_id')
+    formato  = request.GET.get('formato')
+
+    ficha = T_ficha.objects.get(id=ficha_id)
+    actividades = T_acti_ficha.objects.filter(ficha=ficha).order_by('id')
+    aprendices = T_apre.objects.filter(ficha=ficha)
+
+    # Diccionario: aprendiz_id -> {actividad_id: "Aprobó"/"No aprobó"}
+    calificaciones = {
+        apre.id: {
+            acti.id: ""
+            for acti in actividades
+        } for apre in aprendices
+    }
+
+    registros = T_cali.objects.filter(apre__in=aprendices, acti__in=actividades)
+
+    for cali in registros:
+        estado = "Aprobó" if int(cali.cali) == 1 else "No aprobó"
+        calificaciones[cali.apre.id][cali.acti.id] = estado
+
+    if formato == 'pdf':
+        template = get_template("reportes/informe_calificaciones.html")
+        tabla = []
+        for apre in aprendices:
+            fila = {
+                'apre': apre,
+                'calificaciones': [calificaciones[apre.id][acti.id] for acti in actividades]
+            }
+            tabla.append(fila)
+        html = template.render({
+            'logo_url': settings.STATIC_URL + 'images/imagenhome.png',
+            'tabla': tabla,
+            'ficha': ficha,
+            'actividades': actividades,
+            'aprendices': aprendices
+        })
+        buffer = BytesIO()
+        pisa.CreatePDF(html, dest=buffer, link_callback=link_callback)
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename=f"Informe_Calificaciones_{ficha.id}.pdf")
+
+    elif formato == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Calificaciones"
+
+        # Encabezado
+        ws.cell(row=1, column=1).value = "Aprendiz"
+        for col, acti in enumerate(actividades, start=2):
+            ws.cell(row=1, column=col).value = acti.acti.nom
+
+        # Filas
+        for row, apre in enumerate(aprendices, start=2):
+            ws.cell(row=row, column=1).value = f"{apre.perfil.nom} {apre.perfil.apelli}"
+            for col, acti in enumerate(actividades, start=2):
+                estado = calificaciones[apre.id][acti.id]
+                ws.cell(row=row, column=col).value = estado
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename=f"Informe_Calificaciones_{ficha.id}.xlsx")
+
+    return HttpResponse("Formato no válido", status=400)
 
 def detalle_encuentro(request, encuentro_id):
     encuentro = T_encu.objects.get(id = encuentro_id)

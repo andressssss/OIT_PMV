@@ -179,53 +179,15 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for actividad in actividades %}
-                                    <tr>
-                                        <td>{{ actividad.acti.nom}}</td>
-                                        <td>{{ actividad.crono.fecha_ini_acti|date:"d/m/Y" }}</td>
-                                        <td>{{ actividad.crono.fecha_fin_acti|date:"d/m/Y" }}</td>
-                                        <td>{{ actividad.crono.fecha_ini_cali|date:"d/m/Y" }}</td>
-                                        <td>{{ actividad.crono.fecha_fin_cali|date:"d/m/Y" }}</td>
-                                        <td>{{ actividad.acti.fase }}</td>
-                                        <td>
-                                            <button class="btn btn-outline-primary btn-sm btn-detalle-actividad mb-1" data-id="{{ actividad.id }}" data-toggle="tooltip" data-placement="top" title="Detalle"><i class="bi bi-plus-lg"></i></button>
-                                            <button class="btn btn-outline-success btn-sm btn-calificar mb-1"
-                                            data-toggle="tooltip" data-placement="top" title="Calificar"
-                                            data-actividad-id="{{ actividad.id }}"
-                                            data-nombre="{{ actividad.acti.nom }}"
-                                            data-fase="{{ actividad.acti.fase }}"
-                                            data-fecha-inicio="{{ actividad.crono.fecha_ini_acti|date:'d/m/Y' }}"
-                                            data-fecha-fin="{{ actividad.crono.fecha_fin_acti|date:'d/m/Y' }}"
-                                            data-fecha-inicio-cali="{{ actividad.crono.fecha_ini_cali|date:'d/m/Y' }}"
-                                            data-fecha-fin-cali="{{ actividad.crono.fecha_fin_cali|date:'d/m/Y' }}">
-                                            <i class="bi bi-clipboard-check"></i>
-                                            </button>
-                                            <button class="btn btn-outline-warning btn-sm btn-editar-actividad" data-id="{{ actividad.id }}"><i class="bi bi-pencil-square"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                 
                         <!-- Botón inferior y etiquetas -->
                         <div class="d-flex justify-content-between align-items-center mt-3">
-                            <div>
-                            {% if raps_count == 0 %}
-                            <button class="btn btn-warning btn-sm btn-cerrar-fase">Cerrar fase</button>
-                            {% endif %}
-                            {% if perfil.rol == 'admin' %}
-                            <button class="btn btn-danger btn-sm btn-devolver-fase">Devolver fase</button>
-                            {% endif %}
+                            <div id="botones-fase">
                             </div>
-                            <div>
-                                {% if raps_count > 0 %}
-                                <span class="text-danger" data-toggle="tooltip" data-bs-html="true" data-placement="top" title="{{ raps_pendientes }}">Faltan {{ raps_count }} RAPS para la fase {{ fase }}</span><br>
-                                {% endif %}
-                                <span class="{% if raps_count == 0 %}text-success{% else %}text-danger{% endif %}">
-                                    Estado: {% if raps_count == 0 %}Completo{% else %}Incompleto{% endif %}
-                                </span>
+                            <div id="estado-fase">
                             </div>
                         </div>
                     </div>
@@ -239,7 +201,7 @@
                     <div class="card-body">
 
                 <div class="d-flex justify-content-end mb-3">
-                    <a href="{% url 'crear_encuentro' ficha.id %}" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Crear encuentro">
+                    <a class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Crear encuentro" data-bs-toggle="modal" data-bs-target="#crearEncuentroModal">
                         <i class="bi bi-plus"></i>
                     </a>
                 </div>
@@ -255,22 +217,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for encuentro in encuentros %}
-                                <tr>
-                                    <td>{{ encuentro.fecha|date:"d \d\e F \d\e Y" }}</td>
-                                    <td>{{ encuentro.tema }}</td>
-                                    <td>{{ encuentro.lugar }}</td>
-                                    <td>
-                                        <button class="btn btn-outline-primary btn-sm btn-detalle-encuentro" 
-                                                data-id="{{ encuentro.id }}" 
-                                                data-toggle="tooltip" 
-                                                data-placement="top" 
-                                                title="Detalle">
-                                            <i class="bi bi-plus-lg"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -300,7 +246,7 @@
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
                                 <h5 class="card-title">Acta de asistencia</h5>
-                                <p class="card-text">Detalle de asistencia de un encuentro en especifico.</p>
+                                <p class="card-text">Detalle de asistencias para los encuentros de la ficha.</p>
                                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActaAsistencia">Generar</button>
                             </div>
                         </div>
@@ -309,9 +255,9 @@
                     <div class="col">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
-                                <h5 class="card-title">Actividades por fase</h5>
-                                <p class="card-text">Muestra cuántas actividades han sido registradas por fase del proceso.</p>
-                                <a class="btn btn-primary" disabled>Generar</a>
+                                <h5 class="card-title">Calificaciones</h5>
+                                <p class="card-text">Muestra las calificaciones de cada actividad.</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCalificacionesActi">Generar</button>
                             </div>
                         </div>
                     </div>
@@ -742,6 +688,48 @@
     </div>
 </div>
 
+<!-- Modal para crear encuentro -->
+<div class="modal fade" id="crearEncuentroModal" tabindex="-1" aria-labelledby="crearEncuentroModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="crearEncuentroModalLabel">Crear Encuentro</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="formCrearEncuentro" autocomplete="off">
+        <div class="modal-body">
+            {% csrf_token %}
+
+            <h5 class="mb-3">Datos del encuentro:</h5>
+            <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
+                {{ encuentro_form.tema }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
+                {{ encuentro_form.lugar }}
+            </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">Seleccione los aprendices ausentes:</h5>
+            <div class="mb-3">
+            {{encuapre_form.as_p}}
+            </div>
+
+            <div id="errorCrearEncuentro" class="text-danger mt-2"></div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="submit" id="btnCrearEncuentro" class="btn btn-primary">Crear encuentro</button>
+        </div>
+        </form>
+    </div>
+    </div>
+</div>
+
 <!-- Modal Acta de Asistencia -->
 <div class="modal fade" id="modalActaAsistencia" tabindex="-1" aria-labelledby="modalActaAsistenciaLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -767,6 +755,30 @@
     </div>
 </div>
 
+<!-- Modal informe de calificaciones -->
+<div class="modal fade" id="modalCalificacionesActi" tabindex="-1" aria-labelledby="modalCalificacionesActi" aria-hidden="true">
+    <div class="modal-dialog">
+    <div class="modal-content">
+        <form method="get" action="{% url 'generar_informe_calificaciones' %}">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalCalificacionesActiLabel">Seleccionar Formato</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" name="ficha_id" value="{{ ficha.id }}">
+            <label for="formato" class="form-label">Formato del reporte:</label>
+            <select class="form-select" name="formato" id="formato" required>
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-success" id="btnGenerarReporteCali">Generar reporte</button>
+        </div>
+        </form>
+    </div>
+    </div>
+</div>
 
 <!-- Modal aprendiz Asistencia -->
 <!-- <div class="modal fade" id="modalActaAsistenciaAprendiz" tabindex="-1" aria-labelledby="modalActaAsistenciaAprendizLabel" aria-hidden="true">

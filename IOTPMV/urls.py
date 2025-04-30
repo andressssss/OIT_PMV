@@ -166,7 +166,6 @@ urlpatterns = [
 
     # Panel instructor
     path('fichas_inst/', formacion_views.listar_fichas, name='listar_fichas'),
-    path('fichas/<int:ficha_id>/crear_encuentro/', formacion_views.crear_encuentro, name='crear_encuentro'),
 
     # Tree
     path("api/tree/obtener_carpetas/<int:ficha_id>/", formacion_views.obtener_carpetas, name="api_obtener_carpetas"),
@@ -191,10 +190,16 @@ urlpatterns = [
     path('api/ficha/cerrar_fase/<int:ficha_id>/', formacion_views.cerrar_fase_ficha, name='api_cerrar_fase_ficha'),
     path('api/ficha/devolver_fase/<int:ficha_id>/', formacion_views.devolver_fase_ficha, name='api_devolver_fase_ficha'),
     path('api/ficha/actividad/<int:actividad_id>/', formacion_views.obtener_actividad, name='api_obtener_actividad'),
-    
+    path('api/ficha/actividad/editar/<int:actividad_id>/', formacion_views.editar_actividad, name='api_editar_actividad'),
+    path('api/ficha/actividades/<int:ficha_id>/', formacion_views.obtener_actividades, name='api_obtener_actividades'),
+    path('api/ficha/obtener_estado_fase/<int:ficha_id>/', formacion_views.obtener_estado_fase, name='api_obtener_estado_fase'),
+    path('api/ficha/crear_encuentro/<int:ficha_id>/', formacion_views.crear_encuentro, name='api_crear_encuentro'),
+    path('api/ficha/encuentros/<int:ficha_id>/', formacion_views.obtener_encuentros, name='api_obtener_encuentros'),
+
     # Reportes ficha
     path('api/reporte/ficha/generar_acta_asistencia/', formacion_views.generar_acta_asistencia, name='generar_acta_asistencia'),
     path('api/reporte/ficha/generar_acta_asistencia_aprendiz/', formacion_views.generar_acta_asistencia_aprendiz, name='generar_acta_asistencia_aprendiz'),
+    path('api/reporte/ficha/generar_informe_calificaciones/', formacion_views.generar_informe_calificaciones, name='generar_informe_calificaciones'),
 
     # ROL Aprendices
     path('panel_aprendiz/', formacion_views.panel_aprendiz, name='panel_aprendiz'),

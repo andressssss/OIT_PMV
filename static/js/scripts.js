@@ -62,17 +62,7 @@ $(document).ready(function () {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
         }
     });
-    new DataTable('#encuentros_ficha', {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-        }
-    });
     new DataTable('#listado_fichas', {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-        }
-    });
-    new DataTable('#actividades_ficha', {
         language: {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
         }

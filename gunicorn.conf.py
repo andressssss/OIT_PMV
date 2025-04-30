@@ -1,4 +1,14 @@
-# gunicorn.conf.py
-workers = 4  # Número de workers (ajusta según los recursos de tu máquina)
-worker_class = "uvicorn.workers.UvicornWorker"  # Usa Uvicorn como worker
-bind = "0.0.0.0:8000"  # Escucha en todas las interfaces, puerto 8000
+import os
+
+env = os.getenv('DJANGO_ENV', 'dev').lower()
+
+if env in ['pre', 'prod']:
+    workers = 4
+    timeout = 120
+else:
+    workers = 1
+    timeout = 60
+
+worker_class = "uvicorn.workers.UvicornWorker"
+bind = "0.0.0.0:8000"
+loglevel = "info"

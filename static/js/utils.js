@@ -263,3 +263,21 @@ showToast(text, color, time, position, gravity);
     });
   }
   
+  export function reiniciarTooltips() {
+    // Quitar tooltips anteriores que estén activos en el DOM (flotantes)
+    document.querySelectorAll('.tooltip').forEach(el => el.remove());
+
+    // Buscar elementos con tooltip y destruir instancias anteriores si existen
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach((el) => {
+        const tooltip = bootstrap.Tooltip.getInstance(el);
+        if (tooltip) {
+            tooltip.dispose();
+        }
+    });
+
+    // Crear nuevas instancias
+    tooltipTriggerList.forEach((el) => {
+        new bootstrap.Tooltip(el);
+    });
+}

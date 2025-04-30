@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build: .
@@ -9,6 +7,7 @@ services:
     environment:
       - DJANGO_ENV=${DJANGO_ENV}
     volumes:
+      - .:/var/www/iotpmv
       - /var/www/iotpmv/static:/var/www/iotpmv/static
       - /var/www/iotpmv/media:/var/www/iotpmv/media
     depends_on:
