@@ -35,3 +35,9 @@ media/
 *.env
 *.log
 *.sqlite3
+
+/static/admin/
+/static/rest_framework/
+/static/vendor/
+/static/autocomplete_light/
+/static/mptt/
