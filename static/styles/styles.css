@@ -309,5 +309,25 @@ select.form-select.choices__input {
 }
 
 .nav-pills .nav-link:hover {
-    color: #16219cb2; /* un tono más oscuro si deseas */
+    color: #16219cb2;
+}
+
+/* Estilos para lista dentro de tabla */
+.lista-estilo {
+    list-style-type: none; /* Elimina el estilo de lista por defecto */
+    padding-left: 0;
+}
+
+.lista-estilo li {
+    padding-left: 20px; /* Espacio entre el ícono y el texto */
+    position: relative;
+}
+
+.lista-estilo li i {
+    position: absolute;
+    left: 0; /* Posiciona el ícono a la izquierda de la lista */
+    top: 50%;
+    transform: translateY(-50%); /* Centra el ícono verticalmente */
+    color: #000000; /* Cambia el color del ícono */
+    font-size: 20px; /* Ajusta el tamaño del ícono si es necesario */
 }

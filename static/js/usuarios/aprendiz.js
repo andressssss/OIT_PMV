@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .finally(() => fadeOut(loadingDiv));
     }
 
-    // ======= Cargar opciones dinámicas para filtros Select2 =======
+    // ======= Cargar opciones dinámicas para filtros =======
     function cargarOpciones(url, elemento, placeholder) {
         fetch(url)
             .then(response => response.json())

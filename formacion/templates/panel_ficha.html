@@ -6,7 +6,15 @@
 {% block content %}
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
-        <h2 class="text-center mb-4">Panel de la ficha {{ ficha.num}} - Fase {{ fase }}</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0 display-5">Panel de la ficha {{ ficha.num }} - Fase {{ fase }}</h2>
+                {% if ficha.instru %}
+                    <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
+                {% else %}
+                    <span class="h5 text-muted mb-0">Sin instructor</span>
+                {% endif %}
+            </div>
+            
 
         <!-- NavPills -->
         <ul class="nav nav-pills mb-4 nav-fill" id="instructorTab" role="tablist">
@@ -17,10 +25,10 @@
                 <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" id="cronograma-tab" data-bs-toggle="pill" href="#cronograma" role="tab" aria-controls="cronograma" aria-selected="false">Cronograma</a>
+                <a class="nav-link" id="cronograma-tab" data-bs-toggle="pill" href="#cronograma" role="tab" aria-controls="cronograma" aria-selected="false">Evaluar RAPS</a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" id="inasistencias-tab" data-bs-toggle="pill" href="#inasistencias" role="tab" aria-controls="inasistencias" aria-selected="false">Encuentros</a>
+                <a class="nav-link" id="inasistencias-tab" data-bs-toggle="pill" href="#inasistencias" role="tab" aria-controls="inasistencias" aria-selected="false">Inasistencias</a>
             </li>
             <li class="nav-item" role="presentation">
                 <a class="nav-link" id="reportes-tab" data-bs-toggle="pill" href="#reportes" role="tab" aria-controls="reportes" aria-selected="false">Reportes</a>
@@ -32,74 +40,12 @@
 
             <!-- Portafolio Ficha -->
             <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
-                <div class="row">
-                    <!-- Sección para cargar documentos -->
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Portafolio ficha</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="folderTree"></div>
-                            </div>
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="card-body">
+                            <div id="folderTree"></div>
                         </div>
                     </div>
-            
-                    <!-- Sección para descargar documentos
-                    <div class="col-md-12 mt-3">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5>Documentos del proceso</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="accordion" id="accordionDocumentos">
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                                            Formación
-                                        </button>
-                                        </h2>
-                                        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionDocumentos">
-                                            <div class="accordion-body">
-                                                <ul class="list-group">
-                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                        Documento 1
-                                                        <a href="/media/formatos/formato_asignacion_masiva.csv" class="btn btn-outline-secondary btn-sm">
-                                                            Descargar
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                            Administración
-                                        </button>
-                                        </h2>
-                                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionDocumentos">
-                                            <div class="accordion-body">
-                                                <strong>This is the second item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                                            Ejecución
-                                        </button>
-                                        </h2>
-                                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionDocumentos">
-                                            <div class="accordion-body">
-                                                <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    </div>
-                            </div>
-                        </div>
-                    </div> -->
                 </div>
             </div>
 
@@ -112,7 +58,6 @@
                             <tr>
                                 <th>Nombre</th>
                                 <th>Apellido</th>
-                                <th>Codigo</th>
                                 <th>Representante</th>
                                 <th>Repre tel</th>
                                 <th>Repre mail</th>
@@ -124,7 +69,6 @@
                             <tr>
                                 <td>{{ aprendiz.perfil.nom}}</td>
                                 <td>{{ aprendiz.perfil.apelli}}</td>
-                                <td>{{ aprendiz.cod}}</td>
                                 <td>{{ aprendiz.repre_legal.nom}}</td>
                                 <td>{{ aprendiz.repre_legal.tele}}</td>
                                 <td>{{ aprendiz.repre_legal.mail}}</td>                        
@@ -134,7 +78,7 @@
                                             data-nombre="{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}"
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top"
-                                            data-bs-title="Ver portafolio">
+                                            data-bs-title="Subir portafolio">
                                         <i class="bi bi-folder"></i>
                                     </button>
                                     <button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
@@ -398,64 +342,95 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="formCrearActividad" autocomplete="off">
-        <div class="modal-body">
-            {% csrf_token %}
+<div class="modal-body">
+    {% csrf_token %}
 
-            <h5 class="mb-3">Datos de la actividad:</h5>
-            <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ actividad_form.nom.id_for_label }}" class="form-label">Nombre</label>
-                {{ actividad_form.nom }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">Tipo de actividad</label>
-                {{ actividad_form.tipo }}
-            </div>
-            <div class="col-md-12 mb-3">
-                <label for="{{ actividad_form.descri.id_for_label }}" class="form-label">Descripción</label>
-                {{ actividad_form.descri }}
-            </div>
-            <div class="col-md-12 mb-3">
-                <label for="{{ actividad_form.guia.id_for_label }}" class="form-label">Guía relacionada</label>
-                {{ actividad_form.guia }}
-            </div>
-            </div>
-
-            <hr class="my-4">
-
-            <h5 class="mb-3">Cronograma asociado:</h5>
-            <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_ini_acti.id_for_label }}" class="form-label">Fecha inicio actividad</label>
-                {{ cronograma_form.fecha_ini_acti }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_fin_acti.id_for_label }}" class="form-label">Fecha fin actividad</label>
-                {{ cronograma_form.fecha_fin_acti }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_ini_cali.id_for_label }}" class="form-label">Fecha inicio calificación</label>
-                {{ cronograma_form.fecha_ini_cali }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_fin_cali.id_for_label }}" class="form-label">Fecha fin calificación</label>
-                {{ cronograma_form.fecha_fin_cali }}
-            </div>
-            <div class="col-md-12 mb-3">
-                <label for="{{ cronograma_form.nove.id_for_label }}" class="form-label">Novedades</label>
-                {{ cronograma_form.nove }}
-            </div>
-            </div>
-
-            <hr class="my-4">
-
-            <h5 class="mb-3">Seleccione los RAP asociados:</h5>
-            <div class="mb-3">
-            {{ raps_form.raps }}
-            </div>
-
-            <div id="errorCrearActividad" class="text-danger mt-2"></div>
+    <h5 class="mb-3">Datos de la actividad:</h5>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.nom.id_for_label }}" class="form-label">Nombre <span class="text-danger">*</span></label>
+            {{ actividad_form.nom }}
+            <small class="form-text text-muted">
+                Asigne un nombre representativo que identifique claramente la actividad.
+            </small>
         </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">Tipo de actividad <span class="text-danger">*</span></label>
+            {{ actividad_form.tipo }}
+            <small class="form-text text-muted">
+                Puede seleccionar uno o varios tipos que se ajusten a la naturaleza de la actividad (conocimiento, desempeño, producto).
+            </small>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label for="{{ actividad_form.descri.id_for_label }}" class="form-label">Descripción <span class="text-danger">*</span></label>
+            {{ actividad_form.descri }}
+            <small class="form-text text-muted">
+                Describa brevemente el propósito o contenido de la actividad. Máximo 500 caracteres.
+            </small>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label for="{{ actividad_form.guia.id_for_label }}" class="form-label">Guía relacionada <span class="text-danger">*</span></label>
+            {{ actividad_form.guia }}
+            <small class="form-text text-muted">
+                Seleccione la guía que contiene los lineamientos para desarrollar esta actividad.
+            </small>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h5 class="mb-3">Cronograma asociado:</h5>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_ini_acti.id_for_label }}" class="form-label">Fecha inicio actividad <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_ini_acti }}
+            <small class="form-text text-muted">
+                Fecha en la que los aprendices podrán comenzar a desarrollar la actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_fin_acti.id_for_label }}" class="form-label">Fecha fin actividad <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_fin_acti }}
+            <small class="form-text text-muted">
+                Fecha límite para la entrega o desarrollo de la actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_ini_cali.id_for_label }}" class="form-label">Fecha inicio calificación <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_ini_cali }}
+            <small class="form-text text-muted">
+                Fecha a partir de la cual se podrán registrar calificaciones para esta actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_fin_cali.id_for_label }}" class="form-label">Fecha fin calificación <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_fin_cali }}
+            <small class="form-text text-muted">
+                Último día permitido para registrar calificaciones.
+            </small>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label for="{{ cronograma_form.nove.id_for_label }}" class="form-label">Novedades</label>
+            {{ cronograma_form.nove }}
+            <small class="form-text text-muted">
+                Anote cualquier particularidad que se deba tener en cuenta durante el desarrollo o calificación de esta actividad.
+            </small>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h5 class="mb-3">Seleccione los RAP asociados:</h5>
+    <div class="mb-3">
+        <label class="form-label">RAP asociados <span class="text-danger">*</span></label>
+        {{ raps_form.raps }}
+        <small class="form-text text-muted">
+            Marque los Resultados de Aprendizaje (RAP) que esta actividad contribuye a desarrollar.
+        </small>
+    </div>
+
+    <div id="errorCrearActividad" class="text-danger mt-2"></div>
+</div>
 
         <div class="modal-footer">
             <button type="submit" id="btnCrearActividad" class="btn btn-primary">Crear actividad</button>
@@ -474,65 +449,97 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="formEditarActividad" autocomplete="off">
-        <div class="modal-body">
-            {% csrf_token %}
-            <input type="hidden" name="actividad_id" id="actividadIdEditar">
+       <div class="modal-body">
+    {% csrf_token %}
+    <input type="hidden" name="actividad_id" id="actividadIdEditar">
 
-            <h5 class="mb-3">Datos de la actividad:</h5>
-            <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ actividad_form.nom.id_for_label }}" class="form-label">Nombre</label>
-                {{ actividad_form.nom }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">Tipo de actividad</label>
-                {{ actividad_form.tipo }}
-            </div>
-            <div class="col-md-12 mb-3">
-                <label for="{{ actividad_form.descri.id_for_label }}" class="form-label">Descripción</label>
-                {{ actividad_form.descri }}
-            </div>
-            <div class="col-md-12 mb-3">
-                <label for="{{ actividad_form.guia.id_for_label }}" class="form-label">Guía relacionada</label>
-                {{ actividad_form.guia }}
-            </div>
-            </div>
-
-            <hr class="my-4">
-
-            <h5 class="mb-3">Cronograma asociado:</h5>
-            <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_ini_acti.id_for_label }}" class="form-label">Fecha inicio actividad</label>
-                {{ cronograma_form.fecha_ini_acti }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_fin_acti.id_for_label }}" class="form-label">Fecha fin actividad</label>
-                {{ cronograma_form.fecha_fin_acti }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_ini_cali.id_for_label }}" class="form-label">Fecha inicio calificación</label>
-                {{ cronograma_form.fecha_ini_cali }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ cronograma_form.fecha_fin_cali.id_for_label }}" class="form-label">Fecha fin calificación</label>
-                {{ cronograma_form.fecha_fin_cali }}
-            </div>
-            <div class="col-md-12 mb-3">
-                <label for="{{ cronograma_form.nove.id_for_label }}" class="form-label">Novedades</label>
-                {{ cronograma_form.nove }}
-            </div>
-            </div>
-
-            <hr class="my-4">
-
-            <h5 class="mb-3">Seleccione los RAP asociados:</h5>
-            <div class="mb-3">
-            {{ raps_form.raps }}
-            </div>
-
-            <div id="errorEditarActividad" class="text-danger mt-2"></div>
+    <h5 class="mb-3">Datos de la actividad:</h5>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.nom.id_for_label }}" class="form-label">Nombre <span class="text-danger">*</span></label>
+            {{ actividad_form.nom }}
+            <small class="form-text text-muted">
+                Asigne un nombre representativo que identifique claramente la actividad.
+            </small>
         </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">Tipo de actividad <span class="text-danger">*</span></label>
+            {{ actividad_form.tipo }}
+            <small class="form-text text-muted">
+                Puede seleccionar uno o varios tipos que se ajusten a la naturaleza de la actividad (conocimiento, desempeño, producto).
+            </small>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label for="{{ actividad_form.descri.id_for_label }}" class="form-label">Descripción <span class="text-danger">*</span></label>
+            {{ actividad_form.descri }}
+            <small class="form-text text-muted">
+                Describa brevemente el propósito o contenido de la actividad. Máximo 500 caracteres.
+            </small>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label for="{{ actividad_form.guia.id_for_label }}" class="form-label">Guía relacionada <span class="text-danger">*</span></label>
+            {{ actividad_form.guia }}
+            <small class="form-text text-muted">
+                Seleccione la guía que contiene los lineamientos para desarrollar esta actividad.
+            </small>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h5 class="mb-3">Cronograma asociado:</h5>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_ini_acti.id_for_label }}" class="form-label">Fecha inicio actividad <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_ini_acti }}
+            <small class="form-text text-muted">
+                Fecha en la que los aprendices podrán comenzar a desarrollar la actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_fin_acti.id_for_label }}" class="form-label">Fecha fin actividad <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_fin_acti }}
+            <small class="form-text text-muted">
+                Fecha límite para la entrega o desarrollo de la actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_ini_cali.id_for_label }}" class="form-label">Fecha inicio calificación <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_ini_cali }}
+            <small class="form-text text-muted">
+                Fecha a partir de la cual se podrán registrar calificaciones para esta actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ cronograma_form.fecha_fin_cali.id_for_label }}" class="form-label">Fecha fin calificación <span class="text-danger">*</span></label>
+            {{ cronograma_form.fecha_fin_cali }}
+            <small class="form-text text-muted">
+                Último día permitido para registrar calificaciones.
+            </small>
+        </div>
+        <div class="col-md-12 mb-3">
+            <label for="{{ cronograma_form.nove.id_for_label }}" class="form-label">Novedades</label>
+            {{ cronograma_form.nove }}
+            <small class="form-text text-muted">
+                Anote cualquier particularidad que se deba tener en cuenta durante el desarrollo o calificación de esta actividad.
+            </small>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h5 class="mb-3">Seleccione los RAP asociados:</h5>
+    <div class="mb-3">
+        <label class="form-label">RAP asociados <span class="text-danger">*</span></label>
+        {{ raps_form.raps }}
+        <small class="form-text text-muted">
+            Marque los Resultados de Aprendizaje (RAP) que esta actividad contribuye a desarrollar.
+        </small>
+    </div>
+
+    <div id="errorEditarActividad" class="text-danger mt-2"></div>
+</div>
+
 
         <div class="modal-footer">
             <button type="submit" id="btnEditarActividad" class="btn btn-success">Guardar cambios</button>

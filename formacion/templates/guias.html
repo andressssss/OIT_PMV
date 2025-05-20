@@ -8,9 +8,9 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center pb-4">
-                <h1 class="display-5">Gestión de guias</h1>
+                <h1 class="display-5">Gestión de guías</h1>
                 <div>
-                    <a href="/guias/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear guia">
+                    <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear guia" data-bs-toggle="modal" data-bs-target="#crearGuiaModal">
                         {% icon 'plus' %}
                     </a>
                 </div>
@@ -34,7 +34,7 @@
                         <td>{{ guia.horas_auto}}</td>
                         <td>{{ guia.horas_dire}}</td>
                         <td>
-                            <a href="/" class="btn btn-outline-warning btn-sm " data-toggle="tooltip" data-placement="top" title="Editar">
+                            <a class="btn btn-outline-warning btn-sm editBtn" data-id="{{ guia.id }}" data-toggle="tooltip" data-placement="top" title="Editar">
                             <i class="bi bi-pencil-square"></i></a>
                         </td>
                     </tr>
@@ -46,4 +46,54 @@
     </div>
     </section>
 </main>
+<!-- Modal para crear Guia -->
+<div class="modal fade" id="crearGuiaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="crearGuiaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="crearGuiaModalLabel">Crear Guía</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCrearGuia">
+                <div class="modal-body">
+                    {% csrf_token %}
+
+                    {{ guia_form.as_p }}
+            
+                    <div id="errorCrearGuia" class="text-danger mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="btnCrearGuia" class="btn btn-primary">Crear Guía</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal para editar Guia -->
+<div class="modal fade" id="editarGuiaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarGuiaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarGuiaModalLabel">Editar Guía</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEditarGuia">
+                <div class="modal-body">
+                    {% csrf_token %}
+
+                    {{ guia_form.as_p }}
+            
+                    <div id="errorEditarGuia" class="text-danger mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="btnEditarGuia" class="btn btn-primary">Editar Guía</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type ="module" src="{% static 'js/formacion/guia.js' %}"></script>
 {% endblock %}

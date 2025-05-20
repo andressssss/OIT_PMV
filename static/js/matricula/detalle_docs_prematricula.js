@@ -1,4 +1,4 @@
-import { confirmDeletion, confirmAprove, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+import { toastError, toastSuccess, confirmDeletion, confirmAprove, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Evento para desvincular aprendiz
     document.body.addEventListener("click", function (event) {
         const btn = event.target.closest(".delete-apre-btn");  
-        if (!btn) return;  // Si no es el botón, salir
+        if (!btn) return;
 
         event.preventDefault();
         const id = btn.getAttribute("data-id");
@@ -42,9 +42,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     console.log("Respuesta del servidor:", data);
                     if (data.success) {
                         row.remove();
-                        Swal.fire("Eliminado", "El aprendiz ha sido desvinculado.", "success");
+                        Swal.fire("Eliminado", data.message, "success");
                     } else {
-                        Swal.fire("Error", data.error || "No se pudo eliminar el registro.", "error");
+                        Swal.fire("Error", data.message || "No se pudo eliminar el registro.", "error");
                     }
                 })
                 .catch(error => {
@@ -409,5 +409,42 @@ document.addEventListener("DOMContentLoaded", function () {
     
 
     document.getElementById("btnRechazar").addEventListener("click", rechazarDocumento);
-        
+
+    //== enviar formulario dividir pdf
+
+    const formpdf = document.getElementById('upload-form');
+    
+    formpdf.addEventListener('submit', async (e) => {
+        e.preventDefault();
+    
+        const formData = new FormData(formpdf);
+        const btn = document.getElementById('btnEnviarPdf');
+        const originalBtnContent = btn.innerHTML;
+        showSpinner(btn);
+        try {
+            const response = await fetch(`/dividir_pdf/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+    
+            const data = await response.json();
+    
+            if (!response.ok) {
+                toastError(data.message || "Error al dividir PDF");
+                return;
+            }
+    
+            toastSuccess(data.message, data.total_paginas);
+            toastSuccess("Paginas: "+ data.total_paginas);
+            window.location.href = data.download_url;
+            formpdf.reset();
+    
+        } catch (error) {
+            toastError("Error inesperado");
+        } finally {
+            hideSpinner(btn, originalBtnContent);
+        }
+    });
+    
 });

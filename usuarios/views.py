@@ -1,4 +1,5 @@
 import re
+from django.utils.encoding import force_str
 from django.forms import ValidationError
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, redirect, get_object_or_404
@@ -9,8 +10,8 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.utils import timezone
-from commons.models import T_instru,T_ficha, T_cuentas, T_gestor_insti_edu, T_apre,T_docu_labo, T_gestor_depa, T_gestor,T_docu, T_perfil, T_admin, T_lider, T_nove, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
-from .forms import InstructorForm, PerfilEForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, NovedadForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
+from commons.models import T_instru, T_ficha, T_cuentas, T_gestor_insti_edu, T_apre,T_docu_labo, T_gestor_depa, T_gestor,T_docu, T_perfil, T_admin, T_lider, T_nove, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
+from .forms import InstructorForm, PerfilEForm,CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, NovedadForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
 from .serializers import T_insti_edu_Serializer
@@ -397,7 +398,7 @@ def crear_instructor(request):
     if request.method == 'POST':
         perfil_form = PerfilForm(request.POST)
         instructor_form = InstructorForm(request.POST)
-        ficha_id = request.POST.get('ficha_id')
+        ficha_ids = request.POST.getlist('ficha_id[]')
         ficha = None
 
         if perfil_form.is_valid() and instructor_form.is_valid():
@@ -409,20 +410,6 @@ def crear_instructor(request):
             
             if T_perfil.objects.filter(mail__iexact = email).exists():
                 return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
-
-            if ficha_id:
-                try:
-                    ficha = T_ficha.objects.get(id=ficha_id)
-                    if ficha.instru is not None:
-                        return JsonResponse({
-                            'success': False,
-                            'error': 'Esta ficha ya tiene un instructor asignado.'
-                        }, status=409)
-                except T_ficha.DoesNotExist:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'La ficha seleccionada no existe.'
-                    }, status=404)
 
             nombre = perfil_form.cleaned_data['nom']
             apellido = perfil_form.cleaned_data['apelli']
@@ -452,12 +439,24 @@ def crear_instructor(request):
             new_instructor.perfil = new_perfil
             new_instructor.esta = "Activo"
             new_instructor.save()
+            
+            for ficha_id in ficha_ids:
+                try:
+                    ficha = T_ficha.objects.get(id = ficha_id)
+                    if ficha.instru is not None:
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': f'La ficha {ficha.num} ya tiene un instructor asignado: {ficha.instru.perfil.nom} {ficha.instru.perfil.apelli}'
+                        }, status = 409)
+                    ficha.instru = new_instructor
+                    ficha.save()
+                except T_ficha.DoesNotExist:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'La ficha con ID {ficha_id} no existe.'
+                    }, status=404)
 
-            if ficha:
-                ficha.instru = new_instructor
-                ficha.save()
-
-            return JsonResponse({'status': 'success', 'message': 'Instructor creado con exito.'})
+            return JsonResponse({'status': 'success', 'message': 'Instructor creado con éxito.'})
         else:
             errores_dict = {
                 **perfil_form.errors.get_json_data(),
@@ -486,7 +485,7 @@ def obtener_instructor(request, instructor_id):
     instructor = T_instru.objects.filter(id=instructor_id).select_related('perfil').first()
 
     if instructor:
-        ficha = T_ficha.objects.filter(instru=instructor).first()
+        fichas = T_ficha.objects.filter(instru=instructor)
         data = {
             'id': instructor.id,
             'perfil': {
@@ -505,14 +504,13 @@ def obtener_instructor(request, instructor_id):
             'fecha_ini': instructor.fecha_ini.isoformat() if instructor.fecha_ini else '',
             'fecha_fin': instructor.fecha_fin.isoformat() if instructor.fecha_fin else '',
             'tipo_vincu': instructor.tipo_vincu,
-            'ficha_id': ficha.id if ficha else None,
+            'fichas': [{'id': f.id, 'num': f.num} for f in fichas],
         }
         return JsonResponse (data)
     return JsonResponse({'status': 'error', 'message': 'Instructor no encontrado'}, status=404)
 
 @login_required
 def editar_instructor(request, instructor_id):
-    print(request.POST)
     instructor = get_object_or_404(T_instru, pk=instructor_id)
     perfil = get_object_or_404(T_perfil, pk=instructor.perfil.id)
 
@@ -521,28 +519,28 @@ def editar_instructor(request, instructor_id):
         form_instructor = InstructorForm(request.POST, instance=instructor)
 
         if form_perfil.is_valid() and form_instructor.is_valid():
-            ficha_id = request.POST.get('ficha_id')
-            if ficha_id:
-                try:
-                    ficha = T_ficha.objects.get(pk=ficha_id)
-                    if ficha.instru is not None:
-                        return JsonResponse({
-                            'status': 'error',
-                            'message': 'Esta ficha ya tiene un instructor asignado.'
-                        }, status=409)
-                    ficha.instru = instructor
-                    ficha.save()
+            ficha_ids = request.POST.getlist('ficha_id')
+            nuevas_fichas = T_ficha.objects.filter(id__in=ficha_ids)
 
-                except T_ficha.DoesNotExist:
+            for ficha in nuevas_fichas:
+                if ficha.instru and ficha.instru.id != instructor.id:
                     return JsonResponse({
                         'status': 'error',
-                        'message': 'Ficha no válida seleccionada.'
-                    }, status=400)
+                        'message': f'La ficha {ficha.num} ya tiene un instructor asignado: {ficha.instru.perfil.nom} {ficha.instru.perfil.apelli}'
+                    }, status=409)
+
+            fichas_actuales = T_ficha.objects.filter(instru=instructor)
+            for ficha in fichas_actuales:
+                if str(ficha.id) not in ficha_ids:
+                    ficha.instru = None
+                    ficha.save()
+
+            for ficha in nuevas_fichas:
+                ficha.instru = instructor
+                ficha.save()
 
             form_perfil.save()
             form_instructor.save()
-
-            instructor.save()
 
             return JsonResponse({'status': 'success', 'message': 'Instructor actualizado con éxito.'})
         else:
@@ -560,6 +558,139 @@ def editar_instructor(request, instructor_id):
         'status': 'error',
         'message': 'Método no permitido',
     }, status=405)
+
+# Función auxiliar para formatear errores por fila
+def formatear_error_csv(fila, errores_campos):
+    fila_str = '\n  '.join([f"{k}: '{v}'" for k, v in fila.items()])
+    return (
+        "⚠️ Error de validación en una fila del archivo CSV:\n"
+        "----------------------------------------\n"
+        f"Datos de la fila:\n  {fila_str}\n\n"
+        f"Errores encontrados:\n" + '\n'.join(errores_campos) + "\n"
+        "----------------------------------------"
+    )
+def cargar_instructores_masivo(request):
+    if request.method == 'POST':
+        errores = []
+        resumen = {
+            "insertados": 0,
+            "errores": 0,
+            "duplicados_dni": []
+        }
+        form = CargarInstructoresMasivoForm(request.POST, request.FILES)
+        if form.is_valid():
+            archivo = request.FILES['archivo']
+            datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
+
+            # Validaciones iniciales
+            if not archivo.name.lower().endswith('.csv'):
+                errores.append(formatear_error_csv({}, ["Solo se permiten archivos CSV (.csv)"]))
+                resumen["errores"] += 1
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
+
+            allowed_mime_types = ['text/csv', 'application/csv', 'text/plain']
+            if archivo.content_type not in allowed_mime_types:
+                errores.append(formatear_error_csv({}, ["Tipo de archivo no válido (solo CSV)."]))
+                resumen["errores"] += 1
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
+
+            contenido_csv = datos_csv.read().replace(';', ',')
+            lector = csv.DictReader(contenido_csv.splitlines())
+
+            for fila in lector:
+                try:
+                    with transaction.atomic():
+                        # Validar campos requeridos
+                        campos_requeridos = ['email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele', 'dire', 'gene', 'fecha_naci', 'profe', 'tipo_vincu']
+                        for campo in campos_requeridos:
+                            if campo not in fila or not fila[campo].strip():
+                                raise ValidationError(f"Campo requerido faltante: '{campo}'")
+
+                        dni = fila['dni']
+                        if T_perfil.objects.filter(dni=dni).exists():
+                            resumen["duplicados_dni"].append(dni)
+                            raise ValidationError(f"DNI duplicado: {dni}")
+
+                        validate_email(fila['email'])
+                        if T_perfil.objects.filter(mail=fila['email']).exists():
+                            raise ValidationError(f"Email ya existe: {fila['email']}")
+
+                        # Parseo de fechas
+                        fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                        fecha_ini = datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
+                        fecha_fin = datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
+
+                        # Generación de username único
+                        base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
+                        username = base_username
+                        i = 1
+                        while User.objects.filter(username=username).exists():
+                            username = f"{base_username}{i}"
+                            i += 1
+
+                        # Crear usuario
+                        contraseña = generar_contraseña()
+                        user = User.objects.create_user(
+                            username=username,
+                            password=contraseña,
+                            email=fila['email']
+                        )
+
+                        # Crear perfil
+                        perfil = T_perfil.objects.create(
+                            user=user,
+                            nom=fila['nom'],
+                            apelli=fila['apelli'],
+                            tipo_dni=fila['tipo_dni'],
+                            dni=dni,
+                            tele=fila['tele'],
+                            dire=fila['dire'],
+                            gene=fila['gene'],
+                            mail=fila['email'],
+                            fecha_naci=fecha_naci,
+                            rol="instructor"
+                        )
+
+                        perfil.full_clean()
+
+                        # Crear instructor
+                        instructor = T_instru(
+                            perfil=perfil,
+                            esta="activo",
+                            contra=fila.get('contra', ''),
+                            profe=fila['profe'],
+                            tipo_vincu=fila['tipo_vincu'],
+                            fecha_ini=fecha_ini,
+                            fecha_fin=fecha_fin
+                        )
+
+                        # Validar y guardar instructor
+                        instructor.full_clean()
+                        instructor.save()
+
+                        resumen["insertados"] += 1
+
+                except Exception as e:
+                    errores.append(formatear_error_csv(fila, [force_str(e)]))
+                    resumen["errores"] += 1
+                    continue
+
+            if resumen["insertados"]:
+                messages.success(request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
+            else:
+                messages.error(request, "No se ha cargado información, corrija los errores e inténtelo de nuevo.")
+
+            return render(request, 'instructor_masivo_crear.html', {
+                'form': form,
+                'errores': errores,
+                'resumen': resumen
+            })
+
+    else:
+        form = CargarInstructoresMasivoForm()
+
+    return render(request, 'instructor_masivo_crear.html', {'form': form})
+
 
 ### CUENTAS ###
 
@@ -1643,10 +1774,7 @@ def cargar_aprendices_masivo(request):
                             fecha_naci_str = fila.get('fecha_naci', '').strip()
                             if fecha_naci_str:
                                 try:
-                                    # Intentar convertir la fecha en formato "1/01/1980"
-                                    fecha_naci = timezone.strptime(fecha_naci_str, '%d/%m/%Y')
-                                    # Convertirla al formato YYYY-MM-DD
-                                    fecha_naci = fecha_naci.strftime('%Y-%m-%d')
+                                    fecha_naci = datetime.strptime(fecha_naci_str, '%d/%m/%Y').date()
                                 except ValueError as e:
                                     raise ValidationError(f"Formato de fecha inválido en fila {fila}: {str(e)}")  # Cambiar esto
                             else:

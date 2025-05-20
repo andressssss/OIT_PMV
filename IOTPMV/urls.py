@@ -92,6 +92,7 @@ urlpatterns = [
     path('api/instructor/crear/', usuarios_views.crear_instructor,name='crear_instructor'),
     path('api/instructor/<int:instructor_id>/', usuarios_views.obtener_instructor ,name='api_obtener_instructor'),
     path('api/instructor/editar/<int:instructor_id>/', usuarios_views.editar_instructor, name='api_editar_instructor'),
+    path('cargar_instructores_masivo/', usuarios_views.cargar_instructores_masivo, name='cargar_instructores_masivo'),
 
     # Rol Administradores
     path('administradores/', usuarios_views.administradores, name='administradores'),
@@ -162,7 +163,6 @@ urlpatterns = [
 
     # ROL Instructores
     path('gestion_instructor/', gestion_instructores_views.gestion_instructor,name='gestion_instructor'),
-    path('get_tree_instructor/', formacion_views.tree_detalle,name='get_tree_instructor'),
 
     # Panel instructor
     path('fichas_inst/', formacion_views.listar_fichas, name='listar_fichas'),
@@ -218,16 +218,35 @@ urlpatterns = [
     path('api/programa/detalle/<int:programa_id>/', formacion_views.detalle_programa, name='api_detalle_programa'),
 
     # Competencias
-    path('competencias/', formacion_views.listar_competencias, name='competencias'),
-    path('competencias/crear/', formacion_views.crear_competencias, name='crear_competencias'),
+    path('competencias/', formacion_views.competencias, name='competencias'),
+    path('api/competencia/crear/', formacion_views.crear_competencia, name="api_crear_competencia"),
+    path('api/competencias/filtrar/', formacion_views.filtrar_competencias, name="api_filtrar_competencias"),
+    path('api/competencias/fases/', formacion_views.obtener_opciones_fases, name="api_opciones_fases"),
+    path('api/competencias/programas/', formacion_views.obtener_opciones_programas, name="api_opciones_programas"),
+    path('api/competencia/<int:competencia_id>/', formacion_views.obtener_competencia, name="api_obtener_competencia"),
+    path('api/competencia/editar/<int:competencia_id>/', formacion_views.editar_competencia, name="api_editar_competencia"),
 
-    # Raps
+    # RAPS
     path('raps/', formacion_views.listar_raps, name = 'raps'),
-    path('raps/crear/', formacion_views.crear_raps, name='crear_raps'),
+    path('api/rap/crear/', formacion_views.crear_rap, name = 'api_crear_rap'),
+    path('api/raps/filtrar/', formacion_views.filtrar_raps, name="api_filtrar_raps"),
+    path('api/raps/fases/', formacion_views.obtener_opciones_fases_raps, name="api_opciones_fases_raps"),
+    path('api/raps/programas/', formacion_views.obtener_opciones_programas_raps, name="api_opciones_programas_raps"),
+    path('api/raps/competencias/', formacion_views.obtener_opciones_competencias_raps, name="api_opciones_competencias_raps"),
+    path('api/rap/<int:rap_id>/', formacion_views.obtener_rap, name="api_obtener_rap"),
+
+    path('api/competencias/', formacion_views.obtener_opciones_competencias, name="api_opciones_competencias"),
+    path('api/rap/editar/<int:rap_id>/', formacion_views.editar_rap, name="api_editar_rap"),
+
+
+    path('api/competencias_progra/<int:id_progra>/', formacion_views.obtener_competencias_programa, name = 'api_obtener_competencias_programa'),
+    
 
     # Guias
     path('guias/', formacion_views.listar_guias, name = 'guias'),
-    path('guia/crear/', formacion_views.crear_guia, name='crear_guia'),
+    path('api/guia/crear/', formacion_views.crear_guia, name='api_crear_guia'),
+    path('api/guia/<int:guia_id>/', formacion_views.obtener_guia, name='api_obtener_guia'),
+    path('api/guia/editar/<int:guia_id>/', formacion_views.editar_guia, name='api_editar_guia'),
 
     # Tree
     path('api/carpetas/<int:ficha_id>/', formacion_views.obtener_carpetas, name='obtener_carpetas'),
