@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 class AsignarAprendicesGrupoForm(forms.Form):
     aprendices = forms.ModelMultipleChoiceField(
         queryset=T_apre.objects.filter(grupo__isnull=True),
-        widget=forms.SelectMultiple(attrs={'class': 'form-control select2'})
+        widget=forms.SelectMultiple(attrs={'class': 'form-control tomselect'})
     )
 
 # class GrupoForm(forms.ModelForm):

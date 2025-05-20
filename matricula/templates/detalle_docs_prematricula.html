@@ -7,12 +7,20 @@
     <section class="card card-body shadow-sm p-4">
         <div class="row">
             <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center pb-4">
-                    <h1 class="display-5">Panel del grupo {{ grupo.id }} - {{ grupo.insti.nom }}</h1>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="mb-0 display-5">Panel del grupo {{ grupo.id }} - {{ grupo.insti.nom }}</h1>
+                    <div>
+                        {% if instructor %}
+                            <span class="h5 text-muted">{{ instructor.perfil.nom }} {{ instructor.perfil.apelli }}</span>
+                        {% else %}
+                            <span class="h5 text-muted">Sin instructor</span>
+                        {% endif %}
+                    </div>
                 </div>
+
         {% if grupo %}
         <!-- NavPills -->
-        <ul class="nav nav-tabs mb-4 nav-fill" id="aprendizTab" role="tablist">
+        <ul class="nav nav-pills mb-4 nav-fill" id="aprendizTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <a class="nav-link" id="instituciones-tab" data-bs-toggle="pill" href="#institucionest" role="tab" aria-controls="instituciones" aria-selected="true">
                     Institución
@@ -23,152 +31,135 @@
                     Aprendices
                 </a>
             </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="instructores-tab" data-bs-toggle="pill" href="#instructores" role="tab" aria-controls="instructores" aria-selected="false">
-                    Instructor
-                </a>
-            </li>
         </ul>
 
         <!-- Contenido de las Pills -->
         <div class="tab-content" id="aprendizTabContent">
-            <!-- Portafolio -->
+            <!-- Instituciones -->
             <div class="tab-pane fade" id="institucionest" role="tabpanel" aria-labelledby="instituciones-tab">
-                <h4>Instituciones</h4>
-                <p>Aquí puedes consultar la documentación de la institución</p>
-                
-            <!-- Tabla de Documentos Cargados -->
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Nombre del Documento</th>
-                        <th>Estado</th>
-                        <th>Archivo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for documento in documentos_institucion %}
-                    <tr>
-                        <td>{{ documento.nom }}</td>
-                        <td>
-                            {% if documento.vali == '0' %}
-                            <span class="text-muted">No cargado</span>
-                            {% elif documento.vali == '1' %}
-                                <span class="badge bg-primary">Cargado</span>
-                            {% elif documento.vali == '2' %}
-                            <span class="badge bg-danger">Rechazado</span>
-                            {% elif documento.vali == '3' %}
-                            <span class="badge bg-warning">Recargado</span>
-                            {% elif documento.vali == '4' %}
-                            <span class="badge bg-success">Aprobado</span>
-                            {% else %}
-                                Estado desconocido
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if documento.docu and documento.docu.archi %}
-                                <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn btn-sm btn-outline-primary" data-toggle="tooltip" title="Ver archivo">
-                                    <i class="bi bi-eye"></i> Ver
-                                </a>
-                            {% else %}
-                                No cargado
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center">No hay documentos cargados.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            </div>
-            
-            <!-- Entregas -->
-            <div class="tab-pane fade show active" id="aprendicest" role="tabpanel" aria-labelledby="aprendicest-tab">    
-                <div class="row">
-                    <div class="col-md-6">
-                        <h4>Documentación</h4>
-                        <p>Aquí deberá cargar los documentos relacionados con la matrícula.</p>
-                    </div>
-                    <div class="col-md-6">
-                        {% if grupo.esta == 'En radicacion' %}
-                        <a class="btn btn-danger float-end mx-2 descargar-zip" 
-                        href="{% url 'descargar_documentos_grupo_zip' grupo.id %}" 
-                        data-toggle="tooltip" 
-                        data-placement="top" 
-                        title="Descargar documentos grupo">
-                        {% icon 'download' %}
-                        </a>
-                        {% endif %}
-                        <a class="btn btn-danger float-end descargar-agrupados" 
-                        href="{% url 'descargar_documentos_grupo' grupo.id 'Carta Intención' %}" 
-                        data-toggle="tooltip" 
-                        data-placement="top" 
-                        title="Descargar documentos agrupados">
-                        {% icon 'download' %}
-                        </a>
-                        <a class="btn btn-danger float-end mx-2 descargar-agrupados"
-                        data-toggle="tooltip" 
-                        data-placement="top" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#dividirPdfModal"
-                        title="Dividir PDF">
-                        {% icon 'dividir' %}
-                        </a>
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre del Documento</th>
+                                    <th>Estado</th>
+                                    <th>Archivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for documento in documentos_institucion %}
+                                <tr>
+                                    <td>{{ documento.nom }}</td>
+                                    <td>
+                                        {% if documento.vali == '0' %}
+                                        <span class="text-muted">No cargado</span>
+                                        {% elif documento.vali == '1' %}
+                                            <span class="badge bg-primary">Cargado</span>
+                                        {% elif documento.vali == '2' %}
+                                        <span class="badge bg-danger">Rechazado</span>
+                                        {% elif documento.vali == '3' %}
+                                        <span class="badge bg-warning">Recargado</span>
+                                        {% elif documento.vali == '4' %}
+                                        <span class="badge bg-success">Aprobado</span>
+                                        {% else %}
+                                            Estado desconocido
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if documento.docu and documento.docu.archi %}
+                                            <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn btn-sm btn-outline-primary" data-toggle="tooltip" title="Ver archivo">
+                                                <i class="bi bi-eye"></i> Ver
+                                            </a>
+                                        {% else %}
+                                            No cargado
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay documentos cargados.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                
-    <div class="table-responsive">
-        <table id="fichas_prematricula" class="table table-hover table-bordered align-middle">
-            <thead class="table-secondary text-center">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for aprendiz, documentos in documentos_por_aprendiz.items %}
-                    <tr>
-                        <td>
-                            {{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}
-                        </td>
-                        <td>
-                            {{ aprendiz.esta_docu|default:"Desconocido"}}
-                        </td>
-                        <td class="text-end">
-                            <a href="{% url 'descargar_documentos_zip' aprendiz.id %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Descargar documentos ZIP">{% icon 'download' %}</a>
-                            <a class="btn btn-danger delete-apre-btn btn-sm" data-id="{{aprendiz.id}}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Eliminar relación grupo">{% icon 'delete' %}</a>
-                            <button class="btn btn-primary btn-sm ver-documentacion"  
-                                data-id="{{aprendiz.id}}" 
-                                data-nombre="{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Ver documentación">
-                                <i class="bi bi-folder"></i>
-                            </button>
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="2" class="text-center">No hay aprendices en este grupo.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </div>
+            
+            <!-- Aprendices -->
+            <div class="tab-pane fade show active" id="aprendicest" role="tabpanel" aria-labelledby="aprendicest-tab">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <!-- Botones superiores -->
+                        <div class="d-flex justify-content-end mb-3">
+                            <a class="btn btn-danger btn-sm me-2 descargar-zip" 
+                            href="{% url 'descargar_documentos_grupo_zip' grupo.id %}" 
+                            data-toggle="tooltip" 
+                            data-placement="top" 
+                            title="Descargar documentos grupo">
+                            {% icon 'download' %}
+                            </a>
+                            <a class="btn btn-danger btn-sm me-2"
+                            data-toggle="tooltip" 
+                            data-placement="top" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#dividirPdfModal"
+                            title="Dividir PDF">
+                            {% icon 'dividir' %}
+                            </a>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table id="fichas_prematricula" class="table table-hover table-bordered align-middle">
+                                <thead class="table-secondary text-center">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for aprendiz, documentos in documentos_por_aprendiz.items %}
+                                        <tr>
+                                            <td>
+                                                {{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}
+                                            </td>
+                                            <td>
+                                                {{ aprendiz.esta_docu|default:"Desconocido"}}
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{% url 'descargar_documentos_zip' aprendiz.id %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Descargar documentos ZIP">{% icon 'download' %}</a>
+                                                <a class="btn btn-danger delete-apre-btn btn-sm" data-id="{{aprendiz.id}}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Eliminar relación grupo">{% icon 'delete' %}</a>
+                                                <button class="btn btn-primary btn-sm ver-documentacion"  
+                                                    data-id="{{aprendiz.id}}" 
+                                                    data-nombre="{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Ver documentación">
+                                                    <i class="bi bi-folder"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="2" class="text-center">No hay aprendices en este grupo.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Documentación -->
-            <div class="tab-pane fade" id="instructorest" role="tabpanel" aria-labelledby="instructorest-tab">
-            </div>
         </div>
+
         {% else %}
             <div class="alert alert-warning text-center">
-                No tienes una ficha asignada aún. Por favor, contacta a tu instructor.
+                No existe el grupo. Por favor, contacta a tu instructor.
             </div>
         {% endif %}
     </section>
 </main>
-<!-- Modal -->
+
 <div class="modal fade" id="dividirPdfModal" tabindex="-1" aria-labelledby="dividirPdfModal" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -182,9 +173,8 @@
                 {% csrf_token %}
                 <input type="file" class="form-control" name="pdf_file" id="pdf_file" accept=".pdf" required>
         </div>
-        <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Dividir PDF</button>
+        <div class="modal-footer"> 
+                <button id="btnEnviarPdf" type="submit" class="btn btn-primary">Dividir PDF</button>
             </form>
         </div>
         </div>
@@ -243,6 +233,7 @@
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="modalRechazo" tabindex="-1" aria-labelledby="modalRechazoLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -263,6 +254,7 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}

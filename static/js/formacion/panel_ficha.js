@@ -1196,7 +1196,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     data.raps.forEach(rap => {
                         const li = document.createElement('li');
                         li.classList.add('list-group-item');
-                        li.innerHTML = `<strong>${rap.rap__nom}</strong> (${rap.rap__compe__fase})<br><em>${rap.rap__compe__nom}</em>`;
+                        li.innerHTML = `<strong>${rap.rap__rap__nom}</strong> (${rap.rap__rap__compe__fase__nom})<br><em>${rap.rap__rap__compe__nom}</em>`;
                         listaRaps.appendChild(li);
                     });
 
