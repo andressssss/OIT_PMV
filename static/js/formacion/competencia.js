@@ -157,6 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             toastSuccess(data.message);
             formCrearCompetencia.reset();
+            formCrearCompetencia.querySelectorAll('select').forEach(el => {
+                if (el.tomselect) {
+                    el.tomselect.clear();
+                }
+            });
             modal.hide();
             aplicarFiltros();
         } catch (error) {

@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             el.disabled = true;
 
             if(el.tomselect){
-                el.tomselect.disabled();
+                el.tomselect.disable();
             }
         });
     
@@ -237,31 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }
-    
-    //Cargar competencias filtradas por programa en el modal de creacion
-    async function cargarCompetencias(programaId) {
-        const compeSelect = document.getElementById('compeSelect');
-        compeSelect.innerHTML = '<option value="">Seleccione una competencia</option>';
-        compeSelect.disabled = true;
-    
-        if (!programaId) return;
-    
-        try {
-            const response = await fetch(`/api/programa/${programaId}/competencias/`);
-            const data = await response.json();
-    
-            data.forEach(compe => {
-                const option = document.createElement('option');
-                option.value = compe.id;
-                option.textContent = compe.nom;
-                compeSelect.appendChild(option);
-            });
-    
-            compeSelect.disabled = false;
-        } catch (error) {
-            toastError('Error al cargar competencias');
-        }
-    }
 
     //Cargar competencias completas en el modal de edicion
     async function cargarCompetenciasEdit() {
@@ -287,10 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('programaSelect').addEventListener('change', (e) => {
-        const programaId = e.target.value;
-        cargarCompetencias(programaId);
-    });
+
 
     formEditarRAP.addEventListener('submit', async (e) => {
         e.preventDefault();
