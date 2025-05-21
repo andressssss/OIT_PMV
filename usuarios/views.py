@@ -65,18 +65,19 @@ def signin(request):
         else:
             login(request, user)
             
-            # Obtener el perfil del usuario
             try:
                 perfil = T_perfil.objects.get(user=user)  # Obtener el perfil asociado al usuario
                 # Verificar el rol del perfil
                 if perfil.rol == 'aprendiz':
-                    print("1")
-                    return redirect('panel_aprendiz')  # Redirigir al panel del aprendiz
+                    return redirect('panel_aprendiz')
+                
                 elif perfil.rol in ['gestor', 'lider']:
-                    print("2")
                     return redirect('instituciones_gestor')
+                
+                elif perfil.rol  == 'admin':
+                    return redirect('admin_dashboard')
+                
                 elif perfil.rol == 'instructor':
-                    print("3")
                     return redirect('listar_fichas')
             except T_perfil.DoesNotExist:
                 pass  # Si no se encuentra el perfil, no hacer nada adicional
