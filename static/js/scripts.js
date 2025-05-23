@@ -19,12 +19,6 @@ $(document).ready(function () {
             deferRender: true
         }
     });
-    new DataTable('#represantesLegales', {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-            deferRender: true
-        }
-    });
     new DataTable('#instructores_table', {
         language: {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
@@ -57,11 +51,6 @@ $(document).ready(function () {
         }
     });
     new DataTable('#fichas_prematricula', {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-        }
-    });
-    new DataTable('#listado_fichas', {
         language: {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
         }

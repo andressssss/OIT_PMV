@@ -2,7 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
 from django.db import transaction
 from django.contrib.staticfiles import finders
+import io
+import zipfile
+import os
 import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from django.db.models import Q
 import logging
 from django.http import FileResponse
 from django.template.loader import get_template
@@ -27,9 +33,96 @@ from django.db.models import F
 
 logger = logging.getLogger(__name__)
 
+###############################################################################################################
+#        VISTAS FICHA
+###############################################################################################################
+@login_required
 def fichas(request):
     fichas = T_ficha.objects.all()
     return render(request, 'listar_fichas.html', {'fichas': fichas})
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_estados(request):
+    estados = T_ficha.objects.filter(
+        esta__isnull = False
+    ).distinct().values_list('esta', flat=True)
+    return JsonResponse(list(estados), safe=False)
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_instructores(request):
+    instructores = T_ficha.objects.filter(
+        instru__isnull = False
+    ).distinct().values_list('instru__perfil__nom', flat=True)
+    opciones = ['Sin asignar'] + list(instructores)
+    return JsonResponse(opciones, safe=False)
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_programas(request):
+    programas = T_ficha.objects.filter(
+        progra__isnull=False
+    ).distinct().values_list('progra__nom', flat=True)
+    return JsonResponse(list(programas), safe=False)
+
+@require_GET
+@login_required
+def filtrar_fichas(request):
+    estados = request.GET.getlist('estados', [])
+    instructores = request.GET.getlist('instructores', [])
+    programas = request.GET.getlist('programas', [])
+
+    fichas = T_ficha.objects.all()
+
+    if estados:
+        fichas = fichas.filter(esta__in = estados)
+    if instructores:
+        incluir_null = 'Sin asignar' in instructores
+        nombres_validos = [i for i in instructores if i != 'Sin asignar']
+
+        if incluir_null and nombres_validos:
+            fichas = fichas.filter(
+                Q(instru__perfil__nom__in = nombres_validos) |
+                Q(instru__isnull=True)
+                )
+        elif incluir_null:
+            fichas = fichas.filter(instru__isnull=True)
+        else:
+            fichas = fichas.filter(instru__perfil__nom__in = nombres_validos)
+
+    if programas:
+        fichas = fichas.filter(progra__nom__in = programas)
+
+    data = [
+        {
+            'id': f.id,
+            'num': f.num,
+            'estado': f.esta,
+            'fecha_aper': f.fecha_aper.strftime('%d/%m/%Y') if f.fecha_aper else None,
+            'fecha_cierre': f.fecha_cierre.strftime('%d/%m/%Y') if f.fecha_cierre else None,
+            'centro': f.centro.nom,
+            'institucion': f.insti.nom,
+            'instru': f.instru.perfil.nom if f.instru else None,
+            'matricu': f.num_apre_proce,
+            'progra': f.progra.nom
+        } for f in fichas
+    ]
+    return JsonResponse(data, safe=False)
+
+@require_POST
+@login_required
+def cambiar_numero_ficha(request, ficha_id):
+    nuevo_num = request.POST.get('nuevo_num')
+
+    if not nuevo_num:
+        return JsonResponse({'status': 'error', 'message': 'Numero de ficha invalido'}, status=400)
+    
+    ficha = get_object_or_404(T_ficha, id = ficha_id)
+    ficha.num = nuevo_num
+    ficha.save()
+
+    return JsonResponse({'status': 'success', 'message': 'Numero de ficha actualizado correctamente'}, status=200)
 
 @login_required
 def listar_fichas(request):
@@ -105,8 +198,7 @@ def obtener_estado_fase(request, ficha_id):
         'fase': fase_ficha.fase.nom
     })
 
-
-
+@login_required
 def cerrar_fase_ficha(request, ficha_id):
     if not ficha_id:
         return JsonResponse({"success": False, "error": "Falta el ID de la ficha."}, status=400)
@@ -160,7 +252,7 @@ def cerrar_fase_ficha(request, ficha_id):
     except T_fase.DoesNotExist:
         return JsonResponse({"success": False, "error": "Fase siguiente no existe en T_fase."}, status=404)
 
-
+@login_required
 def devolver_fase_ficha(request, ficha_id):
     if not ficha_id:
         return JsonResponse({"status": "error", "message": "Falta el ID de la ficha."}, status=400)
@@ -210,6 +302,7 @@ def devolver_fase_ficha(request, ficha_id):
     except T_fase_ficha.DoesNotExist:
         return JsonResponse({"success": False, "error": "No se encontró la fase activa."}, status=404)
 
+@login_required
 def obtener_actividad(request, actividad_id):
     try:
         actividad_ficha = get_object_or_404(T_acti_ficha, id=actividad_id)
@@ -240,6 +333,7 @@ def obtener_actividad(request, actividad_id):
         traceback.print_exc()
         return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
+@login_required
 def obtener_carpetas(request, ficha_id):
     # Obtener todas las carpetas y documentos asociados a la ficha
     nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values(
@@ -285,6 +379,63 @@ def obtener_carpetas(request, ficha_id):
 
     return JsonResponse(root_nodes, safe=False)
 
+@login_required
+def descargar_portafolio_zip(request, ficha_id):
+    nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).select_related("documento")
+
+    # Creamos un diccionario para construir la jerarquía de carpetas
+    folder_map = {}
+
+    for nodo in nodos:
+        folder_map[nodo.id] = {
+            "id": nodo.id,
+            "name": nodo.name,
+            "parent_id": nodo.parent_id,
+            "tipo": nodo.tipo,
+            "documento": nodo.documento if nodo.tipo == "documento" else None,
+            "children": []
+        }
+
+    # Construimos la jerarquía
+    root_nodes = []
+    for nodo in folder_map.values():
+        if nodo["parent_id"]:
+            parent = folder_map.get(nodo["parent_id"])
+            if parent:
+                parent["children"].append(nodo)
+        else:
+            root_nodes.append(nodo)
+
+    def agregar_a_zip(zip_file, nodo, ruta_actual):
+        nombre = nodo["name"]
+        ruta = os.path.join(ruta_actual, nombre)
+
+        if nodo["tipo"] == "carpeta":
+            # Creamos una carpeta vacía en el zip
+            zip_file.writestr(f"{ruta}/", "")
+            for hijo in nodo["children"]:
+                agregar_a_zip(zip_file, hijo, ruta)
+        elif nodo["tipo"] == "documento" and nodo["documento"] and nodo["documento"].archi:
+            path_archivo = nodo["documento"].archi.path
+            try:
+                with open(path_archivo, "rb") as f:
+                    contenido = f.read()
+                    zip_file.writestr(f"{ruta}", contenido)
+            except FileNotFoundError:
+                pass
+    # Creamos el zip en memoria
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for nodo in root_nodes:
+            agregar_a_zip(zip_file, nodo, "")
+
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename=portafolio_ficha_{ficha_id}.zip'
+    return response
+
+@login_required
 def cargar_documento(request):
     if request.method == 'POST':
         if  request.FILES.get("file"):
@@ -332,23 +483,26 @@ def cargar_documento(request):
         return JsonResponse({'status': 'error', 'message': 'Debe cargar un documento'}, status = 400)
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status = 405)
 
-@login_required  # Función para eliminar documento del portafolio
+@login_required
 def eliminar_documento_portafolio_ficha(request, documento_id):
     if request.method != "DELETE":
         return JsonResponse({"status": "error", "error": "Método no permitido"}, status=405)
 
     documento = get_object_or_404(T_DocumentFolder, id=documento_id)
 
-    if documento.documento:
+    # Si hay un archivo relacionado, eliminarlo manualmente
+    if documento.documento and documento.documento.archi:
         archivo_a_eliminar = documento.documento.archi.name
-        documento.documento.delete()
         if archivo_a_eliminar:
             default_storage.delete(archivo_a_eliminar)
+        documento.documento.delete()
 
     documento.delete()
 
-    return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status = 200)
+    return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status=200)
 
+
+@login_required
 def obtener_hijos_carpeta(request, carpeta_id):
     try:
         nodos = T_DocumentFolder.objects.filter(parent_id=carpeta_id).values(
@@ -380,6 +534,7 @@ def obtener_hijos_carpeta(request, carpeta_id):
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
+@login_required
 def obtener_carpetas_aprendiz(request, aprendiz_id):
     # Obtener todas las carpetas y documentos asociados a la ficha
     nodos = T_DocumentFolderAprendiz.objects.filter(aprendiz_id=aprendiz_id).values(
@@ -425,6 +580,61 @@ def obtener_carpetas_aprendiz(request, aprendiz_id):
 
     return JsonResponse(root_nodes, safe=False)
 
+@login_required
+def descargar_portafolio_aprendiz_zip(request, aprendiz_id):
+    # Obtener todos los nodos del árbol
+    nodos = T_DocumentFolderAprendiz.objects.filter(aprendiz_id=aprendiz_id).select_related('documento')
+
+    folder_map = {}
+    doc_map = {}
+
+    for nodo in nodos:
+        folder_map[nodo.id] = {
+            "id": nodo.id,
+            "name": nodo.name,
+            "parent_id": nodo.parent_id,
+            "tipo": nodo.tipo,
+            "children": [],
+        }
+        if nodo.tipo == "documento" and nodo.documento:
+            doc_map[nodo.id] = nodo.documento
+
+    # Construir jerarquía de carpetas
+    root_nodes = []
+    for nodo in folder_map.values():
+        parent_id = nodo["parent_id"]
+        if parent_id:
+            folder_map[parent_id]["children"].append(nodo)
+        else:
+            root_nodes.append(nodo)
+
+    # Función recursiva para añadir al ZIP
+    def agregar_a_zip(zip_file, nodo, ruta):
+        ruta_actual = os.path.join(ruta, nodo["name"])
+        if nodo["tipo"] == "carpeta":
+            for hijo in nodo["children"]:
+                agregar_a_zip(zip_file, hijo, ruta_actual)
+        elif nodo["tipo"] == "documento" and nodo["id"] in doc_map:
+            doc = doc_map[nodo["id"]]
+            if doc.archi and os.path.isfile(doc.archi.path):
+                with open(doc.archi.path, 'rb') as f:
+                    file_data = f.read()
+                nombre_archivo = f"{doc.nom or os.path.basename(doc.archi.name)}"
+                zip_file.writestr(os.path.join(ruta, nombre_archivo), file_data)
+
+    # Crear archivo ZIP en memoria
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for nodo in root_nodes:
+            agregar_a_zip(zip_file, nodo, "")
+
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename=portafolio_aprendiz_{aprendiz_id}.zip'
+    return response
+
+@login_required
 def cargar_documento_aprendiz(request):
     if request.method == 'POST':
         if  request.FILES.get("file"):
@@ -479,16 +689,18 @@ def eliminar_documento_portafolio_aprendiz(request, documento_id):
 
     documento = get_object_or_404(T_DocumentFolderAprendiz, id=documento_id)
 
-    if documento.documento:
+    if documento.documento and documento.documento.archi:
         archivo_a_eliminar = documento.documento.archi.name
-        documento.documento.delete()
         if archivo_a_eliminar:
             default_storage.delete(archivo_a_eliminar)
+        documento.documento.delete()
 
     documento.delete()
 
-    return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status = 200)
+    return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status=200)
 
+
+@login_required
 def obtener_hijos_carpeta_aprendiz(request, carpeta_id):
     try:
         nodos = T_DocumentFolderAprendiz.objects.filter(parent_id=carpeta_id).values(
@@ -529,7 +741,6 @@ def crear_encuentro(request, ficha_id):
         if encuentro_form.is_valid() and encuapre_form.is_valid():
 
             new_encuentro = encuentro_form.save(commit=False)
-            new_encuentro.fecha = timezone.now()
 
             fase_ficha = T_fase_ficha.objects.filter(ficha=ficha, vige='1').first()
 
@@ -578,6 +789,7 @@ def crear_encuentro(request, ficha_id):
             return JsonResponse({'status': 'error', 'message': 'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status=400)
     return JsonResponse ({'status':'error', 'message': 'Metodo no permitido'}, status = 405)
 
+@login_required
 def obtener_encuentros(request, ficha_id):
     encuentros = T_encu.objects.filter(ficha_id = ficha_id)
     data = [
@@ -590,6 +802,59 @@ def obtener_encuentros(request, ficha_id):
     ]
     return JsonResponse(data, safe=False)
 
+@require_GET
+@login_required
+def obtener_encuentro(request, encuentro_id):
+    encuentro = T_encu.objects.get(pk=encuentro_id)
+
+    if not encuentro:
+        return JsonResponse({'status': 'error', 'message': 'Encuentro no encontrado'}, status=404)
+    
+    ausentes_qs = T_encu_apre.objects.filter(encu=encuentro, prese="No")
+    ausentes_ids = list(ausentes_qs.values_list('apre_id', flat=True))
+    data = {
+        'tema': encuentro.tema,
+        'lugar': encuentro.lugar,
+        'fecha': encuentro.fecha.strftime('%Y-%m-%d'),
+        'ausentes': ausentes_ids
+    }
+    return JsonResponse(data, safe=False)
+
+@require_POST
+@login_required
+def editar_encuentro(request, encuentro_id):
+    try:
+        encuentro = T_encu.objects.get(pk=encuentro_id)
+    except T_encu.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Encuentro no encontrado'}, status=404)
+
+    tema = request.POST.get('tema')
+    lugar = request.POST.get('lugar')
+    fecha_str = request.POST.get('fecha')
+
+    try:
+        fecha_naive = datetime.strptime(fecha_str, "%Y-%m-%d")
+        fecha_aware = timezone.make_aware(fecha_naive)
+    except (ValueError, TypeError):
+        return JsonResponse({'status': 'error', 'message': 'Formato de fecha inválido'}, status=400)
+
+    # Asignar todos los campos antes de guardar
+    encuentro.tema = tema
+    encuentro.lugar = lugar
+    encuentro.fecha = fecha_aware
+    encuentro.save()
+
+    ausentes = request.POST.getlist('aprendices')
+
+    registros = T_encu_apre.objects.filter(encu=encuentro)
+    for reg in registros:
+        reg.prese = "No" if str(reg.apre.id) in ausentes else "Si"
+        reg.save()
+
+    return JsonResponse({'status': 'success', 'message': 'Encuentro actualizado correctamente'}, status=200)
+
+
+@login_required
 def obtener_actividades(request, ficha_id):
     actividades = T_acti_ficha.objects.filter(ficha_id = ficha_id)
     fase = T_fase_ficha.objects.filter(ficha_id = ficha_id, vige = 1).first()
@@ -696,6 +961,7 @@ def crear_actividad(request, ficha_id):
 
     return JsonResponse({'status': 'success', 'message': 'Actividad creada con éxito.'}, status=200)
 
+@login_required
 def listar_actividades_ficha(request, ficha_id):
     
     actividades = T_acti_ficha.objects.select_related('crono', 'acti').filter(ficha_id = ficha_id)
@@ -775,6 +1041,10 @@ def editar_actividad(request, actividad_id):
         'errors': errores
     }, status=400)
 
+###############################################################################################################
+#        VISTAS APRENDIZ
+###############################################################################################################
+
 @login_required
 def panel_aprendiz(request):
     # Obtener el perfil del usuario logueado
@@ -801,12 +1071,16 @@ def panel_aprendiz(request):
         total_documentos = 0
     return render(request, 'panel_aprendiz.html', {'ficha': ficha, 'documentos': documentos, 'total_documentos': total_documentos})
 
-# Vistas programa
+###############################################################################################################
+#        VISTAS PROGRAMA
+###############################################################################################################
 
+@login_required
 def listar_programas(request):
     programas = T_progra.objects.all()
     return render(request, 'programas.html', {'programas': programas})
 
+@login_required
 def crear_programa(request):
     if request.method == 'POST':
         programa_form = ProgramaForm(request.POST)
@@ -821,12 +1095,14 @@ def crear_programa(request):
 #        VISTAS COMPETENCIA
 ###############################################################################################################
 
+@login_required
 def competencias(request):
     competencia_form = CompetenciaForm()
     return render(request, 'competencias.html', {
         'competencia_form': competencia_form
         })
 
+@login_required
 def crear_competencia(request):
     if request.method == 'POST':
         competencia_form = CompetenciaForm(request.POST)
@@ -839,38 +1115,40 @@ def crear_competencia(request):
             return JsonResponse({'status': 'error', 'message': 'Competencia creada'}, status = 200)
     return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status =  405)
 
+require_GET
+@login_required
 def filtrar_competencias(request):
-    if request.method == 'GET':
-        programa = request.GET.getlist('programas', [])
-        fase = request.GET.getlist('fases', [])
+    programa = request.GET.getlist('programas', [])
+    fase = request.GET.getlist('fases', [])
 
-        competencias = T_compe.objects.all()
+    competencias = T_compe.objects.all()
 
-        if programa:
-            competencias = competencias.filter(progra__nom__in = programa)
-        if fase:
-            competencias = competencias.filter(fase__nom__in = fase)
-        
-        data = [
-            {
-                'id': c.id,
-                'nom': c.nom,
-                'fase': [f.nom for f in c.fase.all()],
-                'progra': [p.nom for p in c.progra.all()]
-            } for c in competencias
-        ]
-        return JsonResponse(data, safe=False)
+    if programa:
+        competencias = competencias.filter(progra__nom__in = programa)
+    if fase:
+        competencias = competencias.filter(fase__nom__in = fase)
+    
+    data = [
+        {
+            'id': c.id,
+            'nom': c.nom,
+            'fase': [f.nom for f in c.fase.all()],
+            'progra': [p.nom for p in c.progra.all()]
+        } for c in competencias
+    ]
+    return JsonResponse(data, safe=False)
 
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
-
+@login_required
 def obtener_opciones_fases(request):
     fases = T_fase.objects.filter(t_compe_fase__isnull=False).distinct().values_list('nom')
     return JsonResponse(list(fases), safe=False)
 
+@login_required
 def obtener_opciones_programas(request):
     programas = T_progra.objects.filter(t_compe_progra__isnull=False).distinct().values_list('nom')
     return JsonResponse(list(programas), safe=False)
 
+@login_required
 def obtener_competencia(request, competencia_id):
     competencia = T_compe.objects.filter(pk=competencia_id).first()
     if competencia:
@@ -883,7 +1161,7 @@ def obtener_competencia(request, competencia_id):
         return JsonResponse(data)
     return JsonResponse({'status': 'error', 'message': 'Competencia no encontrada'}, status=404)
 
-
+@login_required
 def editar_competencia(request, competencia_id):
     competencia = T_compe.objects.filter(pk = competencia_id).first()
 
@@ -905,6 +1183,7 @@ def editar_competencia(request, competencia_id):
 #        VISTAS RAPS
 ###############################################################################################################
 
+@login_required
 def listar_raps(request):
     rap_form = RapsForm()
     programas = T_progra.objects.filter(
@@ -918,6 +1197,7 @@ def listar_raps(request):
         'programas': programas,
         })
 
+@login_required
 def crear_rap(request):
     rap_form = RapsForm(request.POST)
 
@@ -946,6 +1226,7 @@ def crear_rap(request):
 
     return JsonResponse({'status': 'error', 'message': 'Formulario inválido', 'errors': rap_form.errors}, status=400)
 
+@login_required
 def filtrar_raps(request):
     if request.method == 'GET':
         programas = request.GET.getlist('programas', [])
@@ -979,6 +1260,7 @@ def filtrar_raps(request):
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
+@login_required
 def obtener_opciones_fases_raps(request):
     fases = T_fase.objects.filter(
         t_compe_fase__compe__t_raps__isnull=False
@@ -986,6 +1268,7 @@ def obtener_opciones_fases_raps(request):
 
     return JsonResponse(list(fases), safe=False)
 
+@login_required
 def obtener_opciones_programas_raps(request):
     programas = T_progra.objects.filter(
         t_compe_progra__compe__t_raps__isnull=False
@@ -993,6 +1276,7 @@ def obtener_opciones_programas_raps(request):
 
     return JsonResponse(list(programas), safe=False)
 
+@login_required
 def obtener_opciones_competencias_raps(request):
     competencias = T_compe.objects.filter(
         t_raps__isnull=False
@@ -1000,11 +1284,13 @@ def obtener_opciones_competencias_raps(request):
 
     return JsonResponse(list(competencias), safe=False)
 
+@login_required
 def obtener_competencias_programa(request, id_progra):
     competencias = T_compe_progra.objects.filter(progra_id = id_progra).distinct()
     data = list(competencias.values('compe__id', 'compe__nom'))
     return JsonResponse(data, safe=False)
 
+@login_required
 def obtener_rap(request, rap_id):
     rap = T_raps.objects.filter(pk=rap_id).first()
     if rap:
@@ -1016,10 +1302,12 @@ def obtener_rap(request, rap_id):
         return JsonResponse(data)
     return JsonResponse({'status': 'error', 'message': 'RAP no encontrado'}, status=404)
 
+@login_required
 def obtener_opciones_competencias(request):
     competencias = T_compe.objects.all().values('id', 'nom')
     return JsonResponse(list(competencias), safe=False)
 
+@login_required
 def editar_rap(request, rap_id):
     rap = T_raps.objects.filter(pk = rap_id).first()
 
@@ -1040,6 +1328,7 @@ def editar_rap(request, rap_id):
 #        VISTAS GUIAS
 ###############################################################################################################
 
+@login_required
 def listar_guias(request):
     guia_form = GuiaForm()
     guias = T_guia.objects.all()
@@ -1048,6 +1337,7 @@ def listar_guias(request):
         'guia_form': guia_form
         })
 
+@login_required
 def crear_guia(request):
     if request.method == 'POST':
         guia_form = GuiaForm(request.POST)
@@ -1057,6 +1347,7 @@ def crear_guia(request):
     return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
 
 @require_GET
+@login_required
 def obtener_guia(request, guia_id):
     guia = T_guia.objects.filter(pk=guia_id).first()
     if not guia:
@@ -1073,6 +1364,7 @@ def obtener_guia(request, guia_id):
     return JsonResponse(data)
 
 @require_POST
+@login_required
 def editar_guia(request, guia_id):
     guia = T_guia.objects.filter(pk=guia_id).first()
     if not guia:
@@ -1085,17 +1377,31 @@ def editar_guia(request, guia_id):
         return JsonResponse({'status': 'success', 'message': 'Guia actualizada con exito'}, status = 200)
     return JsonResponse({'status': 'error', 'message': 'Error al actualizar la guia', 'errors': form_guia.errors}, status=400)
 
-
+@login_required
 def eliminar_doc(request, documento_id):
     if request.method == "DELETE":
         try:
-            documento = T_DocumentFolder.objects.get(id = documento_id)
+            documento = T_DocumentFolder.objects.get(id=documento_id)
+
+            # Eliminar archivo físico antes de borrar el modelo relacionado
+            if documento.documento and documento.documento.archi:
+                archivo_a_eliminar = documento.documento.archi.name
+                if archivo_a_eliminar:
+                    default_storage.delete(archivo_a_eliminar)
+                documento.documento.delete()
+
             documento.delete()
+
             return JsonResponse({"success": True, "message": "Documento eliminado exitosamente."}, status=200)
+
         except T_DocumentFolder.DoesNotExist:
             return JsonResponse({"success": False, "message": "Documento no encontrado."}, status=404)
+
     return JsonResponse({"success": False, "message": "Método no permitido."}, status=405)
 
+
+
+@login_required
 def listar_estudiantes(request, ficha_id):
     estudiantes = T_apre.objects.filter(ficha_id=ficha_id)
     data = [
@@ -1109,23 +1415,27 @@ def listar_estudiantes(request, ficha_id):
     return JsonResponse(data, safe=False)
 
 # Vista para cargar los municipios según el departamento
+@login_required
 def get_municipios(request, departamento_id):
     municipio_qs = T_munici.objects.filter(nom_departa_id=departamento_id)
     municipios = list(municipio_qs.values('id', 'nom_munici'))
     return JsonResponse(municipios, safe=False)
 
 # Vista para cargar las instituciones según el municipio
+@login_required
 def get_instituciones(request, municipio_id):
     instituciones_qs = T_insti_edu.objects.filter(muni_id=municipio_id)
     instituciones = list(instituciones_qs.values('id', 'nom'))
     return JsonResponse(instituciones, safe=False)
 
 # Vista para cargar los municipios según el departamento
+@login_required
 def get_centros(request, departamento_id):
     centro_qs = T_centro_forma.objects.filter(depa_id=departamento_id)
     centros = list(centro_qs.values('id', 'nom'))
     return JsonResponse(centros, safe=False)
 
+@login_required
 def calificarActividad(request):
     if request.method == 'POST':
         ids = request.POST.getlist('aprendiz_id[]')
@@ -1145,9 +1455,15 @@ def calificarActividad(request):
                 'actividad_id': actividad_id
             }, status=400)
 
-        for i in range(len(ids)):
-            aprendiz_id = ids[i]
-            nota = notas[i]
+        for aprendiz_id in ids:
+            # Por defecto, asumimos que NO aprobó (0)
+            nota = '0'
+
+            # Si este aprendiz tiene un checkbox marcado, su valor estará en request.POST.getlist('nota[]')
+            # Comprobamos si el input con name="nota[]" y value=aprendiz_id existe
+            checkbox_name = f"nota_{aprendiz_id}"
+            if checkbox_name in request.POST:
+                nota = '1'
 
             aprendiz = T_apre.objects.get(id=aprendiz_id)
 
@@ -1159,6 +1475,7 @@ def calificarActividad(request):
         return JsonResponse({'status': 'success', 'message': 'Calificado!', 'actividad_id': actividad_id}, status = 200)
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status = 405)
 
+@login_required
 def obtener_aprendices_calificacion(request, ficha_id, actividad_id):
     
     aprendices = T_apre.objects.filter(ficha_id=ficha_id)
@@ -1178,6 +1495,7 @@ def obtener_aprendices_calificacion(request, ficha_id, actividad_id):
 
     return JsonResponse(respuesta, safe=False)
 
+@login_required
 def detalle_actividad(request, actividad_id):
     actividad_ficha = get_object_or_404(T_acti_ficha, id=actividad_id)
     actividad = actividad_ficha.acti
@@ -1226,6 +1544,7 @@ def detalle_actividad(request, actividad_id):
 
     return JsonResponse(data, safe=False)
 
+@login_required
 def detalle_programa(request, programa_id):
     programa = T_progra.objects.get(pk=programa_id)
 
@@ -1256,13 +1575,13 @@ def detalle_programa(request, programa_id):
         'raps': raps,
     })
 
-
 def link_callback(uri, rel):
     result = finders.find(uri.replace(settings.STATIC_URL, ""))
     if result:
         return result
     raise Exception(f"Media URI must start with {settings.STATIC_URL}")
 
+@login_required
 def generar_acta_asistencia(request):
     ficha_id = request.GET.get('ficha_id')
     formato  = request.GET.get('formato')
@@ -1313,24 +1632,124 @@ def generar_acta_asistencia(request):
         ws = wb.active
         ws.title = "Asistencia"
 
-        # Encabezado
-        ws.cell(row=1, column=1).value = "Aprendiz"
-        for col, encu in enumerate(encuentros, start=2):
-            ws.cell(row=1, column=col).value = encu.fecha.strftime('%d/%m/%Y')
+        # Estilos
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        fill_header = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+        fill_asistencias_col = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+        fill_fallas_col = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+        fill_fila_asistentes = PatternFill(start_color="A9D08E", end_color="A9D08E", fill_type="solid")
+        fill_fila_fallas = PatternFill(start_color="F4B084", end_color="F4B084", fill_type="solid")
 
-        # Filas
-        for row, apre in enumerate(aprendices, start=2):
-            ws.cell(row=row, column=1).value = f"{apre.perfil.nom} {apre.perfil.apelli}"
-            for col, encu in enumerate(encuentros, start=2):
-                valor = asistencias[apre.id][encu.id]
-                ws.cell(row=row, column=col).value = "Sí" if valor == "Si" else "No"
-        # Descargar
+        if ficha.instru and ficha.instru.perfil:
+            nombre_instructor = f"{ficha.instru.perfil.nom.upper()} {ficha.instru.perfil.apelli.upper()}"
+        else:
+            nombre_instructor = "INSTRUCTOR NO ASIGNADO"
+
+        # Info general
+        ws['A1'] = "1 = Asistencia (Sí)"
+        ws['C1'] = f"Ficha: {ficha.num}"
+        ws['A2'] = "0 = No asistencia (No)"
+        ws['C2'] = f"Programa: {ficha.progra.nom}"
+        ws['C3'] = f"Instructor: {nombre_instructor}"
+        ws['A5'] = "PLANILLA  DE ASISTENCIA"
+
+        headers = ["No.", "TIPO ID", "NUMERO ID", "APELLIDOS Y NOMBRES", "E-MAIL", "TELEFONO"]
+        fechas = list(T_encu.objects.filter(ficha=ficha).order_by('fecha').values_list('id', 'fecha'))
+        headers += [fecha.strftime("%d-%b-%y") for _, fecha in fechas]
+        headers += ["Asistencias", "Fallas"]
+
+        for col, header in enumerate(headers, start=1):
+            cell = ws.cell(row=6, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center')
+            cell.fill = fill_header
+            cell.border = thin_border
+
+        conteo_por_fecha = {encu_id: {'asistencias': 0, 'faltas': 0} for encu_id, _ in fechas}
+        aprendices = aprendices.order_by('perfil__apelli', 'perfil__nom')
+
+        for i, apre in enumerate(aprendices, start=1):
+            row_num = i + 6
+            perfil = apre.perfil
+            asistencias = T_encu_apre.objects.filter(apre=apre, encu__ficha=ficha).select_related('encu')
+            asistencia_por_id_encu = {
+                a.encu_id: 1 if a.prese.strip().lower() == 'si' else 0 for a in asistencias
+            }
+
+            data = [
+                i,
+                perfil.tipo_dni,
+                perfil.dni,
+                f"{perfil.apelli} {perfil.nom}",
+                perfil.mail,
+                perfil.tele
+            ]
+            for col_idx, val in enumerate(data, start=1):
+                cell = ws.cell(row=row_num, column=col_idx, value=val)
+                cell.border = thin_border
+
+            total_asistencias = 0
+            for j, (encu_id, _) in enumerate(fechas, start=1):
+                valor = asistencia_por_id_encu.get(encu_id, 0)
+                col_idx = 6 + j
+                cell = ws.cell(row=row_num, column=col_idx, value=valor)
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+                total_asistencias += valor
+
+                if valor == 1:
+                    conteo_por_fecha[encu_id]['asistencias'] += 1
+                else:
+                    conteo_por_fecha[encu_id]['faltas'] += 1
+
+            total_fallas = len(fechas) - total_asistencias
+            asist_cell = ws.cell(row=row_num, column=6 + len(fechas) + 1, value=total_asistencias)
+            fallas_cell = ws.cell(row=row_num, column=6 + len(fechas) + 2, value=total_fallas)
+
+            asist_cell.fill = fill_asistencias_col
+            fallas_cell.fill = fill_fallas_col
+            asist_cell.border = thin_border
+            fallas_cell.border = thin_border
+            asist_cell.alignment = fallas_cell.alignment = Alignment(horizontal='center')
+
+        fila_totales_asistentes = len(aprendices) + 7
+        fila_totales_fallas = len(aprendices) + 8
+
+        ws.cell(row=fila_totales_asistentes, column=6).value = "Asistentes"
+        ws.cell(row=fila_totales_fallas, column=6).value = "No asistentes"
+
+        for j, (encu_id, _) in enumerate(fechas, start=1):
+            asistentes = conteo_por_fecha[encu_id]['asistencias']
+            no_asistentes = conteo_por_fecha[encu_id]['faltas']
+
+            for fila, valor, fill in [
+                (fila_totales_asistentes, asistentes, fill_fila_asistentes),
+                (fila_totales_fallas, no_asistentes, fill_fila_fallas),
+            ]:
+                cell = ws.cell(row=fila, column=6 + j, value=valor)
+                cell.font = Font(bold=True)
+                cell.fill = fill
+                cell.alignment = Alignment(horizontal='center')
+                cell.border = thin_border
+
+        # Ajustar ancho de columnas
+        for col in range(1, len(headers) + 1):
+            ws.column_dimensions[get_column_letter(col)].auto_size = True  # o set un ancho fijo si no funciona bien
+
+        # Guardar y retornar
         buffer = BytesIO()
         wb.save(buffer)
         buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True, filename=f"Asistencia_{ficha.id}.xlsx")
+        return FileResponse(buffer, as_attachment=True, filename=f"Planilla_Asistencia_{ficha.num}.xlsx")
+
     return HttpResponse("Formato no válido", status=400)
 
+@login_required
 def generar_acta_asistencia_aprendiz(request):
     aprendiz_id = request.GET.get('aprendiz_id')
     aprendiz = T_apre.objects.get(id=aprendiz_id)
@@ -1352,6 +1771,7 @@ def generar_acta_asistencia_aprendiz(request):
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"Acta_Asistencia_{aprendiz.perfil.nom}_{aprendiz.perfil.apelli}.pdf")
 
+@login_required
 def generar_informe_calificaciones(request):
     ficha_id = request.GET.get('ficha_id')
     formato  = request.GET.get('formato')
@@ -1419,6 +1839,7 @@ def generar_informe_calificaciones(request):
 
     return HttpResponse("Formato no válido", status=400)
 
+@login_required
 def detalle_encuentro(request, encuentro_id):
     encuentro = T_encu.objects.get(id = encuentro_id)
 

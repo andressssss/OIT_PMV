@@ -15,8 +15,28 @@
                     </a>
                 </div> -->
             </div>
+            <div id="contenedor-filtros">
+                <h5>Filtrar y organizar:</h5>
+                <form id="filtros-form" class="row mb-3">
+                    <div class="col-md-3" id="contenedor-estado">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3" id="contenedor-instructor">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6" id="contenedor-programa">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
             <div class="table-responsive">
-                <table id="listado_fichas" class="table table-hover table-bordered align-middle">
+                <table id="listado_fichas_table" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
                         <th>Numero ficha</th>
@@ -32,25 +52,18 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for ficha in fichas %}
                     <tr>
-                        <td>{{ ficha.num }}</td>
-                        <td>{{ ficha.esta }}</td>
-                        <td>{{ ficha.fecha_aper}}</td>
-                        <td>{{ ficha.fecha_cierre|default:"Pendiente"}}</td>
-                        <td>{{ ficha.centro.nom }}</td>
-                        <td>{{ ficha.insti.nom }}</td>
-                        <td>{{ ficha.instru.perfil.nom|default:"No asignado" }}</td>
-                        <td>{{ ficha.num_apre_pendi_regi }}</td>
-                        <td>{{ ficha.progra.nom }}</td>
-                        <td>
-                            <a href="{% url 'panel_ficha' ficha.id %}" class="btn btn-outline-primary btn-sm" data-toggle="tooltip" title="ver ficha">
-                                <i class="bi bi-journals"></i>
-                            </a>
-                        </td>
-                        
+                        <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                        <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span></td>
                     </tr>
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -58,4 +71,32 @@
     </div>
     </section>
 </main>
+<!-- Modal para editar numero de ficha -->
+<div class="modal fade" id="cambiarNumModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="cambiarNumModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cambiarNumModalLabel">Cambiar numero de ficha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCambiarNum">
+                <div class="modal-body">
+                    <input type="hidden" id="inputFichaId">
+                    <div class="mb-3">
+                        <label for="inputNuevoNum" class="form-label">Nuevo número de ficha</label>
+                        <input type="text" class="form-control" id="inputNuevoNum" required>
+                    </div>
+                    <div id="errorCambiarNum" class="text-danger mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="btnCambiarNum" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type ="module" src="{% static 'js/formacion/listar_fichas.js' %}"></script>
 {% endblock %}

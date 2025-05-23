@@ -1236,6 +1236,10 @@ def obtener_historial_institucion(request, institucion_id):
     
     return JsonResponse({"historial": data})
 
+###############################################################################################################
+#        VISTAS FICHA
+###############################################################################################################
+
 def formalizar_ficha(request):
     if request.method == "POST":
         try:
@@ -1311,3 +1315,4 @@ def formalizar_ficha(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+

@@ -102,20 +102,20 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.appendChild(tr);
     }
 
-        //== Filtrar tabla
-        async function aplicarFiltros(){
-            mostrarPlaceholdersTabla();
-            const formData = new FormData(document.getElementById('filtros-form'));
-            const params = new URLSearchParams(formData).toString();
-    
-            try {
-                const response = await fetch(`/api/raps/filtrar/?${params}`);
-                const data = await response.json();
-                renderTabla(data);
-            } catch (error) {
-                toastError(error);
-            }
+    //== Filtrar tabla
+    async function aplicarFiltros(){
+        mostrarPlaceholdersTabla();
+        const formData = new FormData(document.getElementById('filtros-form'));
+        const params = new URLSearchParams(formData).toString();
+
+        try {
+            const response = await fetch(`/api/raps/filtrar/?${params}`);
+            const data = await response.json();
+            renderTabla(data);
+        } catch (error) {
+            toastError(error);
         }
+    }
 
     //== Actualizacion del select basado en el programa seleccionado
     document.getElementById('programaSelect').addEventListener('change', async function () {
