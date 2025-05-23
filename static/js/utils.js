@@ -413,4 +413,3 @@ export async function crearSelect({ id, nombre, url, placeholderTexto = 'Selecci
       contenedorEl.innerHTML = `<div class="text-danger small">Error al cargar opciones</div>`;
   }
 }
-

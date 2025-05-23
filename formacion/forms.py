@@ -231,14 +231,16 @@ class GuiaForm(forms.ModelForm):
 class EncuentroForm(forms.ModelForm):
     class Meta:
         model = T_encu
-        fields = ['tema', 'lugar']
+        fields = ['tema', 'lugar', 'fecha']
         widgets = {
             'tema': forms.TextInput(attrs={'class': 'form-control'}),
             'lugar': forms.TextInput(attrs={'class': 'form-control'}),
+            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
         }
         labels = {
             'tema': 'Tema del encuentro',
-            'lugar': 'Lugar de encuentro'
+            'lugar': 'Lugar de encuentro',
+            'fecha': 'Fecha del encuentro'
         }
 
 class EncuApreForm(forms.Form):

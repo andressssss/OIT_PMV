@@ -172,14 +172,16 @@ urlpatterns = [
     path("api/tree/cargar_doc/", formacion_views.cargar_documento, name="api_cargar_documento"),
     path('api/tree/eliminar_documento/<int:documento_id>', formacion_views.eliminar_documento_portafolio_ficha, name='api_eliminar_documento_portafolio_ficha'),
     path('api/tree/obtener_hijos_carpeta/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta, name='api_obtener_hijos_carpeta'),
+    path('tree/descargar_portafolio/<int:ficha_id>', formacion_views.descargar_portafolio_zip, name='descargar_portafolio_zip'),
 
     # Tree aprendiz
     path("api/tree/obtener_carpetas_aprendiz/<int:aprendiz_id>/", formacion_views.obtener_carpetas_aprendiz, name="api_obtener_carpetas_aprendiz"),
     path("api/tree/cargar_doc_aprendiz/", formacion_views.cargar_documento_aprendiz, name="api_cargar_documento_aprendiz"),
     path('api/tree/eliminar_documento_aprendiz/<int:documento_id>', formacion_views.eliminar_documento_portafolio_aprendiz, name='api_eliminar_documento_portafolio_aprendiz'),
     path('api/tree/obtener_hijos_carpeta_aprendiz/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta_aprendiz, name='api_obtener_hijos_carpeta_aprendiz'),
+    path('tree/descargar_portafolio_aprendiz/<int:aprendiz_id>', formacion_views.descargar_portafolio_aprendiz_zip, name='descargar_portafolio_aprendiz_zip'),
 
-    #Fichas
+    #Fichas Panel
     path('ficha/<int:ficha_id>/', formacion_views.panel_ficha, name='panel_ficha'),
     path('api/ficha/crear_actividad/<int:ficha_id>/', formacion_views.crear_actividad, name='api_crear_actividad'),
     path('api/ficha/calificar_actividad/', formacion_views.calificarActividad, name='api_calificar_actividad_ficha'),
@@ -195,6 +197,8 @@ urlpatterns = [
     path('api/ficha/obtener_estado_fase/<int:ficha_id>/', formacion_views.obtener_estado_fase, name='api_obtener_estado_fase'),
     path('api/ficha/crear_encuentro/<int:ficha_id>/', formacion_views.crear_encuentro, name='api_crear_encuentro'),
     path('api/ficha/encuentros/<int:ficha_id>/', formacion_views.obtener_encuentros, name='api_obtener_encuentros'),
+    path('api/ficha/encuentro/<int:encuentro_id>/', formacion_views.obtener_encuentro, name='api_obtener_encuentro'),
+    path('api/ficha/encuentro/editar/<int:encuentro_id>/', formacion_views.editar_encuentro, name='api_editar_encuentro'),
 
     # Reportes ficha
     path('api/reporte/ficha/generar_acta_asistencia/', formacion_views.generar_acta_asistencia, name='generar_acta_asistencia'),
@@ -211,6 +215,11 @@ urlpatterns = [
     # Fichas
     path('fichas/', formacion_views.fichas, name='fichas'), 
     path('api/formalizar_ficha/', matricula_views.formalizar_ficha, name='api_formalizar_ficha'), 
+    path('api/fichas/estados/', formacion_views.obtener_opciones_fichas_estados, name='api_obtener_opciones_fichas_estados'), 
+    path('api/fichas/instructores/', formacion_views.obtener_opciones_fichas_instructores, name='api_obtener_opciones_fichas_instructores'), 
+    path('api/fichas/programas/', formacion_views.obtener_opciones_fichas_programas, name='api_obtener_opciones_fichas_programas'), 
+    path('api/fichas/filtrar/', formacion_views.filtrar_fichas, name='api_filtrar_fichas'), 
+    path('api/ficha/cambiar_num/<int:ficha_id>/', formacion_views.cambiar_numero_ficha, name='api_cambiar_numero_ficha'), 
 
     # Programas
     path('programas/', formacion_views.listar_programas, name='programas'),

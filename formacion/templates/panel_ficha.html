@@ -6,14 +6,15 @@
 {% block content %}
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="mb-0 display-5">Panel de la ficha {{ ficha.num }} - Fase {{ fase }}</h2>
-                {% if ficha.instru %}
-                    <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
-                {% else %}
-                    <span class="h5 text-muted mb-0">Sin instructor</span>
-                {% endif %}
-            </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0 display-5">Panel de la ficha {{ ficha.num }} - Fase {{ fase }}</h2>
+            {% if ficha.instru %}
+                <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
+            {% else %}
+                <span class="h5 text-muted mb-0">Sin instructor</span>
+            {% endif %}
+        </div>
             
 
         <!-- NavPills -->
@@ -42,9 +43,12 @@
             <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="card-body">
-                            <div id="folderTree"></div>
+                        <div class="d-flex justify-content-end mb-3">
+                            <a href="{% url 'descargar_portafolio_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-download"></i> Descargar portafolio
+                            </a>
                         </div>
+                        <div id="folderTree"></div>
                     </div>
                 </div>
             </div>
@@ -88,6 +92,13 @@
                                             data-bs-placement="top">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
+                                    <a href="{% url 'descargar_portafolio_aprendiz_zip' aprendiz.id %}" 
+                                    class="btn btn-outline-success btn-sm mb-1"
+                                    title="Descargar portafolio"
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top">
+                                        <i class="bi bi-download"></i>
+                                    </a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -202,29 +213,6 @@
                                 <h5 class="card-title">Calificaciones</h5>
                                 <p class="card-text">Muestra las calificaciones de cada actividad.</p>
                                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCalificacionesActi">Generar</button>
-                            </div>
-                        </div>
-                    </div>
-                
-                
-                    <!-- Reporte 3 -->
-                    <div class="col">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">Evaluación por aprendiz</h5>
-                                <p class="card-text">Muestra el resumen de notas por actividad y aprendiz.</p>
-                                <a class="btn btn-primary" disabled>Generar</a>
-                            </div>
-                        </div>
-                    </div>
-                
-                    <!-- Reporte 4 -->
-                    <div class="col">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">Cumplimiento del cronograma</h5>
-                                <p class="card-text">Comparación entre el cronograma planificado y las actividades ejecutadas.</p>
-                                <a class="btn btn-primary" disabled>Generar</a>
                             </div>
                         </div>
                     </div>
@@ -588,8 +576,7 @@
                 <thead class="table-secondary">
                 <tr>
                     <th>Aprendiz</th>
-                    <th>Nota</th>
-                    <!-- <th>Observaciones</th> -->
+                    <th>¿Aprobó?</th>
                 </tr>
                 </thead>
                 <tbody id="tablaAprendicesCali">
@@ -709,14 +696,20 @@
 
             <h5 class="mb-3">Datos del encuentro:</h5>
             <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
-                {{ encuentro_form.tema }}
+                <div class="col-md-12 mb-3">
+                    <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
+                    {{ encuentro_form.tema }}
+                </div>
             </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
-                {{ encuentro_form.lugar }}
-            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
+                    {{ encuentro_form.lugar }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ encuentro_form.fecha.id_for_label }}" class="form-label">Fecha</label>
+                    {{ encuentro_form.fecha }}
+                </div>
             </div>
 
             <hr class="my-4">
@@ -731,6 +724,54 @@
 
         <div class="modal-footer">
             <button type="submit" id="btnCrearEncuentro" class="btn btn-primary">Crear encuentro</button>
+        </div>
+        </form>
+    </div>
+    </div>
+</div>
+
+<!-- Modal para editar encuentro -->
+<div class="modal fade" id="editarEncuentroModal" tabindex="-1" aria-labelledby="editarEncuentroModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="editarEncuentroModalLabel">Editar Encuentro</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="formEditarEncuentro" autocomplete="off">
+        <div class="modal-body">
+            {% csrf_token %}
+
+            <h5 class="mb-3">Datos del encuentro:</h5>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
+                    {{ encuentro_form.tema }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
+                    {{ encuentro_form.lugar }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ encuentro_form.fecha.id_for_label }}" class="form-label">Fecha</label>
+                    {{ encuentro_form.fecha }}
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">Seleccione los aprendices ausentes:</h5>
+            <div class="mb-3">
+            {{encuapre_form.as_p}}
+            </div>
+
+            <div id="errorEditarEncuentro" class="text-danger mt-2"></div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="submit" id="btnEditarEncuentro" class="btn btn-primary">Editar encuentro</button>
         </div>
         </form>
     </div>
