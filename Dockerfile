@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Exponer el puerto 8000 para gunicorn
-EXPOSE 8000
+EXPOSE 8080
 
 # Comando para ejecutar la aplicación con gunicorn
 CMD ["gunicorn", "IOTPMV.asgi:application", "-c", "gunicorn.conf.py"]
