@@ -3,7 +3,7 @@ services:
     build: .
     container_name: oitpmv
     ports:
-      - "8080:8080"
+      - "8000:8000"
     environment:
       - DJANGO_ENV=${DJANGO_ENV}
     volumes:
