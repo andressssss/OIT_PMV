@@ -301,7 +301,7 @@ class T_ficha(models.Model):
     fecha_cierre = models.DateTimeField(null=True, blank=True)
     insti = models.ForeignKey(T_insti_edu, on_delete=models.CASCADE)
     centro = models.ForeignKey(T_centro_forma, on_delete=models.CASCADE)
-    num = models.CharField(max_length=100)
+    num = models.CharField(max_length=100, null=True, blank=True)
     instru = models.ForeignKey(T_instru, on_delete=models.CASCADE, blank=True, null=True)
     progra = models.ForeignKey(T_progra, on_delete=models.CASCADE)
     num_apre_proce = models.CharField(max_length=100)

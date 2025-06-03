@@ -37,6 +37,8 @@ import csv
 import random
 import string
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 print("TEMPLATES_DIR:", settings.TEMPLATES[0]['DIRS'])
@@ -78,7 +80,7 @@ def signin(request):
                     return redirect('admin_dashboard')
                 
                 elif perfil.rol == 'instructor':
-                    return redirect('listar_fichas')
+                    return redirect('fichas')
             except T_perfil.DoesNotExist:
                 pass  # Si no se encuentra el perfil, no hacer nada adicional
 
@@ -136,7 +138,6 @@ def signup(request):
 def check_authentication(request):
     is_authenticated = request.user.is_authenticated
     return JsonResponse({'isAuthenticated': is_authenticated})
-
 
 @login_required
 def perfil(request):
@@ -340,6 +341,7 @@ def perfil(request):
         'form_perfil': form_perfil
     })
 
+@login_required
 def editar_perfil(request):
     perfil = getattr(request.user, 't_perfil', None)
     if request.method == 'POST':
@@ -352,6 +354,7 @@ def editar_perfil(request):
         form = PerfilEForm(instance=perfil)  # Pre-poblar el formulario con los datos actuales del perfil
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
+@login_required
 def eliminar_documentoinstru(request, hv_id):
     archivo = get_object_or_404(T_docu_labo, id=hv_id)
     documento = get_object_or_404(T_docu, id=archivo.docu.id)
@@ -482,6 +485,7 @@ def crear_instructor(request):
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
+@login_required
 def obtener_instructor(request, instructor_id):
     instructor = T_instru.objects.filter(id=instructor_id).select_related('perfil').first()
 
@@ -570,6 +574,8 @@ def formatear_error_csv(fila, errores_campos):
         f"Errores encontrados:\n" + '\n'.join(errores_campos) + "\n"
         "----------------------------------------"
     )
+
+@login_required
 def cargar_instructores_masivo(request):
     if request.method == 'POST':
         errores = []
@@ -804,6 +810,7 @@ def aprendices(request):
     })
 
 ## Endpoint para editar aprendiz ##
+@login_required
 def obtener_aprendiz(request, aprendiz_id):
     aprendiz = T_apre.objects.filter(id=aprendiz_id).first()
     perfil = T_perfil.objects.filter(id=aprendiz.perfil_id).first()
@@ -832,6 +839,7 @@ def obtener_aprendiz(request, aprendiz_id):
 # Enviar datos a los filtros de aprendices:
 
 ## Filtro de usuario creacion ##
+@login_required
 def obtener_usuarios_creacion(request):
     usuarios_ids = T_apre.objects.values_list('usu_crea', flat=True,).distinct()
 
@@ -843,12 +851,19 @@ def obtener_usuarios_creacion(request):
 
     return JsonResponse(usuarios, safe=False)
 
+@login_required
 def obtener_opciones_estados(request):
     estados = T_apre.objects.values_list('esta', flat=True).distinct()
     return JsonResponse(list(estados), safe=False)
 
 ## Endpoint para filtrar aprendices en la tabla ##
+
+@login_required
 def filtrar_aprendices(request):
+    if request.user.is_authenticated:
+        logger.warning(f"Usuario autenticado:{request.user}")
+    else:
+        logger.warning("Usuario anónimo")
     usuarios = request.GET.getlist('usuario_creacion', [])
     estado = request.GET.getlist('estado', [])
     fecha = request.GET.get('fecha_creacion_', None)
@@ -902,6 +917,7 @@ def filtrar_aprendices(request):
     ]
     return JsonResponse(resultados, safe=False)
 
+@login_required
 def ver_perfil_aprendiz(request, aprendiz_id):
     aprendiz = get_object_or_404(T_apre, id=aprendiz_id)
     repre_legal = get_object_or_404(T_repre_legal, id=aprendiz.repre_legal.id)
@@ -997,7 +1013,7 @@ def crear_aprendices(request):
 
     return redirect('aprendices')
 
-
+@login_required
 def editar_aprendiz(request, id):
     aprendiz = get_object_or_404(T_apre, pk=id)
     perfil = get_object_or_404(T_perfil, pk=aprendiz.perfil_id)
@@ -1019,7 +1035,6 @@ def editar_aprendiz(request, id):
             return JsonResponse({'success': False, 'message': 'Error al actualizar el aprendiz', 'errors': errores}, status=400) 
     
     return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
-
 
 @login_required
 def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
@@ -1100,7 +1115,6 @@ def crear_lider(request):
             return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
-
 
 @login_required  # Funcion para actualizar informacion de lider
 def obtener_lider(request, lider_id):
@@ -1270,8 +1284,6 @@ def eliminar_administrador(request, admin_id):
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
-
-
 @login_required
 def editar_administrador(request, admin_id):
     administrador = get_object_or_404(T_admin, pk=admin_id)
@@ -1295,14 +1307,12 @@ def editar_administrador(request, admin_id):
 
 ### NOVEDADES ###
 
-
 @login_required
 def novedades(request):
     novedades = T_nove.objects.all()
     return render(request, 'novedades.html', {
         'novedades': novedades
     })
-
 
 @login_required
 def crear_novedad(request):
@@ -1330,15 +1340,14 @@ def crear_novedad(request):
                 'error': f'Ocurrió un error: {str(e)}'
             })
 
-
 ## DEPARTAMENTOS ##
+
 @login_required
 def departamentos(request):
     departamentos = T_departa.objects.all()
     return render(request, 'departamentos.html', {
         'departamentos': departamentos
     })
-
 
 @login_required
 def creardepartamentos(request):  # funcion para crear departamento
@@ -1359,7 +1368,6 @@ def creardepartamentos(request):  # funcion para crear departamento
                 'departamentosForm': departamentosForm,
                 'error': '"Error al crear departamento. Verifique los datos.'
             })
-
 
 @login_required
 # funcion para actualizar info departamento
@@ -1384,7 +1392,7 @@ def detalle_departamentos(request, departamento_id):
                 'error': '"Error al actualizar departamento. Verifique los datos.'
             })
 
-
+@login_required
 def eliminar_departamentos(request, departamento_id):
     departamento = get_object_or_404(T_departa, id=departamento_id)
     if request.method == 'POST':
@@ -1394,14 +1402,14 @@ def eliminar_departamentos(request, departamento_id):
         'departamento': departamento,
     })
 
-
 ## MUNICIPIOS ##
+
+@login_required
 def municipios(request):
     municipios = T_munici.objects.all()
     return render(request, 'municipios.html', {
         'municipios': municipios
     })
-
 
 @login_required
 def crearmunicipios(request):  # funcion para crear municipio
@@ -1446,7 +1454,7 @@ def detalle_municipios(request, municipio_id):  # funcion para editar municipio
                 'error': 'Error al actualizar. Verifique los datos.'
             })
 
-
+@login_required
 def eliminar_municipios(request, municipio_id):  # funcion para eliminar municipio
     municipio = get_object_or_404(T_munici, id=municipio_id)
 
@@ -1457,8 +1465,8 @@ def eliminar_municipios(request, municipio_id):  # funcion para eliminar municip
         'municipio': municipio,
     })
 
-
 ## Instituciones ##
+
 @login_required
 def instituciones(request):
     instituciones = T_insti_edu.objects.all()
@@ -1470,6 +1478,7 @@ def instituciones(request):
     })
 
 ## Endpoint para editar institucion ##
+@login_required
 def obtener_institucion(request, institucion_id):
     institucion = T_insti_edu.objects.filter(id=institucion_id).first()
     if institucion:
@@ -1497,6 +1506,7 @@ def obtener_institucion(request, institucion_id):
         return JsonResponse(data)
     return JsonResponse({'error': 'Institución no encontrada'}, status=404)
 
+@login_required
 def api_municipios(request):
     municipios = T_munici.objects.all().values('id', 'nom_munici')
     data = list(municipios)
@@ -1537,6 +1547,7 @@ def crear_instituciones(request):
     else:
         return JsonResponse({"errors": "<ul><li>Método no permitido.</li></ul>"}, status=405)
 
+@login_required
 def editar_institucion(request, institucion_id):
     institucion = get_object_or_404(T_insti_edu, id = institucion_id)
 
@@ -1579,6 +1590,7 @@ def eliminar_instituciones(request, institucion_id):
         'institucion': institucion,
     })
 
+@login_required
 def obtener_institucion_modal(request, institucion_id):
     institucion = get_object_or_404(T_insti_edu, id=institucion_id)
     return render(request, 'institucion_ver_modal.html', {
@@ -1632,6 +1644,7 @@ def crear_centro(request):
     return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
 
 ## Endpoint para listar centro
+@login_required
 def listar_centros_formacion_json(request):
     centros = T_centro_forma.objects.all()
     data = []
@@ -1645,6 +1658,7 @@ def listar_centros_formacion_json(request):
     return JsonResponse({'data': data})
 
 ## Endpoint para editar centro ##
+@login_required
 def obtener_centro(request, centro_id):
     centro = T_centro_forma.objects.filter(id=centro_id).first()
     
@@ -1657,6 +1671,7 @@ def obtener_centro(request, centro_id):
         return JsonResponse(data)
     return JsonResponse({'error': 'Centro no encontrado'}, status=404)
 
+@login_required
 def editar_centro(request, centro_id):
     centro = get_object_or_404(T_centro_forma, pk=centro_id)
     
@@ -1693,6 +1708,7 @@ def eliminar_centro(request, centro_id):
             return JsonResponse({'status': 'error', 'message': 'No encontrado.'}, status = 404)       
     return JsonResponse({'status': 'error', 'message': 'Metodo no permitido.'}, status = 405)
 
+@login_required
 def obtener_municipios(request):
     departamento_id = request.GET.get('departamento_id')
     if departamento_id:
@@ -1700,6 +1716,7 @@ def obtener_municipios(request):
         return JsonResponse(list(municipios), safe=False)
     return JsonResponse({'error': 'No se proporcionó el ID del departamento'}, status=400)
 
+@login_required
 def obtener_departamentos(request):
     departamentos = T_departa.objects.all().values('id', 'nom_departa') 
     return JsonResponse(list(departamentos), safe=False)
@@ -1886,6 +1903,7 @@ def cargar_aprendices_masivo(request):
 
     return render(request, 'aprendiz_masivo_crear.html', {'form': form})
 
+@login_required
 def listar_instituciones(request):
     municipio = request.GET.get('municipio')
     departamento = request.GET.get('departamento')
@@ -1979,6 +1997,7 @@ def listar_instituciones(request):
         'data': data,
     })
 
+@login_required
 def obtener_departamentos_filtro_insti(request):
     departamentos = (
         T_insti_edu.objects
@@ -1994,6 +2013,7 @@ def obtener_departamentos_filtro_insti(request):
     ]
     return JsonResponse(data, safe=False)
 
+@login_required
 def obtener_municipio_filtro_insti(request):
     departamento_id = request.GET.get('departamento_id')
 
@@ -2014,6 +2034,7 @@ def obtener_municipio_filtro_insti(request):
 
     return JsonResponse(data, safe=False)
 
+@login_required
 def obtener_estado_filtro_insti(request):
     estados = (T_insti_edu.objects
                 .values_list('esta', flat=True)
@@ -2023,6 +2044,7 @@ def obtener_estado_filtro_insti(request):
     data = [{'value': est, 'label': est.capitalize()} for est in estados if est]
     return JsonResponse(data, safe=False)
 
+@login_required
 def obtener_zona_filtro_insti(request):
     zonas = (T_insti_edu.objects
             .values_list('zona', flat=True)
@@ -2163,7 +2185,6 @@ def obtener_gestor(request, gestor_id):
 
     return JsonResponse({'status': 'error', 'message': 'Gestor no encontrado'}, status=404)
 
-
 @login_required
 def editar_gestor(request, gestor_id):
     gestor = get_object_or_404(T_gestor, pk=gestor_id)
@@ -2223,6 +2244,7 @@ def usuarios(request):
         'usuarios': usuarios,
     })
 
+@login_required
 def restablecer_contrasena(request):
     if request.method == 'POST':
         try:

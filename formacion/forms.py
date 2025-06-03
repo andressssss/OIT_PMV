@@ -64,7 +64,14 @@ class ActividadForm(forms.ModelForm):
             'tipo': 'Tipo de actividad',
             'guia': 'Guia relacionada'
         }
+    def __init__(self, *args, **kwargs):
+        programa = kwargs.pop('programa', None)
+        super().__init__(*args, **kwargs)
 
+        if programa:
+            self.fields['guia'].queryset = T_guia.objects.filter(progra = programa)
+        else:
+            self.fields['guia'].queryset = T_guia.objects.none()
 
 class DocumentosForm(forms.ModelForm):
     class Meta:
@@ -260,3 +267,10 @@ class EncuApreForm(forms.Form):
 class CargarDocuPortafolioFichaForm(forms.Form):
     nombre_documento = forms.CharField(max_length=255, label="Nombre del Documento")
     url_documento = forms.URLField(label="URL del Documento")
+
+
+class CargarFichasMasivoForm(forms.Form):
+    archivo = forms.FileField(
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+        label="Seleccione un archivo CSV"
+    )

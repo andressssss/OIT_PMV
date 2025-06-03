@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('modalReset'));
                 modal.hide();
             } else {
-                toastError(`Error: ${data.message || 'No se pudo cambiar la contraseña'}`);
+                toastError(`Error: ${data.message || data.error || 'No se pudo cambiar la contraseña'}`);
             }
 
         } catch (error) {

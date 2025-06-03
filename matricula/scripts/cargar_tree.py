@@ -36,7 +36,7 @@ def crear_datos_prueba(ficha_id):
             T_DocumentFolder.objects.create(name=subsub, tipo="carpeta", parent=subfolder, ficha=ficha)
 
     # Sub carpetas FORMATO ACTA
-    sub_folders_3 = ["ELECCIÓN DEL VOCERO", "COMITÉ ACADÉMICO", "CERTIFICACIÓN DE TRANSVERSALES FINALIZACIONES 2024", "RETIRO VOLUNTARIO"]
+    sub_folders_3 = ["ELECCIÓN DEL VOCERO", "COMITÉ ACADÉMICO", "CERTIFICACIÓN DE TRANSVERSALES FINALIZACIONES", "DESERCIONES Y RETIROS VOLUNTARIOS"]
     for sub in sub_folders_3:
         subfolder = T_DocumentFolder.objects.create(name=sub, tipo="carpeta", parent=created_folders["3. GORF-084-FORMATO ACTA"], ficha=ficha)
 

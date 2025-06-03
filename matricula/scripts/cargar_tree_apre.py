@@ -8,7 +8,7 @@ def crear_datos_prueba_aprendiz(aprendiz_id):
         "1": "1. ACTA PLAN DE MEJORAMIENTO",
         "2": "2. PLANEACION SEGUIMIENTO Y EVALUACION ETAPA PRODUCTIVA",
         "3": "3. GUIA DE APRENDIZAJE",
-        "4": "4. EVIDENCIAS",
+        "4": "4. EVIDENCIAS DE APRENDIZAJE",
         "5": "5. PLAN DE TRABAJO CON SUS DESCRIPTORES",
     }
 
