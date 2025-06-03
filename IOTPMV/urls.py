@@ -221,6 +221,15 @@ urlpatterns = [
     path('api/fichas/filtrar/', formacion_views.filtrar_fichas, name='api_filtrar_fichas'), 
     path('api/ficha/cambiar_num/<int:ficha_id>/', formacion_views.cambiar_numero_ficha, name='api_cambiar_numero_ficha'), 
 
+    # Fichas masivo
+    path('fichas/crear_masivo/', formacion_views.cargar_fichas_masivo, name='fichas_crear_masivo'),
+    path('api/fichas/crear_masivo/', formacion_views.cargar_fichas, name='fichas_crear'),
+    path('api/fichas/crear_masivo/departamentos/', formacion_views.obtener_opciones_fichas_masivo_departamentos, name='obtener_opciones_fichas_masivo_departamentos'),
+    path('api/fichas/crear_masivo/municipios/', formacion_views.obtener_opciones_fichas_masivo_municipios, name='obtener_opciones_fichas_masivo_municipios'),
+    path('api/fichas/crear_masivo/colegios/', formacion_views.obtener_opciones_fichas_masivo_colegios, name='obtener_opciones_fichas_masivo_colegios'),
+    path('api/fichas/crear_masivo/centros/', formacion_views.obtener_opciones_fichas_masivo_centros, name='obtener_opciones_fichas_masivo_centros'),
+    path('api/fichas/crear_masivo/programas/', formacion_views.obtener_opciones_fichas_masivo_programas, name='obtener_opciones_fichas_masivo_programas'),
+
     # Programas
     path('programas/', formacion_views.listar_programas, name='programas'),
     path('programas/crear/', formacion_views.crear_programa, name='crear_programas'),

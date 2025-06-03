@@ -1,11 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
+from .scripts.cargar_tree import crear_datos_prueba 
+from .scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.db import transaction
 from django.contrib.staticfiles import finders
+from django.utils.encoding import force_str
 import io
 import zipfile
 import os
 import openpyxl
+import csv
+import random
+import string
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from django.db.models import Q
@@ -17,8 +23,8 @@ from io import BytesIO
 from django.utils import timezone 
 from django.db.models import Subquery, OuterRef, Exists
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
-from .forms import CascadaMunicipioInstitucionForm,GuiaForm, CargarDocuPortafolioFichaForm, ActividadForm,RapsFichaForm, EncuApreForm, EncuentroForm, DocumentosForm, CronogramaForm, ProgramaForm, CompetenciaForm, RapsForm, FichaForm
-from commons.models import T_encu,T_compe_progra, T_fase, T_centro_forma,T_guia, T_cali, T_prematri_docu ,T_docu, T_munici, T_insti_edu, T_acti_apre,T_raps_acti,T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha ,T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder
+from .forms import CascadaMunicipioInstitucionForm,GuiaForm, CargarFichasMasivoForm, CargarDocuPortafolioFichaForm, ActividadForm,RapsFichaForm, EncuApreForm, EncuentroForm, DocumentosForm, CronogramaForm, ProgramaForm, CompetenciaForm, RapsForm, FichaForm
+from commons.models import T_encu,T_departa, T_munici, T_compe_progra, T_fase, T_centro_forma,T_guia, T_cali, T_prematri_docu ,T_docu, T_munici, T_insti_edu, T_acti_apre,T_raps_acti,T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha ,T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
 from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
@@ -30,6 +36,9 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import F
+from io import TextIOWrapper
+from django.forms import ValidationError
+from django.core.validators import validate_email
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +61,12 @@ def obtener_opciones_fichas_estados(request):
 @require_GET
 @login_required
 def obtener_opciones_fichas_instructores(request):
+    perfil_logueado = T_perfil.objects.get(user = request.user)
+    
+    if perfil_logueado.rol == "instructor":
+        opciones = [perfil_logueado.nom]
+        return JsonResponse(opciones, safe=False)
+    
     instructores = T_ficha.objects.filter(
         instru__isnull = False
     ).distinct().values_list('instru__perfil__nom', flat=True)
@@ -69,11 +84,16 @@ def obtener_opciones_fichas_programas(request):
 @require_GET
 @login_required
 def filtrar_fichas(request):
+    perfil_logueado = T_perfil.objects.get(user = request.user)
     estados = request.GET.getlist('estados', [])
     instructores = request.GET.getlist('instructores', [])
     programas = request.GET.getlist('programas', [])
 
     fichas = T_ficha.objects.all()
+
+    if perfil_logueado.rol == "instructor":
+        instructor = T_instru.objects.get(perfil = perfil_logueado)
+        fichas = fichas.filter(instru = instructor)
 
     if estados:
         fichas = fichas.filter(esta__in = estados)
@@ -98,6 +118,7 @@ def filtrar_fichas(request):
         {
             'id': f.id,
             'num': f.num,
+            'grupo': f.grupo.id,
             'estado': f.esta,
             'fecha_aper': f.fecha_aper.strftime('%d/%m/%Y') if f.fecha_aper else None,
             'fecha_cierre': f.fecha_cierre.strftime('%d/%m/%Y') if f.fecha_cierre else None,
@@ -113,16 +134,25 @@ def filtrar_fichas(request):
 @require_POST
 @login_required
 def cambiar_numero_ficha(request, ficha_id):
-    nuevo_num = request.POST.get('nuevo_num')
+    nuevo_num = request.POST.get('nuevo_num', '').strip()
 
+    # Validación básica: campo vacío
     if not nuevo_num:
-        return JsonResponse({'status': 'error', 'message': 'Numero de ficha invalido'}, status=400)
-    
-    ficha = get_object_or_404(T_ficha, id = ficha_id)
+        return JsonResponse({'status': 'error', 'message': 'Número de ficha inválido.'}, status=400)
+
+    # Validación: solo números
+    if not nuevo_num.isdigit():
+        return JsonResponse({'status': 'error', 'message': 'El número de ficha debe contener solo dígitos.'}, status=400)
+
+    # Validación: número duplicado (excluyendo el actual)
+    if T_ficha.objects.filter(num=nuevo_num).exclude(id=ficha_id).exists():
+        return JsonResponse({'status': 'error', 'message': 'Ya existe una ficha con ese número.'}, status=400)
+
+    ficha = get_object_or_404(T_ficha, id=ficha_id)
     ficha.num = nuevo_num
     ficha.save()
 
-    return JsonResponse({'status': 'success', 'message': 'Numero de ficha actualizado correctamente'}, status=200)
+    return JsonResponse({'status': 'success', 'message': 'Número de ficha actualizado correctamente.'}, status=200)
 
 @login_required
 def listar_fichas(request):
@@ -140,6 +170,7 @@ def listar_fichas(request):
     print(fichas)
     return render(request, 'fichas.html', {'fichas': fichas})
 
+
 @login_required
 def panel_ficha(request, ficha_id):
     ficha = get_object_or_404(T_ficha, id=ficha_id)
@@ -148,7 +179,7 @@ def panel_ficha(request, ficha_id):
 
     if request.method == 'GET':
         encuentro_form = EncuentroForm()
-        actividad_form = ActividadForm()
+        actividad_form = ActividadForm(programa = ficha.progra)
         cronograma_form = CronogramaForm()
         raps_form = RapsFichaForm(ficha=ficha)
         encuentro_form = EncuentroForm()
@@ -880,7 +911,7 @@ def crear_actividad(request, ficha_id):
         return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
     ficha = get_object_or_404(T_ficha, id=ficha_id)
-    actividad_form = ActividadForm(request.POST)
+    actividad_form = ActividadForm(request.POST, programa = ficha.progra)
     cronograma_form = CronogramaForm(request.POST)
     raps_form = RapsFichaForm(request.POST, ficha=ficha)
 
@@ -1040,6 +1071,369 @@ def editar_actividad(request, actividad_id):
         'message': 'Error al actualizar la actividad.',
         'errors': errores
     }, status=400)
+
+###############################################################################################################
+#        VISTAS FICHA MASIVO
+###############################################################################################################
+
+def formatear_error_csv(fila, errores_campos):
+    fila_str = '\n  '.join([f"{k}: '{v}'" for k, v in fila.items()])
+    return (
+        "⚠️ Error de validación en una fila del archivo:\n"
+        "----------------------------------------\n"
+        f"Datos de la fila:\n  {fila_str}\n\n"
+        f"Errores encontrados:\n" + '\n'.join(errores_campos) + "\n"
+        "----------------------------------------"
+    )
+
+# Función para generar contraseña aleatoria
+def generar_contraseña(length=8):
+    caracteres = string.ascii_letters + string.digits
+    return ''.join(random.choice(caracteres) for _ in range(length))
+
+@login_required
+def cargar_fichas_masivo(request):
+    return render(request, 'fichas_masivo_crear.html')
+
+def formatear_error_csv(fila, errores_campos):
+    fila_str = '\n  '.join([f"{k}: '{v}'" for k, v in fila.items()])
+    return (
+        "⚠️ Error de validación en una fila del archivo:\n"
+        "----------------------------------------\n"
+        f"Datos de la fila:\n  {fila_str}\n\n"
+        f"Errores encontrados:\n" + '\n'.join(errores_campos) + "\n"
+        "----------------------------------------"
+    )
+
+
+@login_required
+@require_POST
+def cargar_fichas(request):
+    logger.warning(request.POST)
+    errores = []
+    resumen = {
+        "insertados": 0,
+        "errores": 0,
+        "duplicados_dni": []
+    }
+
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({
+            "success": False,
+            "message": "No se recibió ningún archivo.",
+            "errores": ["No se recibió ningún archivo."]
+        }, status=400)
+
+    if not archivo.name.lower().endswith('.csv'):
+        return JsonResponse({
+            "success": False,
+            "message": "Solo se permiten archivos CSV (.csv)",
+            "errores": ["Solo se permiten archivos CSV (.csv)"]
+        }, status=400)
+
+    allowed_mime_types = ['text/csv', 'application/csv', 'text/plain']
+    if archivo.content_type not in allowed_mime_types:
+        return JsonResponse({
+            "success": False,
+            "message": "Tipo de archivo no válido (solo CSV)",
+            "errores": ["Tipo de archivo no válido (solo CSV)"]
+        }, status=400)
+
+    datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
+    contenido_csv = datos_csv.read().replace(';', ',')
+    lector = list(csv.DictReader(contenido_csv.splitlines()))
+
+    try:
+        with transaction.atomic():
+            aprendices_creados = []
+
+            for fila in lector:
+                try:
+                    campos_requeridos = [
+                        'email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele',
+                        'dire', 'gene', 'fecha_naci', 'nom_repre', 'dni_repre',
+                        'tele_repre', 'dire_repre', 'mail_repre', 'parentezco'
+                    ]
+                    errores_fila = []
+
+                    for campo in campos_requeridos:
+                        if campo not in fila or not fila[campo].strip():
+                            errores_fila.append(f"Campo requerido faltante: '{campo}'")
+
+                    dni = fila['dni']
+                    if T_perfil.objects.filter(dni=dni).exists():
+                        resumen["duplicados_dni"].append(dni)
+                        errores_fila.append(f"DNI duplicado en el sistema: {dni}")
+
+                    try:
+                        validate_email(fila['email'])
+                    except ValidationError:
+                        errores_fila.append(f"Email inválido: {fila['email']}")
+
+                    if T_perfil.objects.filter(mail=fila['email']).exists():
+                        errores_fila.append(f"Email ya registrado: {fila['email']}")
+
+                    try:
+                        fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                    except ValueError:
+                        errores_fila.append(f"Fecha de nacimiento inválida: {fila['fecha_naci']}")
+
+                    if errores_fila:
+                        error_msg = formatear_error_csv(fila, errores_fila)
+                        raise ValidationError(error_msg)
+
+                    base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
+                    username = base_username
+                    i = 1
+                    while User.objects.filter(username=username).exists():
+                        username = f"{base_username}{i}"
+                        i += 1
+
+                    contraseña = generar_contraseña()
+                    user = User.objects.create_user(
+                        username=username,
+                        password=contraseña,
+                        email=fila['email']
+                    )
+
+                    perfil = T_perfil.objects.create(
+                        user=user,
+                        nom=fila['nom'],
+                        apelli=fila['apelli'],
+                        tipo_dni=fila['tipo_dni'],
+                        dni=dni,
+                        tele=fila['tele'],
+                        dire=fila['dire'],
+                        gene=fila['gene'],
+                        mail=fila['email'],
+                        fecha_naci=fecha_naci,
+                        rol="aprendiz"
+                    )
+                    perfil.full_clean()
+
+                    validate_email(fila['mail_repre'].strip())
+
+                    representante_legal = T_repre_legal.objects.filter(
+                        dni=fila['dni_repre']
+                    ).first()
+
+                    if not representante_legal:
+                        representante_legal = T_repre_legal(
+                            nom=fila['nom_repre'],
+                            dni=fila['dni_repre'],
+                            tele=fila['tele_repre'],
+                            dire=fila['dire_repre'],
+                            mail=fila['mail_repre'],
+                            paren=fila['parentezco']
+                        )
+                        representante_legal.full_clean()
+                        representante_legal.save()
+
+                    aprendiz = T_apre.objects.create(
+                        cod="z",
+                        esta="activo",
+                        perfil=perfil,
+                        repre_legal=representante_legal,
+                        usu_crea=request.user
+                    )
+                    aprendiz.full_clean()
+                    aprendices_creados.append(aprendiz)
+                    resumen["insertados"] += 1
+
+                except Exception as fila_error:
+                    raise ValidationError(str(fila_error))
+
+            # Crear ficha y grupo
+            cod_ficha = request.POST.get('num_ficha', '').strip()
+            fase = request.POST.get('fase_actual')
+            colegio = request.POST.get('colegio')
+            centro_forma = request.POST.get('centro_forma')
+            programa = request.POST.get('programa')
+
+
+            if not fase or not colegio or not centro_forma or not programa:
+                raise ValidationError("Faltan datos para crear la ficha.")
+
+            try:
+                programaf = T_progra.objects.get(id=programa)
+            except T_progra.DoesNotExist:
+                raise ValidationError("Programa de formación no encontrado.")
+
+            if cod_ficha and T_ficha.objects.filter(num=cod_ficha).exists():
+                raise ValidationError("Numero de ficha ya existe.")
+
+            centro = T_centro_forma.objects.filter(pk = centro_forma).first()
+            institucion = T_insti_edu.objects.filter(pk = colegio).first()
+            grupo = T_grupo.objects.create(
+                esta= 'Masivo',
+                fecha_crea= timezone.now(),
+                autor=request.user,
+                num_apre_poten = len(aprendices_creados),
+                centro = centro,
+                insti = institucion,
+                progra = programaf
+            )
+            grupo.full_clean()
+            grupo.save()
+
+            gestor = T_gestor.objects.filter(pk=1).first()
+
+            T_gestor_grupo.objects.create(
+                fecha_crea=timezone.now(),
+                autor=request.user,
+                gestor=gestor,
+                grupo=grupo
+            )
+            
+            documentos_matricula = [
+                'Documento de Identidad del aprendiz',
+                'Registro civil',
+                'Certificado de Afiliación de salud',
+                'Formato de Tratamiento de Datos del Menor de Edad',
+                'Compromiso del Aprendiz',
+            ]
+
+            perfili = T_perfil.objects.get(user = request.user)
+            instructor = T_instru.objects.get(perfil = perfili)
+
+            ficha = T_ficha.objects.create(
+                num=cod_ficha,
+                grupo=grupo,
+                fecha_aper=timezone.now(),
+                fecha_cierre=None,
+                insti=institucion,
+                centro=centro,
+                progra=programaf,
+                num_apre_proce=len(aprendices_creados),
+                num_apre_forma=0,
+                num_apre_pendi_regi=len(aprendices_creados),
+                esta="Activo",
+                instru = instructor
+            )
+
+            for aprendiz in aprendices_creados:
+                aprendiz.grupo = grupo
+                aprendiz.ficha = ficha
+                aprendiz.esta_docu = "Pendiente"
+                aprendiz.save()
+
+                for documento in documentos_matricula:
+                    T_prematri_docu.objects.create(
+                        nom=documento,
+                        apren=aprendiz,
+                        esta="Pendiente",
+                        vali="0"
+                    )
+
+
+            for f in range(1, int(fase)):
+                T_fase_ficha.objects.create(
+                    fase_id=f,
+                    ficha=ficha,
+                    fecha_ini=timezone.now(),
+                    instru=instructor,
+                    vige=0
+                )
+
+            T_fase_ficha.objects.create(
+                fase_id = fase,
+                ficha = ficha,
+                fecha_ini = timezone.now(),
+                instru = instructor,
+                vige  = 1
+            )
+
+            compe_ids = T_compe_progra.objects.filter(progra=ficha.progra).values('compe_id')
+            raps = T_raps.objects.filter(compe__in=Subquery(compe_ids))
+
+            raps_ficha_objs = []
+
+            for rap in raps:
+                for fase in rap.compe.fase.all():
+                    raps_ficha_objs.append(
+                        T_raps_ficha(ficha=ficha, rap=rap, fase=fase)
+                    )
+
+            T_raps_ficha.objects.bulk_create(raps_ficha_objs)
+
+            crear_datos_prueba(ficha.id)
+
+            for aprendiz in aprendices_creados:
+                crear_datos_prueba_aprendiz(aprendiz.id)
+
+    except ValidationError as e:
+        return JsonResponse({
+            "success": False,
+            "message": "Se detectaron errores, operación revertida.",
+            "errores": e.messages,
+            "resumen": resumen
+        }, status=400)
+
+    return JsonResponse({
+        "success": True,
+        "message": (
+            f"✅ Ficha y aprendices creados correctamente.\n\n"
+            f"Ficha creada: ID: {ficha.id}, Numero: {ficha.num or 'Sin numero'}\n"
+            f"Grupo creado:\n  ID: {grupo.id}"
+            f"\nAprendices insertados: {resumen['insertados']}\n"
+            f"{'DNIs duplicados encontrados: ' + ', '.join(resumen['duplicados_dni']) if resumen['duplicados_dni'] else ''}"
+        ),
+        "resumen": resumen,
+        "errores": errores
+    }, status=201)
+
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_masivo_departamentos(request):
+    departamentos = T_departa.objects.all().distinct().values('id', 'nom_departa')
+    data = [{'id': d['id'], 'nom': d['nom_departa']} for d in departamentos]
+    return JsonResponse(list(data), safe=False)
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_masivo_municipios(request):
+    departamento_id = request.GET.get('departamento')
+
+    queryset = T_munici.objects.all()
+
+    if departamento_id:
+        queryset = queryset.filter(nom_departa_id=departamento_id)
+
+    municipios = queryset.distinct().values('id', 'nom_munici')
+    data = [{'id': m['id'], 'nom': m['nom_munici']} for m in municipios]
+    return JsonResponse(list(data), safe=False)
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_masivo_colegios(request):
+    municipio_id = request.GET.get('municipio')
+
+    queryset = T_insti_edu.objects.all()
+
+    if municipio_id:
+        queryset = queryset.filter(muni_id=municipio_id)
+    else:
+        queryset = T_insti_edu.objects.none()
+
+    instituciones = queryset.distinct().values('id', 'nom')
+    data = [{'id': i['id'], 'nom': i['nom']} for i in instituciones]
+    return JsonResponse(list(data), safe=False)
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_masivo_centros(request):
+    centros = T_centro_forma.objects.all().distinct().values('id', 'nom')
+    data = [{'id': c['id'], 'nom': c['nom']} for c in centros]
+    return JsonResponse(list(data), safe=False)
+
+@require_GET
+@login_required
+def obtener_opciones_fichas_masivo_programas(request):
+    programas = T_progra.objects.all().distinct().values('id', 'nom')
+    data = [{'id': p['id'], 'nom': p['nom']} for p in programas]
+    return JsonResponse(list(data), safe=False)
 
 ###############################################################################################################
 #        VISTAS APRENDIZ

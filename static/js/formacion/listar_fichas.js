@@ -59,10 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         data.forEach(el => {
             table.row.add([
-                el.num,
+                el.num || 'No registrado',
+                el.grupo??'No registrado',
                 el.estado,
                 el.fecha_aper,
-                el.fecha_cierre??'No registrado',
                 el.centro,
                 el.institucion,
                 el.instru??'No asignado',

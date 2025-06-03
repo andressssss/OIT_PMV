@@ -202,7 +202,7 @@
             </div>
             </div>
             {% endif %}
-            {% if rol == 'gestor' %}
+            {% if rol == 'gestor'%}
             <!-- ======== GESTIÓN DE APRENDICES ======== -->
             <h4 class="mt-5 mb-3 border-bottom pb-2">Gestión de aprendices</h4>
             <div class="row row-cols-1 row-cols-md-5">
@@ -218,6 +218,22 @@
                     </a>
                 </div>
                 </div>
+        {% endif %}
+        {% if rol == 'instructor'%}
+            <h4 class="mt-5 mb-3 border-bottom pb-2">Currículo y actividades</h4>
+            <div class="row row-cols-1 row-cols-md-5">
+                <div class="col">
+                    <a href="{% url 'fichas' %}" class="btn" >
+                        <div class="card shadow-sm card-anim" style="height: 375px;">
+                            <img src="{% static 'images/programasIcon.png' %}" class="card-img-top p-4" alt="Instructores">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Fichas</h5>
+                                <p class="card-text">Administrar fichas.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
         {% endif %}
         {% if rol == 'lider' %}
         <!-- ======== GESTIÓN ADMINISTRATIVA DEL SISTEMA ======== -->
