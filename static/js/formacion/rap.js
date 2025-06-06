@@ -1,4 +1,4 @@
-import { reiniciarTooltips,cargarOpciones,crearSelect, showPlaceholder, hidePlaceholder, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+import { reiniciarTooltips,setFormDisabled ,cargarOpciones,crearSelect, showPlaceholder, hidePlaceholder, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -76,6 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">
                     <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm mb-1 deleteBtn" 
+                    data-id="${el.id}"
+                    title="Eliminar"
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top">
+                    <i class="bi bi-trash"></i>
                 </button>`
             ]);
         });
@@ -158,10 +165,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = bootstrap.Modal.getInstance(document.getElementById('crearRAPModal'));
 
         showSpinner(btn);
-        formCrearRAP.querySelectorAll('select, input, button').forEach(el => el.disabled = true);
+        setFormDisabled(formCrearRAP, true)
 
         try {
-            const response = await fetch(`/api/rap/crear/`, {
+            const response = await fetch(`/api/formacion/raps/`, {
                 method: 'POST',
                 headers: {'X-CSRFToken': csrfToken},
                 body: formData
@@ -181,12 +188,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             formCrearRAP.querySelectorAll('select, input, button').forEach(el => el.disabled = false);
             hideSpinner(btn, originalBtnContent);
+            setFormDisabled(formCrearRAP, false)
         }
 
     });
 
     //== Boton editar RAP
-    tableEl.addEventListener('click', async (e) => {
+    tableEl.addEventListener('click', async e => {
         if (e.target.closest('.editBtn')){
             const btn = e.target.closest('.editBtn');
             const originalBtnContent = btn.innerHTML;
@@ -198,6 +206,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await cargarDatosEditarRap(rapId);
             hideSpinner(btn, originalBtnContent);
+        } else if (e.target.closest('.deleteBtn')){
+            const btn = e.target.closest('.deleteBtn');
+            const originalBtnContent = btn.innerHTML;
+            const rapId = btn.dataset.id;
+            showSpinner(btn);
+
+            const confirmed = await confirmDeletion('¿Desea eliminar este RAP?')
+            if (confirmed){
+                try {
+                    const response = await fetch(`/api/formacion/raps/${rapId}/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        }
+                    });
+                    if (!response.ok){
+                        const data = await response.json();
+                        toastError(data.message || 'Error eliminando el RAP');
+                    } else {
+                        toastSuccess('RAP eliminado correctamente');
+                        aplicarFiltros();
+                    }
+                } catch (error) {
+                    toastError(error.message)
+                }
+            }
+            hideSpinner(btn, originalBtnContent)
+            reiniciarTooltips();
         }
     });
 
@@ -205,50 +242,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const compeSelect = document.getElementById('compeSelectEdit');
     
     async function cargarDatosEditarRap(rapId) {
-        formEditarRAP.querySelectorAll('select, button, input').forEach(el =>{
-            el.disabled = true;
-
-            if(el.tomselect){
-                el.tomselect.disable();
-            }
-        });
+        setFormDisabled(formEditarRAP, true);
     
         try {
-            const response = await fetch(`/api/rap/${rapId}/`);
+            const response = await fetch(`/api/formacion/raps/${rapId}/`);
             const data = await response.json();
     
             formEditarRAP.querySelector('input[name="nom"]').value = data.nom;
 
-            await cargarCompetenciasEdit();
-    
+            const programaSelect = document.getElementById('programaSelectEdit');
             const compeSelect = document.getElementById('compeSelectEdit');
+
+            const programaSeleccionado = data.programas.length > 0 ? data.programas[0].id : '';
+            programaSelect.value = programaSeleccionado;
+
+            await cargarCompetenciasPorPrograma(programaSeleccionado);
+    
             compeSelect.tomselect.setValue(data.compe);
 
-            formEditarRAP.setAttribute('action', `/api/rap/editar/${rapId}/`);
+            formEditarRAP.setAttribute('action', `/api/formacion/raps/${rapId}/`);
         } catch (error) {
             toastError(error);
         } finally {
-            formEditarRAP.querySelectorAll('select, button, input').forEach(el => {
-                el.disabled = false;
-                
-                if(el.tomselect){
-                    el.tomselect.enable();
-                }
-            });
+            setFormDisabled(formEditarRAP, false);
         }
     }
 
     //Cargar competencias completas en el modal de edicion
-    async function cargarCompetenciasEdit() {
+    async function cargarCompetenciasPorPrograma(programaId) {
         const compeSelect = document.getElementById('compeSelectEdit');
-
         const tomSelectInstance = compeSelect.tomselect;
 
         tomSelectInstance.clearOptions();
         tomSelectInstance.disable();
         
         try {
-            const response = await fetch(`/api/competencias/`);
+            const response = await fetch(`/api/formacion/competencias/?programa=${programaId}`);
             const data = await response.json();
     
             data.forEach(compe => {
@@ -262,30 +291,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    document.getElementById('programaSelectEdit').addEventListener('change', async (e) => {
+        const programaId = e.target.value;
+        await cargarCompetenciasPorPrograma(programaId);
 
+        // Opcional: limpiar selección competencia cuando cambie programa
+        const compeSelect = document.getElementById('compeSelectEdit');
+        compeSelect.tomselect.clear(true);
+    });
 
     formEditarRAP.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const formData = new FormData(formEditarRAP);
-        const dataf = new URLSearchParams(formData).toString();
+        const jsonData = Object.fromEntries(formData.entries());
         const btn = document.getElementById('btnEditarRAP');
         const originalBtnContent = btn.innerHTML;
+
         showSpinner(btn);
     
-        formEditarRAP.querySelectorAll('select, button, input').forEach(el => {
-            el.disabled = true;
-
-            if (el.tomselect) {
-                el.tomselect.disable();
-            }
-        });
+        setFormDisabled(formEditarRAP, true)
 
         try {
             const response = await fetch(formEditarRAP.action, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: dataf
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(jsonData)
             });
             const data = await response.json();
     
@@ -304,14 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             toastError(error);
         } finally {
-            formEditarRAP.querySelectorAll('select, button, input').forEach(el => {
-                el.disabled = false;
-
-                if (el.tomselect){
-                    el.tomselect.enable();
-                }
-            });
+            setFormDisabled(formEditarRAP, false)
             hideSpinner(btn, originalBtnContent);
+            reiniciarTooltips();
         }
     });
     

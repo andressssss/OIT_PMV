@@ -116,6 +116,19 @@
                     {{ rap_form.nom }}
             
                     <div class="mb-3">
+                        <label for="programaSelectEdit" class="form-label">Programa</label>
+                        <select id="programaSelectEdit" class="form-select">
+                            <option value="">Seleccione un programa</option>
+                            {% for programa in programas %}
+                                <option value="{{ programa.id }}">{{ programa.nom }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">
+                            Seleccione nuevamente el programa de ser necesario.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="compeSelectEdit" class="form-label">Competencia</label>
                         <select id="compeSelectEdit" name="compe" class="form-select tomselect" required disabled>
                         </select>

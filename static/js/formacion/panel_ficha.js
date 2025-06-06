@@ -524,7 +524,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 subFolderContainer.classList.add("folder-children");
                 subFolderContainer.id = `portafolio-folder-${node.id}`;
 
-                if (userRole === "instructor"){
+                if (userRole === "instructor" && (!node.children || node.children.length === 0 || node.children.every(child => child.tipo === "documento"))){
                     // Botón de carga (solo para carpetas)
                     const uploadLi = document.createElement("li");
                     uploadLi.classList.add("upload-item");
