@@ -178,10 +178,17 @@
 
                     <h3>Asignar Fichas</h3>
                     <div class="row">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="programaSelect">Programa</label>
+                            <select name="programaSelect" id="programaSelect" class="form-select">
+                                {% for programa in programas %}
+                                    <option value="{{ programa.id }}">{{ programa.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label for="fichaSelect">Ficha</label>
-                            <select name="ficha_id[]" id="fichaSelect" class="form-select tomselect">
-                                <option value="">-- Ninguna --</option>
+                            <select name="ficha_id[]" id="fichaSelect" class="form-select tomselect" disabled>
                                 {% for ficha in fichas %}
                                     <option value="{{ ficha.id }}">{{ ficha.num }}</option>
                                 {% endfor %}

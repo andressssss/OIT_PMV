@@ -30,6 +30,9 @@ urlpatterns = [
     # Ruta Admin
     path('admin/', admin.site.urls),
 
+    path('api/', include('api.urls')),
+
+
     # Ruta default
     path('', usuarios_views.home, name='home'),
 
@@ -51,7 +54,6 @@ urlpatterns = [
     path('eliminar_documentoinstru/<int:hv_id>/', usuarios_views.eliminar_documentoinstru, name='eliminar_documentoinstru'),
     
     # Recuperacion de contraseña
-
     path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
@@ -180,6 +182,7 @@ urlpatterns = [
     path('api/tree/eliminar_documento_aprendiz/<int:documento_id>', formacion_views.eliminar_documento_portafolio_aprendiz, name='api_eliminar_documento_portafolio_aprendiz'),
     path('api/tree/obtener_hijos_carpeta_aprendiz/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta_aprendiz, name='api_obtener_hijos_carpeta_aprendiz'),
     path('tree/descargar_portafolio_aprendiz/<int:aprendiz_id>', formacion_views.descargar_portafolio_aprendiz_zip, name='descargar_portafolio_aprendiz_zip'),
+    path('tree/descargar_portafolios_ficha/<int:ficha_id>', formacion_views.descargar_portafolios_ficha_zip, name='descargar_portafolios_ficha_zip'),
 
     #Fichas Panel
     path('ficha/<int:ficha_id>/', formacion_views.panel_ficha, name='panel_ficha'),
@@ -247,6 +250,7 @@ urlpatterns = [
     # RAPS
     path('raps/', formacion_views.listar_raps, name = 'raps'),
     path('api/rap/crear/', formacion_views.crear_rap, name = 'api_crear_rap'),
+    path('api/rap/eliminar/<int:rap_id>', formacion_views.crear_rap, name = 'api_crear_rap'),
     path('api/raps/filtrar/', formacion_views.filtrar_raps, name="api_filtrar_raps"),
     path('api/raps/fases/', formacion_views.obtener_opciones_fases_raps, name="api_opciones_fases_raps"),
     path('api/raps/programas/', formacion_views.obtener_opciones_programas_raps, name="api_opciones_programas_raps"),

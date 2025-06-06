@@ -65,6 +65,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const programaSelect = document.getElementById('programaSelect');
+    const fichaSelect = document.getElementById('fichaSelect');
+    const fichaTomSelect = fichaSelect.tomselect;
+
+    programaSelect.addEventListener('change', async e =>{
+        const programaId = programaSelect.value;
+
+        fichaTomSelect.clear();
+        fichaTomSelect.clearOptions()
+
+        if (!programaId) {
+            fichaSelect.disabled = true;
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/formacion/fichas/por_programa/${programaId}/`);
+            if (!response.ok) throw new Error('Error al cargar las fichas');
+            const fichas = await response.json();
+
+            if(fichas.length == 0){
+                fichaTomSelect.disable();
+            } else {
+                fichaTomSelect.enable();
+                fichas.forEach(f => {
+                    fichaTomSelect.addOption({ value: f.id, text: f.num});
+                })
+                fichaTomSelect.refreshOptions();
+            }
+        } catch (error) {
+            toastError(error)
+        }
+    })
+
     //== Boton editar
     tabla.addEventListener('click', async (e) => {
         const btn = e.target.closest('.edit-btn');
@@ -116,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     //== Boton guardar formulario editar instructor
-    formEditar.addEventListener('submit', async function (e) {
+    formEditar.addEventListener('submit', async e => {
         e.preventDefault();
     
         const url = formEditar.action;

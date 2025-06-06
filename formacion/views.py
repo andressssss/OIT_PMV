@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
-from .scripts.cargar_tree import crear_datos_prueba 
-from .scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
+from matricula.scripts.cargar_tree import crear_datos_prueba 
+from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.db import transaction
 from django.contrib.staticfiles import finders
 from django.utils.encoding import force_str
@@ -28,8 +28,6 @@ from commons.models import T_encu,T_departa, T_munici, T_compe_progra, T_fase, T
 from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
-from .scripts.cargar_tree import crear_datos_prueba 
-from .scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.urls import reverse
@@ -666,6 +664,67 @@ def descargar_portafolio_aprendiz_zip(request, aprendiz_id):
     return response
 
 @login_required
+def descargar_portafolios_ficha_zip(request, ficha_id):
+    # Obtener todos los aprendices de la ficha
+    aprendices = T_apre.objects.filter(ficha_id=ficha_id)
+
+    # Crear archivo ZIP en memoria
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for aprendiz in aprendices:
+            nodos = T_DocumentFolderAprendiz.objects.filter(aprendiz=aprendiz).select_related('documento')
+
+            folder_map = {}
+            doc_map = {}
+
+            for nodo in nodos:
+                folder_map[nodo.id] = {
+                    "id": nodo.id,
+                    "name": nodo.name,
+                    "parent_id": nodo.parent_id,
+                    "tipo": nodo.tipo,
+                    "children": [],
+                }
+                if nodo.tipo == "documento" and nodo.documento:
+                    doc_map[nodo.id] = nodo.documento
+
+            # Construir jerarquía
+            root_nodes = []
+            for nodo in folder_map.values():
+                if nodo["parent_id"]:
+                    folder_map[nodo["parent_id"]]["children"].append(nodo)
+                else:
+                    root_nodes.append(nodo)
+
+            # Función recursiva para añadir al ZIP
+            def agregar_a_zip(zip_file, nodo, ruta):
+                if nodo["tipo"] == "carpeta":
+                    ruta_actual = os.path.join(ruta, nodo["name"])
+                    for hijo in nodo["children"]:
+                        agregar_a_zip(zip_file, hijo, ruta_actual)
+                elif nodo["tipo"] == "documento" and nodo["id"] in doc_map:
+                    doc = doc_map[nodo["id"]]
+                    if doc.archi and os.path.isfile(doc.archi.path):
+                        with open(doc.archi.path, 'rb') as f:
+                            file_data = f.read()
+                        nombre_archivo = f"{doc.nom or os.path.basename(doc.archi.name)}"
+                        # Guardar directamente en la ruta del aprendiz, sin subcarpeta adicional
+                        zip_file.writestr(os.path.join(ruta, nombre_archivo), file_data)
+
+
+            # Carpeta por aprendiz
+            carpeta_aprendiz = f"{aprendiz.perfil.dni}_{aprendiz.perfil.nom}_{aprendiz.perfil.apelli}".replace(' ', '_')
+            for nodo in root_nodes:
+                agregar_a_zip(zip_file, nodo, carpeta_aprendiz)
+
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename=portafolios_ficha_{ficha_id}.zip'
+    return response
+
+
+@login_required
 def cargar_documento_aprendiz(request):
     if request.method == 'POST':
         if  request.FILES.get("file"):
@@ -1010,15 +1069,15 @@ def listar_actividades_ficha(request, ficha_id):
 
     return JsonResponse(data, safe=False)
 
+@require_POST
 @login_required
 def editar_actividad(request, actividad_id):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
+
 
     actividad = get_object_or_404(T_acti_ficha, pk=actividad_id)
     ficha = actividad.ficha
 
-    form_actividad = ActividadForm(request.POST, instance=actividad.acti)
+    form_actividad = ActividadForm(request.POST, instance=actividad.acti, programa = actividad.ficha.progra)
     form_cronograma = CronogramaForm(request.POST, instance=actividad.crono)
     form_raps = RapsFichaForm(request.POST, ficha=ficha)
 

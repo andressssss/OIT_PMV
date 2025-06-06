@@ -8,16 +8,6 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Creación de fichas</h1>
-                <div>
-                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#instruccionesModal">
-                    Ver Instrucciones CSV
-                </button>
-                </div>
-                <div>
-                <a href="/media/formatos/formato_carga_masiva_fichas.csv" class="btn btn-success" download>
-                    Descargar Formato Oficial
-                </a>
-                </div>
             </div>
 
             <form id="form-cargar-ficha" autocomplete="off" enctype="multipart/form-data" method="POST" class="mt-4">
@@ -84,25 +74,34 @@
 
                 <!-- Programa de formación -->
                 <div class="col-md-6 mb-3">
-                <label for="programa" class="form-label">Programa de formación</label>
-                <div id="contenedor-programa">
-                    <div class="placeholder-glow">
-                        <span class="placeholder col-12 rounded"></span>
+                    <label for="programa" class="form-label">Programa de formación</label>
+                    <div id="contenedor-programa">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
                     </div>
                 </div>
-                </div>
 
-
+                <!-- Campo de carga de CSV -->
                 <div class="col-md-6 mb-3">
-                    <label for="archivo" class="form-label">Seleccione un archivo CSV</label>
+                    <label for="archivo" class="form-label">Cargar aprendices</label>
                     <input type="file" class="form-control" name="archivo" id="archivo" required>
                 </div>
 
+                <!-- Botones de instrucciones y descarga -->
+                <div class="col-12 mb-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#instruccionesModal">
+                        Ver Instrucciones CSV
+                    </button>
+                    <a href="/media/formatos/formato_carga_masiva.csv" class="btn btn-success" download>
+                        Descargar Formato Oficial
+                    </a>
+                </div>
             </div>
 
             <!-- Botón de envío (una sola columna) -->
             <div class="mt-3">
-                <button type="submit" id="submitBtn" class="btn btn-primary">Cargar ficha</button>
+                <button type="submit" id="submitBtn" class="btn btn-primary">Crear ficha</button>
             </div>
             </form>
 
@@ -128,93 +127,144 @@
 <!-- Modal de Instrucciones -->
 <div class="modal fade" id="instruccionesModal" tabindex="-1" aria-labelledby="instruccionesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="instruccionesModalLabel">Instrucciones para el formato CSV - Instructores</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="instruccionesModalLabel">Instrucciones para el formato CSV</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-            <h5>Requisitos del archivo CSV:</h5>
-            <ul class="list-group list-group-flush mb-4">
-            <li class="list-group-item">✅ El archivo debe estar en formato <strong>CSV</strong></li>
-            <li class="list-group-item">✅ Mantener los nombres de las columnas tal como se indican</li>
-            <li class="list-group-item">✅ Codificación UTF-8</li>
-            <li class="list-group-item">✅ Delimitador: coma (,)</li>
-            </ul>
+        <h5>Requisitos del archivo CSV:</h5>
+        <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item">✅ El archivo debe estar en formato <b>CSV</b></li>
+            <li class="list-group-item">✅ Conservar los nombres de las columnas del formato oficial</li>
+            <li class="list-group-item">✅ Codificación UTF-8 (seleccionar al guardar el archivo)</li>
+            <li class="list-group-item">✅ Utilizar el delimitador de columnas con coma (,)</li>
+        </ul>
 
-            <h5>Instrucciones de llenado:</h5>
-            <div class="alert alert-warning">
-            <strong>Campos obligatorios:</strong> Todos excepto <code>contra</code>, <code>fecha_ini</code> y <code>fecha_fin</code> deben estar completos.
-            </div>
-
-            <table class="table table-striped">
+        <h5>Instrucciones de llenado:</h5>
+        <div class="alert alert-warning">
+            <strong>Campos obligatorios:</strong> Todos los campos deben estar completos
+        </div>
+        
+        <table class="table table-striped">
             <thead>
-                <tr>
+            <tr>
                 <th>Campo</th>
-                <th>Descripción / Requisitos</th>
-                </tr>
+                <th>Requerimientos</th>
+            </tr>
             </thead>
             <tbody>
-                <tr><td>email</td><td>Correo electrónico válido</td></tr>
-                <tr><td>nom</td><td>Nombres del instructor</td></tr>
-                <tr><td>apelli</td><td>Apellidos del instructor</td></tr>
-                <tr>
+            <tr>
+                <td>email</td>
+                <td>Correo electronico del aprendiz en formato válido de correo electrónico</td>
+            </tr>
+            <tr>
+                <td>nom</td>
+                <td>Nombres del aprendiz</td>
+            </tr>
+            <tr>
+                <td>apelli</td>
+                <td>Apellidos del aprendiz</td>
+            </tr>
+            <tr>
                 <td>tipo_dni</td>
-                <td>Tipo de documento: <code>ti</code>, <code>cc</code>, <code>pp</code>, <code>ce</code></td>
-                </tr>
-                <tr><td>dni</td><td>Número de documento, sin puntos ni espacios</td></tr>
-                <tr><td>tele</td><td>Teléfono sin caracteres especiales</td></tr>
-                <tr><td>dire</td><td>Dirección de residencia</td></tr>
-                <tr>
+                <td>Tipo de documento del aprendiz, colocar solo(ti, cc, pp o cc): 
+                <ul>
+                    <li>ti: Tarjeta de identidad</li>
+                    <li>cc: Cedula de ciudadania</li>
+                    <li>pp: Pasaporte</li>
+                    <li>cc: Tarjeta de extranjeria</li>
+                </ul>
+                </td>
+            </tr>
+            <tr>
+                <td>dni</td>
+                <td>Número de identidad único, sin puntos ni espacios</td>
+            </tr>
+            <tr>
+                <td>tele</td>
+                <td>Telefono del aprendiz, sin puntos, espacios o caracteres especiales</td>
+            </tr>
+            <tr>
+                <td>dire</td>
+                <td>Direccion de residencia del aprendiz</td>
+            </tr>
+            <tr>
                 <td>gene</td>
-                <td>Género: <code>H</code> (Masculino), <code>M</code> (Femenino)</td>
-                </tr>
-                <tr><td>fecha_naci</td><td>Fecha de nacimiento en formato <code>DD/MM/AAAA</code></td></tr>
-                <tr><td>contra</td><td>(Opcional) Número de contrato</td></tr>
-                <tr><td>fecha_ini</td><td>(Opcional) Fecha inicio del contrato <code>DD/MM/AAAA</code></td></tr>
-                <tr><td>fecha_fin</td><td>(Opcional) Fecha fin del contrato <code>DD/MM/AAAA</code></td></tr>
-                <tr>
-                <td>profe</td>
-                <td>
-                    Profesión del instructor. En negrilla las opciones válidas (en minúsculas y sin tildes): 
-                    <ul>
-                        <li><strong>ingenieros</strong>: Ingeniero de sistemas </li>
-                        <li><strong>ingenieroe</strong>: Ingeniero electrónico</li>
-                        <li><strong>tecnologodf</strong>: Tecnólogo en desarrollo de software</li>
-                        <li><strong>ingenierosof</strong>: Ingeniero de software</li>
-                    </ul>
+                <td>Genero del aprendiz, solo colocar una letra(H, M):
+                <ul>
+                    <li>H: Masculino</li>
+                    <li>M: Femenino</li>
+                <ul></ul>
                 </td>
-                </tr>
-                <tr>
-                <td>tipo_vincu</td>
-                <td>Tipo de vinculación. En negrilla las opciones válidas (en minúsculas y sin tildes): 
-                    <ul>
-                    <li><strong>termino indefinido</strong>: Termino indefinido</li>
-                    <li><strong>colaborador externo</strong>: Colaborador externo</li>
-                    <li><strong>obra</strong>: Obra labor</li>
-                    <li><strong>presta</strong>: Prestación de Servicios</li>
-                    <li><strong>sindefinir</strong>: Sin definir</li>
-                    </ul>
+            </tr>
+            <tr>
+                <td>fecha_naci</td>
+                <td>Formato DD/MM/AAAA (ej: 15/04/2000)</td>
+            </tr>
+            <tr>
+                <td>nom_repre</td>
+                <td>Nombre del representante legal del aprendiz</td>
+            </tr>
+            <tr>
+                <td>dni_repre</td>
+                <td>Numero de identificacion del representante legal, sin puntos ni espacios</td>
+            </tr>
+            <tr>
+                <td>tele_repre</td>
+                <td>Telfono representante legal, sin comas, espacios ni caracteres especiales</td>
+            </tr>
+            <tr>
+                <td>dire_repre</td>
+                <td>Direccion del representante legal</td>
+            </tr>
+            <tr>
+                <td>mail_repre</td>
+                <td>Correo electronico del representante legal en formato válido de correo electrónico</td>
+            </tr>
+            <tr>
+                <td>parentezco</td>
+                <td>Parentezco del representante legal, colocar una de las siguientes opciones en miniscula y sin tildes:
+                <ul>
+                    <li>padre</li>
+                    <li>madre</li>
+                    <li>abuelo</li>
+                    <li>abuela</li>
+                    <li>hermano</li>
+                    <li>hermana</li>
+                    <li>tio</li>
+                    <li>tia</li>
+                    <li>otro</li>
+                </ul>
                 </td>
-                </tr>
+            </tr>
+            <tr>
+                <td>ciu</td>
+                <td>Ciudad de residencia del representante legal</td>
+            </tr>
+            <tr>
+                <td>depa</td>
+                <td>Departamento asociado a la ciudad de residencia del representante legal</td>
+            </tr>
             </tbody>
-            </table>
+        </table>
 
-            <div class="alert alert-danger mt-3">
+        <div class="alert alert-danger mt-3">
             <strong>⚠️ Importante:</strong>
             <ul>
-                <li>No modificar el orden de las columnas</li>
-                <li>No usar tildes ni la letra ñ</li>
-                <li>Verifica que los DNI no estén duplicados</li>
+            <li>No modificar el orden de las columnas</li>
+            <li>No incluir caracteres especiales (ñ, tildes, etc)</li>
+            <li>Verificar que los DNI no estén duplicados en el sistema</li>
             </ul>
-            </div>
+        </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        </div>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
         </div>
     </div>
+    </div>
 </div>
+
 
 
 {% endblock %}

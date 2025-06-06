@@ -10,7 +10,27 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.utils import timezone
-from commons.models import T_instru, T_ficha, T_cuentas, T_gestor_insti_edu, T_apre,T_docu_labo, T_gestor_depa, T_gestor,T_docu, T_perfil, T_admin, T_lider, T_nove, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
+from commons.models import (
+    T_instru, 
+    T_ficha, 
+    T_cuentas, 
+    T_gestor_insti_edu,
+    T_apre,
+    T_docu_labo,
+    T_gestor_depa,
+    T_gestor,
+    T_docu,
+    T_perfil,
+    T_admin,
+    T_lider,
+    T_nove,
+    T_repre_legal,
+    T_munici,
+    T_departa,
+    T_insti_edu,
+    T_centro_forma,
+    T_progra
+    )
 from .forms import InstructorForm, PerfilEForm,CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, NovedadForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
@@ -388,13 +408,15 @@ def dashboard_admin(request):
 def instructores(request):
     instructores = T_instru.objects.select_related('perfil').all()
     fichas = T_ficha.objects.all()
+    programas = T_progra.objects.all()
     perfil_form = PerfilForm()
     instructor_form = InstructorForm()
     return render(request, 'instructor.html', {
         'instructores': instructores,
         'perfil_form': perfil_form,
         'instructor_form': instructor_form,
-        'fichas': fichas
+        'fichas': fichas,
+        'programas': programas
     })
         
 @login_required
