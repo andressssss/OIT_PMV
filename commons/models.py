@@ -311,7 +311,7 @@ class T_ficha(models.Model):
     grupo = models.ForeignKey(T_grupo, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.num}"
+        return self.num if self.num else str(f"G{self.grupo.id}")
 
 class T_gestor_grupo(models.Model):
     class Meta:
@@ -380,8 +380,11 @@ class T_acti(models.Model):
     nom = models.CharField(max_length=200)
     descri = models.CharField(max_length=500)
     tipo = models.ManyToManyField(T_tipo_acti)
-    guia = models.ForeignKey(T_guia, on_delete=models.CASCADE)
+    guia = models.ForeignKey(T_guia, on_delete=models.CASCADE, null=True, blank=True)
     fase = models.ForeignKey('T_fase', on_delete=models.CASCADE)
+    horas_auto = models.CharField(max_length=200)
+    horas_dire = models.CharField(max_length=200)
+
 
 class T_descri(models.Model):
     class Meta:

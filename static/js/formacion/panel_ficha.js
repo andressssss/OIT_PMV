@@ -1114,7 +1114,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 formEditarActividad.querySelector('#id_nom').value = data.nom;
                 formEditarActividad.querySelector('#id_tipo').value = data.tipo;
                 formEditarActividad.querySelector('#id_descri').value = data.descri;
-                formEditarActividad.querySelector('#id_guia').value = data.guia;
+                formEditarActividad.querySelector('#id_horas_auto').value = data.horas_auto;
+                formEditarActividad.querySelector('#id_horas_dire').value = data.horas_dire;
                 formEditarActividad.querySelector('#id_fecha_ini_acti').value = data.fecha_ini_acti;
                 formEditarActividad.querySelector('#id_fecha_fin_acti').value = data.fecha_fin_acti;
                 formEditarActividad.querySelector('#id_fecha_ini_cali').value = data.fecha_ini_cali;
@@ -1179,10 +1180,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById('act-tipo').textContent = data.tipo_actividad.join(', ');
                     document.getElementById('act-fase').textContent = data.fase;
 
-                    document.getElementById('guia-nombre').textContent = data.guia.nombre;
-                    document.getElementById('guia-programa').textContent = data.guia.programa;
-                    document.getElementById('guia-horas-directas').textContent = data.guia.horas_directas;
-                    document.getElementById('guia-horas-autonomas').textContent = data.guia.horas_autonomas;
+                    document.getElementById('act-horas-directas').textContent = data.horas_directas;
+                    document.getElementById('act-horas-autonomas').textContent = data.horas_autonomas;
 
                     document.getElementById('cron-inicio').textContent = formatFecha(data.cronograma.fecha_inicio_actividad);
                     document.getElementById('cron-fin').textContent = formatFecha(data.cronograma.fecha_fin_actividad);

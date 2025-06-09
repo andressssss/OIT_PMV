@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    function llenarModalPrograma(data){
+    function llenarModalPrograma(data) {
         // Datos del programa
         document.getElementById('prog-cod').textContent = data.cod_prog;
         document.getElementById('prog-nom').textContent = data.nom;
@@ -38,18 +38,15 @@ document.addEventListener('DOMContentLoaded', () => {
         data.competencias.forEach(compe => {
             const li = document.createElement('li');
             li.className = 'list-group-item';
-            li.textContent = `${compe.nom} - Fase: ${compe.fase}`;
+            const fases = compe.fase.map(f => f.charAt(0).toUpperCase() + f.slice(1)).join(', ');
+            li.textContent = `${compe.nom} - Fase(s): ${fases}`;
             listaCompe.appendChild(li);
         });
 
-        // Guías
-        const listaGuias = document.getElementById('prog-guias');
-        listaGuias.innerHTML = '';
-        data.guias.forEach(guia => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item';
-            li.textContent = `Nombre: ${guia.nom} - Directas: ${guia.horas_dire} - Autónomas: ${guia.horas_auto}`;
-            listaGuias.appendChild(li);
+        // Crear un mapa rápido para encontrar fases por competencia
+        const fasesPorCompetencia = {};
+        data.competencias.forEach(compe => {
+            fasesPorCompetencia[compe.nom] = compe.fase;
         });
 
         // RAPs
@@ -58,9 +55,14 @@ document.addEventListener('DOMContentLoaded', () => {
         data.raps.forEach(rap => {
             const li = document.createElement('li');
             li.className = 'list-group-item';
-            li.textContent = `${rap.nom} - Fase: ${rap.fase}`;
+            const fases = fasesPorCompetencia[rap.compe] || [];
+            const fasesTexto = fases.length > 0 
+                ? ' - Fase(s): ' + fases.map(f => f.charAt(0).toUpperCase() + f.slice(1)).join(', ')
+                : '';
+            li.textContent = `${rap.nom} - ${rap.compe}${fasesTexto}`;
             listaRaps.appendChild(li);
         });
     }
+
 
 })

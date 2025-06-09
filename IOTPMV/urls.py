@@ -45,6 +45,7 @@ urlpatterns = [
 
     # Log In
     path('signin/', usuarios_views.signin, name='signin'),
+    path('api/consultar_usuario_por_cedula/', usuarios_views.consultar_usuario_por_cedula, name='consultar_usuario_por_cedula'),
     
     # Perfil
     path('perfil/', usuarios_views.perfil, name='perfil'),

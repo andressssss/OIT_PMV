@@ -51,27 +51,21 @@ class CascadaMunicipioInstitucionForm(forms.Form):
 class ActividadForm(forms.ModelForm):
     class Meta:
         model = T_acti
-        fields = ['nom', 'descri', 'tipo', 'guia']
+        fields = ['nom', 'descri', 'tipo', 'horas_auto', 'horas_dire']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la actividad'}),
             'descri': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Descripción de la actividad'}),
             'tipo': forms.SelectMultiple(attrs={'class': 'form-select tomselect-multiple', 'placeholder': 'Seleccione los tipos de actividad'}),
-            'guia': forms.Select(attrs={'class': 'form-select'})
+            'horas_auto': forms.NumberInput(attrs={'class': 'form-select', 'placeholder': 'Horas autónomas'}),
+            'horas_dire': forms.NumberInput(attrs={'class': 'form-select', 'placeholder': 'Horas directas'})
         }
         labels = {
             'nom': 'Nombre',
             'descri': 'Descripcion',
             'tipo': 'Tipo de actividad',
-            'guia': 'Guia relacionada'
+            'horas_auto': 'Horas autónomas',
+            'horas_dire': 'Horas  directas'
         }
-    def __init__(self, *args, **kwargs):
-        programa = kwargs.pop('programa', None)
-        super().__init__(*args, **kwargs)
-
-        if programa:
-            self.fields['guia'].queryset = T_guia.objects.filter(progra = programa)
-        else:
-            self.fields['guia'].queryset = T_guia.objects.none()
 
 class DocumentosForm(forms.ModelForm):
     class Meta:
