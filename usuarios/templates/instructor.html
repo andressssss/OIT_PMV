@@ -190,7 +190,7 @@
                             <label for="fichaSelect">Ficha</label>
                             <select name="ficha_id[]" id="fichaSelect" class="form-select tomselect" disabled>
                                 {% for ficha in fichas %}
-                                    <option value="{{ ficha.id }}">{{ ficha.num }}</option>
+                                    <option value="{{ ficha.id }}">{{ ficha }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -303,7 +303,7 @@
                             <select name="ficha_id" id="editarFichaSelect" class="form-select tomselect">
                                 <option value="">-- Ninguna --</option>
                                 {% for ficha in fichas %}
-                                    <option value="{{ ficha.id }}">{{ ficha.num }}</option>
+                                    <option value="{{ ficha.id }}">{{ ficha }}</option>
                                 {% endfor %}
                             </select>
                         </div>

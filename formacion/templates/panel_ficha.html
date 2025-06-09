@@ -373,11 +373,18 @@
                 Describa brevemente el propósito o contenido de la actividad. Máximo 500 caracteres.
             </small>
         </div>
-        <div class="col-md-12 mb-3">
-            <label for="{{ actividad_form.guia.id_for_label }}" class="form-label">Guía relacionada <span class="text-danger">*</span></label>
-            {{ actividad_form.guia }}
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.horas_auto.id_for_label }}" class="form-label">Horas autónomas<span class="text-danger">*</span></label>
+            {{ actividad_form.horas_auto }}
             <small class="form-text text-muted">
-                Seleccione la guía que contiene los lineamientos para desarrollar esta actividad.
+                Seleccione la cantidad de horas autónomas relacionadas a la actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.horas_dire.id_for_label }}" class="form-label">Horas directas<span class="text-danger">*</span></label>
+            {{ actividad_form.horas_dire }}
+            <small class="form-text text-muted">
+                Seleccione la cantidad de horas directas relacionadas a la actividad.
             </small>
         </div>
     </div>
@@ -481,11 +488,18 @@
                 Describa brevemente el propósito o contenido de la actividad. Máximo 500 caracteres.
             </small>
         </div>
-        <div class="col-md-12 mb-3">
-            <label for="{{ actividad_form.guia.id_for_label }}" class="form-label">Guía relacionada <span class="text-danger">*</span></label>
-            {{ actividad_form.guia }}
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.horas_auto.id_for_label }}" class="form-label">Horas autónomas<span class="text-danger">*</span></label>
+            {{ actividad_form.horas_auto }}
             <small class="form-text text-muted">
-                Seleccione la guía que contiene los lineamientos para desarrollar esta actividad.
+                Seleccione la cantidad de horas autónomas relacionadas a la actividad.
+            </small>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="{{ actividad_form.horas_dire.id_for_label }}" class="form-label">Horas directas<span class="text-danger">*</span></label>
+            {{ actividad_form.horas_dire }}
+            <small class="form-text text-muted">
+                Seleccione la cantidad de horas directas relacionadas a la actividad.
             </small>
         </div>
     </div>
@@ -643,13 +657,12 @@
 
             <!-- Guía y cronograma -->
             <div class="col-lg-6">
+            <!-- Horas de la actividad -->
             <div class="card mb-4 shadow">
-                <div class="card-header">Guía Asociada</div>
+                <div class="card-header">Horas de la Actividad</div>
                 <div class="card-body">
-                <p><strong>Nombre:</strong> <span id="guia-nombre"></span></p>
-                <p><strong>Programa:</strong> <span id="guia-programa"></span></p>
-                <p><strong>Horas Directas:</strong> <span id="guia-horas-directas"></span></p>
-                <p><strong>Horas Autónomas:</strong> <span id="guia-horas-autonomas"></span></p>
+                <p><strong>Horas Directas:</strong> <span id="act-horas-directas"></span></p>
+                <p><strong>Horas Autónomas:</strong> <span id="act-horas-autonomas"></span></p>
                 </div>
             </div>
 

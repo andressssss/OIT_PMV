@@ -1,5 +1,6 @@
 import re
 from django.utils.encoding import force_str
+from django.views.decorators.http import require_POST, require_GET
 from django.forms import ValidationError
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, redirect, get_object_or_404
@@ -106,6 +107,21 @@ def signin(request):
 
             # Si no es aprendiz, redirigir a novedades
             return redirect('novedades')
+
+@require_GET
+def consultar_usuario_por_cedula(request):
+    cedula = request.GET.get('cedula')
+
+    if not cedula:
+        return JsonResponse({'error': 'Cédula no proporcionada'}, status=400)
+
+    perfil = T_perfil.objects.filter(dni=cedula).first()
+
+    if perfil is None:
+        return JsonResponse({'error': 'No se encontró un usuario con esa cédula'}, status=404)
+
+    return JsonResponse({'username': perfil.user.username})
+
 
 def signup(request):
     if request.method == 'GET':
@@ -446,11 +462,11 @@ def crear_instructor(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            contraseña = generar_contraseña()
+            # contraseña = generar_contraseña()
 
             new_user = User.objects.create_user(
                 username=username,
-                password=contraseña,
+                password=dni,
                 email=perfil_form.cleaned_data['mail']
             )
 
@@ -658,10 +674,10 @@ def cargar_instructores_masivo(request):
                             i += 1
 
                         # Crear usuario
-                        contraseña = generar_contraseña()
+                        # contraseña = generar_contraseña()
                         user = User.objects.create_user(
                             username=username,
-                            password=contraseña,
+                            password=dni,
                             email=fila['email']
                         )
 
@@ -984,11 +1000,11 @@ def crear_aprendices(request):
                     username = f"{base_username}{i}"
                     i += 1
 
-                contraseña = generar_contraseña()
+                # contraseña = generar_contraseña()
 
                 new_user = User.objects.create_user(
                     username=username,
-                    password=contraseña,
+                    password=dni,
                     email=perfil_form.cleaned_data['mail']
                 )
 
@@ -1102,11 +1118,11 @@ def crear_lider(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            contraseña = generar_contraseña()
+            # contraseña = generar_contraseña()
 
             new_user = User.objects.create_user(
                 username=username,
-                password=contraseña,
+                password=dni,
                 email=perfil_form.cleaned_data['mail']
             )
 
@@ -1229,11 +1245,11 @@ def crear_administrador(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            contraseña = generar_contraseña()
+            # contraseña = generar_contraseña()
 
             new_user = User.objects.create_user(
                 username=username,
-                password=contraseña,
+                password=dni,
                 email=perfil_form.cleaned_data['mail']
             )
 
@@ -1831,12 +1847,12 @@ def cargar_aprendices_masivo(request):
                                 i += 1
 
                             # Generar contraseña aleatoria
-                            contraseña = generar_contraseña()
+                            # contraseña = generar_contraseña()
 
                             # Crear el usuario
                             user = User.objects.create_user(
                                 username=username,
-                                password=contraseña,
+                                password=dni,
                                 email=fila['email']
                             )
                             
@@ -2123,10 +2139,10 @@ def crear_gestor(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            contraseña = generar_contraseña()
+            # contraseña = generar_contraseña()
 
             # Crear el usuario con los datos generados
-            new_user = User.objects.create_user(username=username, password=contraseña, email=perfil_form.cleaned_data['mail'])
+            new_user = User.objects.create_user(username=username, password=dni, email=perfil_form.cleaned_data['mail'])
 
             # Asignar usuario al perfil y guardarlo
             new_perfil = perfil_form.save(commit=False)

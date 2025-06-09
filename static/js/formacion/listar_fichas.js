@@ -1,7 +1,8 @@
 import { reiniciarTooltips,cargarOpciones,crearSelect, showPlaceholder, hidePlaceholder, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-
+    const userRole = document.body.dataset.userRole;
+    
     const tableEl = document.getElementById('listado_fichas_table');
     const table = new DataTable(tableEl, {
         language: {

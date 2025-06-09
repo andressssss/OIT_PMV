@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from .forms import CascadaMunicipioInstitucionForm,GuiaForm, CargarFichasMasivoForm, CargarDocuPortafolioFichaForm, ActividadForm,RapsFichaForm, EncuApreForm, EncuentroForm, DocumentosForm, CronogramaForm, ProgramaForm, CompetenciaForm, RapsForm, FichaForm
-from commons.models import T_encu,T_departa, T_munici, T_compe_progra, T_fase, T_centro_forma,T_guia, T_cali, T_prematri_docu ,T_docu, T_munici, T_insti_edu, T_acti_apre,T_raps_acti,T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha ,T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
+from commons.models import T_encu,T_departa, T_munici, T_compe_progra,T_gestor_depa, T_fase, T_centro_forma,T_guia, T_cali, T_prematri_docu ,T_docu, T_munici, T_insti_edu, T_acti_apre,T_raps_acti,T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha ,T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
 from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
@@ -51,33 +51,54 @@ def fichas(request):
 @require_GET
 @login_required
 def obtener_opciones_fichas_estados(request):
-    estados = T_ficha.objects.filter(
-        esta__isnull = False
-    ).distinct().values_list('esta', flat=True)
+    perfil_logueado = T_perfil.objects.get(user=request.user)
+
+    fichas = T_ficha.objects.filter(esta__isnull=False)
+
+    if perfil_logueado.rol == "gestor":
+        gestor = T_gestor.objects.get(perfil=perfil_logueado)
+        departamentos = T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__nom_departa', flat=True)
+        fichas = fichas.filter(insti__muni__nom_departa__nom_departa__in=departamentos)
+
+    estados = fichas.distinct().values_list('esta', flat=True)
     return JsonResponse(list(estados), safe=False)
+
 
 @require_GET
 @login_required
 def obtener_opciones_fichas_instructores(request):
-    perfil_logueado = T_perfil.objects.get(user = request.user)
-    
+    perfil_logueado = T_perfil.objects.get(user=request.user)
+
     if perfil_logueado.rol == "instructor":
-        opciones = [perfil_logueado.nom]
-        return JsonResponse(opciones, safe=False)
-    
-    instructores = T_ficha.objects.filter(
-        instru__isnull = False
-    ).distinct().values_list('instru__perfil__nom', flat=True)
+        return JsonResponse([perfil_logueado.nom], safe=False)
+
+    fichas = T_ficha.objects.filter(instru__isnull=False)
+
+    if perfil_logueado.rol == "gestor":
+        gestor = T_gestor.objects.get(perfil=perfil_logueado)
+        departamentos = T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__nom_departa', flat=True)
+        fichas = fichas.filter(insti__muni__nom_departa__nom_departa__in=departamentos)
+
+    instructores = fichas.distinct().values_list('instru__perfil__nom', flat=True)
     opciones = ['Sin asignar'] + list(instructores)
     return JsonResponse(opciones, safe=False)
+
 
 @require_GET
 @login_required
 def obtener_opciones_fichas_programas(request):
-    programas = T_ficha.objects.filter(
-        progra__isnull=False
-    ).distinct().values_list('progra__nom', flat=True)
+    perfil_logueado = T_perfil.objects.get(user=request.user)
+
+    fichas = T_ficha.objects.filter(progra__isnull=False)
+
+    if perfil_logueado.rol == "gestor":
+        gestor = T_gestor.objects.get(perfil=perfil_logueado)
+        departamentos = T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__nom_departa', flat=True)
+        fichas = fichas.filter(insti__muni__nom_departa__nom_departa__in=departamentos)
+
+    programas = fichas.distinct().values_list('progra__nom', flat=True)
     return JsonResponse(list(programas), safe=False)
+
 
 @require_GET
 @login_required
@@ -92,6 +113,11 @@ def filtrar_fichas(request):
     if perfil_logueado.rol == "instructor":
         instructor = T_instru.objects.get(perfil = perfil_logueado)
         fichas = fichas.filter(instru = instructor)
+    elif perfil_logueado.rol == "gestor":
+        gestor = T_gestor.objects.get(perfil = perfil_logueado)
+        departamentos = T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__nom_departa', flat=True)
+        fichas = fichas.filter(insti__muni__nom_departa__nom_departa__in=departamentos)
+
 
     if estados:
         fichas = fichas.filter(esta__in = estados)
@@ -177,7 +203,7 @@ def panel_ficha(request, ficha_id):
 
     if request.method == 'GET':
         encuentro_form = EncuentroForm()
-        actividad_form = ActividadForm(programa = ficha.progra)
+        actividad_form = ActividadForm()
         cronograma_form = CronogramaForm()
         raps_form = RapsFichaForm(ficha=ficha)
         encuentro_form = EncuentroForm()
@@ -347,7 +373,8 @@ def obtener_actividad(request, actividad_id):
             'nom': actividad.nom,
             'tipo': list(actividad.tipo.values_list('id', flat=True)),
             'descri': actividad.descri,
-            'guia': actividad.guia_id,
+            'horas_auto': actividad.horas_auto,
+            'horas_dire': actividad.horas_dire,
             'fecha_ini_acti': actividad_ficha.crono.fecha_ini_acti.strftime('%Y-%m-%d'),
             'fecha_fin_acti': actividad_ficha.crono.fecha_fin_acti.strftime('%Y-%m-%d'),
             'fecha_ini_cali': actividad_ficha.crono.fecha_ini_cali.strftime('%Y-%m-%d'),
@@ -970,7 +997,7 @@ def crear_actividad(request, ficha_id):
         return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
     ficha = get_object_or_404(T_ficha, id=ficha_id)
-    actividad_form = ActividadForm(request.POST, programa = ficha.progra)
+    actividad_form = ActividadForm(request.POST)
     cronograma_form = CronogramaForm(request.POST)
     raps_form = RapsFichaForm(request.POST, ficha=ficha)
 
@@ -1077,7 +1104,7 @@ def editar_actividad(request, actividad_id):
     actividad = get_object_or_404(T_acti_ficha, pk=actividad_id)
     ficha = actividad.ficha
 
-    form_actividad = ActividadForm(request.POST, instance=actividad.acti, programa = actividad.ficha.progra)
+    form_actividad = ActividadForm(request.POST, instance=actividad.acti)
     form_cronograma = CronogramaForm(request.POST, instance=actividad.crono)
     form_raps = RapsFichaForm(request.POST, ficha=ficha)
 
@@ -1168,7 +1195,6 @@ def formatear_error_csv(fila, errores_campos):
 @login_required
 @require_POST
 def cargar_fichas(request):
-    logger.warning(request.POST)
     errores = []
     resumen = {
         "insertados": 0,
@@ -1249,10 +1275,10 @@ def cargar_fichas(request):
                         username = f"{base_username}{i}"
                         i += 1
 
-                    contraseña = generar_contraseña()
+                    # contraseña = generar_contraseña()
                     user = User.objects.create_user(
                         username=username,
-                        password=contraseña,
+                        password=dni,
                         email=fila['email']
                     )
 
@@ -1336,7 +1362,14 @@ def cargar_fichas(request):
             grupo.full_clean()
             grupo.save()
 
-            gestor = T_gestor.objects.filter(pk=1).first()
+            departamento = institucion.muni.nom_departa if institucion and institucion.muni else None
+
+            gestor_depa = T_gestor_depa.objects.filter(depa=departamento).select_related('gestor').first()
+
+            if not gestor_depa:
+                gestor = T_gestor.objects.get(pk=1)
+            else:
+                gestor = gestor_depa.gestor
 
             T_gestor_grupo.objects.create(
                 fecha_crea=timezone.now(),
@@ -1975,13 +2008,8 @@ def detalle_actividad(request, actividad_id):
         "descripcion": actividad.descri,
         "tipo_actividad": tipos,
         "fase": actividad.fase.nom,
-        "guia": {
-            "id": guia.id,
-            "nombre": guia.nom,
-            "programa": guia.progra.nom,
-            "horas_directas": guia.horas_dire,
-            "horas_autonomas": guia.horas_auto
-        },
+        "horas_directas": actividad.horas_dire,
+        "horas_autonomas": actividad.horas_auto,
         "cronograma": {
             "fecha_inicio_actividad": crono.fecha_ini_acti,
             "fecha_fin_actividad": crono.fecha_fin_acti,
@@ -2009,14 +2037,12 @@ def detalle_programa(request, programa_id):
             'fase': list(fases),
         })
 
-    guias = list(programa.t_guia_set.values('nom', 'horas_dire', 'horas_auto'))
-
     raps = []
     for compe in T_compe.objects.filter(progra=programa):
         for rap in compe.t_raps_set.all():
             raps.append({
                 'nom': rap.nom,
-                'compe': compe.nom,  # para que sepas a qué competencia pertenece
+                'compe': compe.nom,
             })
 
     return JsonResponse({
@@ -2024,7 +2050,6 @@ def detalle_programa(request, programa_id):
         'nom': programa.nom,
         'nomd': programa.nomd,
         'competencias': competencias,
-        'guias': guias,
         'raps': raps,
     })
 
