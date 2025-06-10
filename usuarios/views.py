@@ -53,6 +53,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.utils.html import escape
 from django.core.paginator import Paginator
+from django.views.decorators.cache import never_cache
 from django.db.models.functions import Lower
 import csv
 import random
@@ -67,45 +68,41 @@ print("TEMPLATES_DIR:", settings.TEMPLATES[0]['DIRS'])
 def home(request):
     return render(request, 'home.html')
 
+@never_cache
 def signin(request):
     if request.user.is_authenticated:
-        return redirect('home')  # Reemplaza 'dashboard' con la vista deseada
+        return redirect('home')  # Reemplaza 'home' por la ruta real si cambia
 
     if request.method == 'GET':
         return render(request, 'signin.html', {
-            'form': AuthenticationForm
+            'form': AuthenticationForm()
         })
     else:
         # Autenticación del usuario
         user = authenticate(
             request, username=request.POST['username'], password=request.POST['password'])
-        
+
         if user is None:
             return render(request, 'signin.html', {
-                'form': AuthenticationForm,
+                'form': AuthenticationForm(),
                 'error': "El usuario o la contraseña es incorrecto"
             })
         else:
             login(request, user)
-            
+
             try:
-                perfil = T_perfil.objects.get(user=user)  # Obtener el perfil asociado al usuario
-                # Verificar el rol del perfil
+                perfil = T_perfil.objects.get(user=user)
                 if perfil.rol == 'aprendiz':
                     return redirect('panel_aprendiz')
-                
                 elif perfil.rol in ['gestor', 'lider']:
                     return redirect('instituciones_gestor')
-                
-                elif perfil.rol  == 'admin':
+                elif perfil.rol == 'admin':
                     return redirect('admin_dashboard')
-                
                 elif perfil.rol == 'instructor':
                     return redirect('fichas')
             except T_perfil.DoesNotExist:
-                pass  # Si no se encuentra el perfil, no hacer nada adicional
+                pass
 
-            # Si no es aprendiz, redirigir a novedades
             return redirect('novedades')
 
 @require_GET
@@ -466,7 +463,7 @@ def crear_instructor(request):
 
             new_user = User.objects.create_user(
                 username=username,
-                password=dni,
+                password=str(dni),
                 email=perfil_form.cleaned_data['mail']
             )
 
@@ -677,7 +674,7 @@ def cargar_instructores_masivo(request):
                         # contraseña = generar_contraseña()
                         user = User.objects.create_user(
                             username=username,
-                            password=dni,
+                            password=str(dni),
                             email=fila['email']
                         )
 
@@ -1004,7 +1001,7 @@ def crear_aprendices(request):
 
                 new_user = User.objects.create_user(
                     username=username,
-                    password=dni,
+                    password=str(dni),
                     email=perfil_form.cleaned_data['mail']
                 )
 
@@ -1122,7 +1119,7 @@ def crear_lider(request):
 
             new_user = User.objects.create_user(
                 username=username,
-                password=dni,
+                password=str(dni),
                 email=perfil_form.cleaned_data['mail']
             )
 
@@ -1249,7 +1246,7 @@ def crear_administrador(request):
 
             new_user = User.objects.create_user(
                 username=username,
-                password=dni,
+                password=str(dni),
                 email=perfil_form.cleaned_data['mail']
             )
 
@@ -1852,7 +1849,7 @@ def cargar_aprendices_masivo(request):
                             # Crear el usuario
                             user = User.objects.create_user(
                                 username=username,
-                                password=dni,
+                                password=str(dni),
                                 email=fila['email']
                             )
                             
@@ -2142,7 +2139,7 @@ def crear_gestor(request):
             # contraseña = generar_contraseña()
 
             # Crear el usuario con los datos generados
-            new_user = User.objects.create_user(username=username, password=dni, email=perfil_form.cleaned_data['mail'])
+            new_user = User.objects.create_user(username=username, password=str(dni), email=perfil_form.cleaned_data['mail'])
 
             # Asignar usuario al perfil y guardarlo
             new_perfil = perfil_form.save(commit=False)

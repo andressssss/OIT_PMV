@@ -1278,7 +1278,7 @@ def cargar_fichas(request):
                     # contraseña = generar_contraseña()
                     user = User.objects.create_user(
                         username=username,
-                        password=dni,
+                        password=str(dni),
                         email=fila['email']
                     )
 
