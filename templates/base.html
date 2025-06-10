@@ -102,11 +102,11 @@
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
                         {% if perfil %}
-                        {% if perfil.rol != 'instructor' and 'aprendiz'%}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'admin_dashboard' %}">Control</a>
-                        </li>
-                        {% endif %}
+                            {% if perfil.rol != 'instructor' and perfil.rol != 'aprendiz' %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'admin_dashboard' %}">Control</a>
+                                </li>
+                            {% endif %}
                         
                             {% if perfil.rol == 'admin' %}
                                 <!-- Contenido específico de admin -->
@@ -143,11 +143,11 @@
                                 </li> -->
                             {% elif perfil.rol == 'aprendiz' %}
                                 <!-- Contenido específico de aprendiz -->
-                                <li class="nav-item">
+                                <!-- <li class="nav-item">
                                     <a class="nav-link" href="{% url 'panel_aprendiz' %}">Portafolio</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'novedades' %}">Novedades</a>
+                                    <a class="nav-link" href="{% url 'novedades' %}">Novedades</a> -->
                                 </li>
                             {% elif perfil.rol == 'gestor' %}
                                 <!-- Contenido específico de aprendiz -->
