@@ -7,6 +7,7 @@ services:
     environment:
       - DJANGO_ENV=${DJANGO_ENV}
     volumes:
+      - .:/var/www/iotpmv
       - /var/www/iotpmv/static:/var/www/iotpmv/static
       - /mnt/fileshare/media:/mnt/fileshare/media
     depends_on:

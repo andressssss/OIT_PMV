@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib.auth.models import User
-from commons.models import T_acti,T_guia, T_centro_forma,T_fase_ficha, T_docu,T_departa, T_insti_edu, T_munici, T_DocumentFolder, T_encu,T_apre, T_raps_ficha, T_acti_docu, T_acti_ficha, T_acti_apre, T_acti_descri, T_crono, T_progra, T_compe, T_raps, T_ficha
-from django.db.models import Subquery
+from commons.models import T_acti,T_guia,T_compe_fase, T_centro_forma,T_fase_ficha, T_docu,T_departa, T_insti_edu, T_munici, T_DocumentFolder, T_encu,T_apre, T_raps_ficha, T_acti_docu, T_acti_ficha, T_acti_apre, T_acti_descri, T_crono, T_progra, T_compe, T_raps, T_ficha
+from django.db.models import Subquery, Exists, OuterRef
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -48,20 +51,21 @@ class CascadaMunicipioInstitucionForm(forms.Form):
 class ActividadForm(forms.ModelForm):
     class Meta:
         model = T_acti
-        fields = ['nom', 'descri', 'tipo', 'guia']
+        fields = ['nom', 'descri', 'tipo', 'horas_auto', 'horas_dire']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la actividad'}),
             'descri': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Descripción de la actividad'}),
             'tipo': forms.SelectMultiple(attrs={'class': 'form-select tomselect-multiple', 'placeholder': 'Seleccione los tipos de actividad'}),
-            'guia': forms.Select(attrs={'class': 'form-select'})
+            'horas_auto': forms.NumberInput(attrs={'class': 'form-select', 'placeholder': 'Horas autónomas'}),
+            'horas_dire': forms.NumberInput(attrs={'class': 'form-select', 'placeholder': 'Horas directas'})
         }
         labels = {
             'nom': 'Nombre',
             'descri': 'Descripcion',
             'tipo': 'Tipo de actividad',
-            'guia': 'Guia relacionada'
+            'horas_auto': 'Horas autónomas',
+            'horas_dire': 'Horas  directas'
         }
-
 
 class DocumentosForm(forms.ModelForm):
     class Meta:
@@ -95,11 +99,12 @@ class RapsFichaForm(forms.Form):
             ).first()
 
             if fase_activa:
-                fase_nom = fase_activa.fase
                 self.fields['raps'].queryset = T_raps_ficha.objects.filter(
                     ficha=ficha,
-                    rap__compe__fase=fase_nom
-                )
+                    fase=fase_activa.fase
+                ).distinct()
+                self.fase_activa = fase_activa.fase
+
 
 class CronogramaForm(forms.ModelForm):
     class Meta:
@@ -120,6 +125,41 @@ class CronogramaForm(forms.ModelForm):
             'fecha_ini_cali': 'Fecha de inicio calificacion',
             'fecha_fin_cali': 'Fecha finalizacion calificacion'
         }
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_ini_acti = cleaned_data.get('fecha_ini_acti')
+        fecha_fin_acti = cleaned_data.get('fecha_fin_acti')
+        fecha_ini_cali = cleaned_data.get('fecha_ini_cali')
+        fecha_fin_cali = cleaned_data.get('fecha_fin_cali')
+
+        # Validar que fecha_fin_acti no sea antes que fecha_ini_acti
+        if fecha_ini_acti and fecha_fin_acti:
+            if fecha_fin_acti < fecha_ini_acti:
+                self.add_error('fecha_fin_acti', 'La fecha final de la actividad no puede ser anterior a la fecha inicial.')
+
+        # Validar que fechas de actividad no estén después de fechas de calificación
+        if fecha_ini_acti and fecha_ini_cali:
+            if fecha_ini_acti > fecha_ini_cali:
+                self.add_error('fecha_ini_cali', 'La fecha de inicio de calificación no puede ser antes de la fecha de inicio de actividad.')
+
+        if fecha_fin_acti and fecha_fin_cali:
+            if fecha_fin_acti > fecha_fin_cali:
+                self.add_error('fecha_fin_cali', 'La fecha final de calificación no puede ser anterior a la fecha final de actividad.')
+
+        # Validar que fecha_fin_cali no sea antes que fecha_ini_cali
+        if fecha_ini_cali and fecha_fin_cali:
+            if fecha_fin_cali < fecha_ini_cali:
+                self.add_error('fecha_fin_cali', 'La fecha final de calificación no puede ser anterior a la fecha inicial.')
+
+        # Validar que fechas de calificación no sean antes de las fechas de actividad
+        if fecha_ini_cali and fecha_ini_acti:
+            if fecha_ini_cali < fecha_ini_acti:
+                self.add_error('fecha_ini_cali', 'La fecha de inicio de calificación no puede ser anterior a la fecha de inicio de actividad.')
+
+        if fecha_fin_cali and fecha_fin_acti:
+            if fecha_fin_cali < fecha_fin_acti:
+                self.add_error('fecha_fin_cali', 'La fecha final de calificación no puede ser anterior a la fecha final de actividad.')
+
 
 
 class ProgramaForm(forms.ModelForm):
@@ -133,21 +173,30 @@ class ProgramaForm(forms.ModelForm):
             'nom': 'Nombre del programa'
         }
 
-
 class CompetenciaForm(forms.ModelForm):
     class Meta:
         model = T_compe
         fields = ['nom', 'progra', 'fase']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control', 'label': 'Ingrese el nombre de la competencia'}),
-            'progra': forms.Select(attrs={'class': 'form-control'}),
-            'fase': forms.Select(attrs={'class': 'form-control'})
+            'nom': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el nombre de la competencia'
+            }),
+            'progra': forms.SelectMultiple(attrs={
+                'class': 'form-control tomselect',
+                'data-placeholder': 'Seleccione uno o varios programas'
+            }),
+            'fase': forms.SelectMultiple(attrs={
+                'class': 'form-control tomselect',
+                'data-placeholder': 'Seleccione una o varias fases'
+            }),
         }
         labels = {
             'nom': 'Nombre',
-            'progra': 'Programa',
-            'fase': 'Fase'
+            'progra': 'Programas',
+            'fase': 'Fases'
         }
+
 
 
 class RapsForm(forms.ModelForm):
@@ -183,14 +232,16 @@ class GuiaForm(forms.ModelForm):
 class EncuentroForm(forms.ModelForm):
     class Meta:
         model = T_encu
-        fields = ['tema', 'lugar']
+        fields = ['tema', 'lugar', 'fecha']
         widgets = {
             'tema': forms.TextInput(attrs={'class': 'form-control'}),
             'lugar': forms.TextInput(attrs={'class': 'form-control'}),
+            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
         }
         labels = {
             'tema': 'Tema del encuentro',
-            'lugar': 'Lugar de encuentro'
+            'lugar': 'Lugar de encuentro',
+            'fecha': 'Fecha del encuentro'
         }
 
 class EncuApreForm(forms.Form):
@@ -210,3 +261,10 @@ class EncuApreForm(forms.Form):
 class CargarDocuPortafolioFichaForm(forms.Form):
     nombre_documento = forms.CharField(max_length=255, label="Nombre del Documento")
     url_documento = forms.URLField(label="URL del Documento")
+
+
+class CargarFichasMasivoForm(forms.Form):
+    archivo = forms.FileField(
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+        label="Seleccione un archivo CSV"
+    )

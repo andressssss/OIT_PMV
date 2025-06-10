@@ -1,4 +1,4 @@
-import { confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+import { reiniciarTooltips, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
 
 document.addEventListener("DOMContentLoaded", function () {
     const fichaId = getFichaIdFromUrl();
@@ -7,14 +7,14 @@ document.addEventListener("DOMContentLoaded", function () {
     
     const userRole = document.body.dataset.userRole;
 
-    // ======= Inicialización de DataTable =======
+    // ======= Inicialización de DataTables =======
     const table = new DataTable(tableAprendicesElement, {
         language: {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
         }
     });
 
-    new TomSelect(".tomselect-multiple", {
+    const tomSelectMultiple = new TomSelect(".tomselect-multiple", {
         plugins: ['remove_button'],
         maxItems: null,
         persist: false,
@@ -22,12 +22,11 @@ document.addEventListener("DOMContentLoaded", function () {
         placeholder: 'Seleccione tipos de actividad'
     });
     
-    new TomSelect(".tomselect-raps", {
+    const tomSelectRaps = new TomSelect(".tomselect-raps", {
         plugins: ['remove_button'],
         maxItems: null,
         placeholder: 'Seleccione los RAPs asociados'
     });
-
 
     // *******************************************************************
     // *                                                                 *
@@ -108,7 +107,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 subFolderContainer.classList.add("folder-children");
                 subFolderContainer.id = `folder-${node.id}`;
 
-                if (userRole === "instructor"){
+                if (userRole === "instructor" && (!node.children || node.children.length === 0 || node.children.every(child => child.tipo === "documento"))){
                     // Botón de carga (solo para carpetas)
                     const uploadLi = document.createElement("li");
                     uploadLi.classList.add("upload-item");
@@ -525,7 +524,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 subFolderContainer.classList.add("folder-children");
                 subFolderContainer.id = `portafolio-folder-${node.id}`;
 
-                if (userRole === "instructor"){
+                if (userRole === "instructor" && (!node.children || node.children.length === 0 || node.children.every(child => child.tipo === "documento"))){
                     // Botón de carga (solo para carpetas)
                     const uploadLi = document.createElement("li");
                     uploadLi.classList.add("upload-item");
@@ -604,7 +603,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return ul;
     }
 
-    let portafolioClickListener = null; // Variable para mantener referencia
+    let portafolioClickListener = null;
 
     // Event listeners específicos para el portafolio
     function agregarEventListenersPortafolio() {
@@ -824,7 +823,168 @@ document.addEventListener("DOMContentLoaded", function () {
     const errorDiv = document.getElementById('errorCrearActividad');
     const tableCaliElement = document.getElementById('actividades_ficha');
     const formEditarActividad = document.getElementById('formEditarActividad');
+    const btnEditarActividad = document.getElementById('btnEditarActividad');
+    
+    // ======= Inicialización de DataTables =======
+    const tableCronograma = new DataTable(tableCaliElement, {
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+        }
+    });
+    
+    cargarDatosTablaCronograma();
 
+    //== LLamar a la API Actividades
+    async function cargarDatosTablaCronograma(){
+        fadeIn(loadingDiv);
+        try {
+            const response = await fetch(`/api/ficha/actividades/${fichaId}/`);
+            const data = await response.json();
+            actualizarTabla(data);
+            actualizarEstadoFase();
+        } catch (error) {
+            console.error('Error al cargar actividades:', error);
+        } finally {
+            fadeOut(loadingDiv);
+            reiniciarTooltips();
+        }
+    }
+
+    //== Poblar tabla Cronograma
+    function actualizarTabla(data) {
+        tableCronograma.clear();
+    
+        data.forEach(item => {
+            let botones = `
+                <button class="btn btn-outline-primary btn-sm btn-detalle-actividad mb-1" 
+                    data-id="${item.id}"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="Detalle">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="btn btn-outline-success btn-sm btn-calificar mb-1" 
+                    data-actividad-id="${item.id}"
+                    data-nombre="${item.nom}"
+                    data-fase="${item.fase}"
+                    data-fecha-inicio="${item.fecha_ini_acti}"
+                    data-fecha-fin="${item.fecha_fin_acti}" 
+                    data-fecha-inicio-cali="${item.fecha_ini_cali}" 
+                    data-fecha-fin-cali="${item.fecha_fin_cali}"
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top" 
+                    title="Calificar">
+                    <i class="bi bi-clipboard-check"></i>
+                </button>`;
+    
+            // Verifica si la fase del item es igual a la fase actual para permitir botón Editar
+            if (item.fase.toLowerCase() === item.fase_ficha.toLowerCase()) {
+                botones += `
+                <button class="btn btn-outline-warning btn-sm btn-editar-actividad mb-1" 
+                    data-id="${item.id}" 
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top" 
+                    title="Editar">
+                    <i class="bi bi-pencil-square"></i>
+                </button>`;
+            }
+    
+            tableCronograma.row.add([
+                item.nom,
+                item.fecha_ini_acti,
+                item.fecha_fin_acti,
+                item.fecha_ini_cali,
+                item.fecha_fin_cali,
+                item.fase,
+                botones
+            ]);
+        });
+    
+        tableCronograma.draw();
+    
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            const tooltipInstance = bootstrap.Tooltip.getInstance(el);
+            if (tooltipInstance) {
+                tooltipInstance.dispose();
+            }
+        });
+
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
+
+    }
+    
+    async function actualizarEstadoFase() {
+        fadeIn(loadingDiv);
+        try {
+            const response = await fetch(`/api/ficha/obtener_estado_fase/${fichaId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+    
+            if (!response.ok) {
+                throw new Error('Error en la solicitud');
+            }
+    
+            const data = await response.json();
+    
+            // Construir HTML de botones
+            let botonesHtml = '';
+    
+            if (data.raps_count == 0) {
+                botonesHtml += `<button class="btn btn-warning btn-sm btn-cerrar-fase">Cerrar fase</button> `;
+            }
+    
+            // Validar si el usuario es admin
+            if (userRole == 'admin') {
+                botonesHtml += `<button class="btn btn-danger btn-sm btn-devolver-fase">Devolver fase</button>`;
+            }
+    
+            // Construir HTML del estado
+            let estadoHtml = '';
+    
+            if (data.raps_count > 0) {
+                estadoHtml += `<span class="text-danger fw-bold" 
+                                    style="cursor: pointer; text-decoration: underline dotted;" 
+                                    data-bs-toggle="popover" 
+                                    data-bs-html="true" 
+                                    data-bs-placement="top" 
+                                    data-bs-content="${data.raps_pendientes}">
+                                    <i class="bi bi-info-circle" style="color: #0d6efd;"></i> 
+                                    Faltan ${data.raps_count} RAPS para la fase ${data.fase}
+                            </span><br>`;
+            }
+    
+            estadoHtml += `<span class="${data.raps_count == 0 ? 'text-success' : 'text-danger'}">
+                            Estado: ${data.raps_count == 0 ? 'Completo' : 'Incompleto'}
+                        </span>`;
+    
+            // Actualizar los contenedores
+            document.getElementById('botones-fase').innerHTML = botonesHtml;
+            document.getElementById('estado-fase').innerHTML = estadoHtml;
+    
+            // Inicializar o reinicializar popovers
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function (popoverTriggerEl) {
+                // Si ya hay un popover anterior, lo destruimos
+                const existingPopover = bootstrap.Popover.getInstance(popoverTriggerEl);
+                if (existingPopover) {
+                    existingPopover.dispose();
+                }
+                // Luego, creamos uno nuevo
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+    
+        } catch (error) {
+            console.error('Hubo un error:', error);
+        } finally {
+            fadeOut(loadingDiv);
+        }
+    }
+    
 
     //== Boton crear actividad
     btnCrearActividad.addEventListener('click', async () => {
@@ -841,7 +1001,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (response.ok) {
                 toastSuccess("Actividad creada con éxito.");
-                location.reload();
+                bootstrap.Modal.getInstance(document.getElementById("crearActividadModal")).hide();
+                formCrearActividad.reset();
+                tomSelectMultiple.clear();
+                tomSelectRaps.clear();
+                cargarDatosTablaCronograma();
             } else {
                 const data = await response.json();
                 console.warn("Respuesta del servidor:", data);
@@ -933,6 +1097,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!btn) return;
 
         if (btn.classList.contains('btn-editar-actividad')){
+            const originalBtnContent = btn.innerHTML;
+            showSpinner(btn);
+            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
             const actividadId = btn.dataset.id;
 
             try {
@@ -947,7 +1114,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 formEditarActividad.querySelector('#id_nom').value = data.nom;
                 formEditarActividad.querySelector('#id_tipo').value = data.tipo;
                 formEditarActividad.querySelector('#id_descri').value = data.descri;
-                formEditarActividad.querySelector('#id_guia').value = data.guia;
+                formEditarActividad.querySelector('#id_horas_auto').value = data.horas_auto;
+                formEditarActividad.querySelector('#id_horas_dire').value = data.horas_dire;
                 formEditarActividad.querySelector('#id_fecha_ini_acti').value = data.fecha_ini_acti;
                 formEditarActividad.querySelector('#id_fecha_fin_acti').value = data.fecha_fin_acti;
                 formEditarActividad.querySelector('#id_fecha_ini_cali').value = data.fecha_ini_cali;
@@ -958,12 +1126,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 const rapsSelectEl = formEditarActividad.querySelector('.tomselect-raps');
                 const tipoSelectEl = formEditarActividad.querySelector('.tomselect-multiple');
 
+                if (rapsSelectEl.tomselect){
+                    rapsSelectEl.tomselect.destroy();
+                }
                 const rapsTomSelect = new TomSelect(rapsSelectEl, {
                     plugins: ['remove_button'],
                     maxItems: null,
                     placeholder: 'Seleccione los RAPs asociados'
                 });
-
+                if (tipoSelectEl.tomselect){
+                    tipoSelectEl.tomselect.destroy();
+                }
                 const tipoTomSelect = new TomSelect(tipoSelectEl, {
                     plugins: ['remove_button'],
                     maxItems: null,
@@ -977,12 +1150,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 tipoTomSelect.setValue(data.tipo); // <- Si tipo es múltiple, asegúrate de que sea un array
 
                 // Guardar el ID para enviarlo al backend después
-                document.getElementById("formEditarActividad").dataset.id = actividadId;
-        
+                formEditarActividad.dataset.id = actividadId;
+                formEditarActividad.setAttribute('action', `/api/ficha/actividad/editar/${actividadId}/`);
+
         
             } catch (error) {
                 toastError("No se pudo cargar la actividad.");
                 console.error(error);
+            } finally {
+                hideSpinner(btn, originalBtnContent);
+                tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
             }
         } else if (btn.classList.contains('btn-detalle-actividad')){
             const actividadId = btn.dataset.id;
@@ -1003,10 +1180,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById('act-tipo').textContent = data.tipo_actividad.join(', ');
                     document.getElementById('act-fase').textContent = data.fase;
 
-                    document.getElementById('guia-nombre').textContent = data.guia.nombre;
-                    document.getElementById('guia-programa').textContent = data.guia.programa;
-                    document.getElementById('guia-horas-directas').textContent = data.guia.horas_directas;
-                    document.getElementById('guia-horas-autonomas').textContent = data.guia.horas_autonomas;
+                    document.getElementById('act-horas-directas').textContent = data.horas_directas;
+                    document.getElementById('act-horas-autonomas').textContent = data.horas_autonomas;
 
                     document.getElementById('cron-inicio').textContent = formatFecha(data.cronograma.fecha_inicio_actividad);
                     document.getElementById('cron-fin').textContent = formatFecha(data.cronograma.fecha_fin_actividad);
@@ -1019,12 +1194,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     data.raps.forEach(rap => {
                         const li = document.createElement('li');
                         li.classList.add('list-group-item');
-                        li.innerHTML = `<strong>${rap.rap__nom}</strong> (${rap.rap__compe__fase})<br><em>${rap.rap__compe__nom}</em>`;
+                        li.innerHTML = `<strong>${rap.rap__rap__nom}</strong> (${rap.rap__rap__compe__fase__nom})<br><em>${rap.rap__rap__compe__nom}</em>`;
                         listaRaps.appendChild(li);
                     });
 
                     modal.show();
-
+                    reiniciarTooltips();
                 } else {
                     throw new Error ("Error al cargar los datos.")
                 }
@@ -1067,29 +1242,20 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    function reiniciarTomSelect(id) {
-        const el = document.getElementById(id);
-        if (el.tomselect) {
-            el.tomselect.destroy();
-        }
-    
-        return new TomSelect(el, {
-            plugins: ['remove_button'],
-            maxItems: null,
-            placeholder: 'Seleccione los RAPs asociados'
-        });
-    }
-
     //== Enviar formulario editar actividad
     document.getElementById("formEditarActividad").addEventListener("submit", async function (e) {
         e.preventDefault();
-    
+        
         const form = this;
         const actividadId = form.dataset.id;
         const formData = new FormData(form);
-    
+        const originalBtnContent = btnEditarActividad.innerHTML;
+
+        showSpinner(btnEditarActividad)
+        form.querySelectorAll('button, input, textarea, select').forEach(el => el.disabled = true);
+        
         try {
-            const response = await fetch(`/api/actividad/${actividadId}/editar/`, {
+            const response = await fetch(`/api/ficha/actividad/editar/${actividadId}/`, {
                 method: "POST",
                 headers: { "X-CSRFToken": csrfToken },
                 body: formData,
@@ -1100,10 +1266,14 @@ document.addEventListener("DOMContentLoaded", function () {
             toastSuccess("Actividad actualizada correctamente.");
             bootstrap.Modal.getInstance(document.getElementById("editarActividadModal")).hide();
             form.reset();
+            cargarDatosTablaCronograma();
             // Actualizar tabla o vista si es necesario
         } catch (error) {
             toastError("Error al guardar los cambios.");
             console.error(error);
+        } finally {
+            hideSpinner(btnEditarActividad, originalBtnContent);
+            form.querySelectorAll('button, input, textarea, select').forEach(el => el.disabled = false);
         }
     });
     
@@ -1111,24 +1281,37 @@ document.addEventListener("DOMContentLoaded", function () {
     async function renderTablaCalificaciones(fichaId, actividad_id) {
         try {
             const response = await fetch(`/api/ficha/obtener_aprendices_calificacion/${fichaId}/${actividad_id}/`);
-    
+
             if (response.ok) {
                 const data = await response.json();
                 const tbody = document.getElementById('tablaAprendicesCali');
                 tbody.innerHTML = '';
-    
-                data.forEach(estudiante => {
+
+                data.forEach((estudiante) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${estudiante.nombre} ${estudiante.apellido}
+                        <td>
+                            ${estudiante.nombre} ${estudiante.apellido}
                             <input type="hidden" name="aprendiz_id[]" value="${estudiante.id}">
                         </td>
-                    <td>
-                        <input type="number" name="nota[]" class="form-control" step="0.1" min="0" max="5" value="${estudiante.nota || ''}" required>
-                    </td>                    `;
-                    //== <td><textarea name="observaciones[]" class="form-control" rows="1"></textarea></td>
+                        <td class="text-center">
+                            <div class="form-check form-switch">
+                                <input 
+                                    class="form-check-input" 
+                                    type="checkbox" 
+                                    name="nota_${estudiante.id}" 
+                                    value="1" 
+                                    ${estudiante.nota == 1 ? 'checked' : ''}
+                                >
+                                <label class="form-check-label">
+                                    ${estudiante.nota == 1 ? 'Aprobó' : 'No aprobó'}
+                                </label>
+                            </div>
+                        </td>
+                    `;
                     tbody.appendChild(row);
                 });
+
             } else {
                 toastError("Error al cargar los aprendices.");
             }
@@ -1136,7 +1319,7 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("Error al cargar los aprendices:", error);
         }
     }
-
+    
     //== Boton guardar calificaciones
     const formularioCalificacion = document.getElementById('formularioCalificacion');
     const tabla_cali = document.getElementById('tabla_cali');
@@ -1183,16 +1366,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     //== Boton cerrar ficha
-    const btnFase = document.querySelector('.btn-cerrar-fase');
-    if (btnFase) {
-        btnFase.addEventListener('click', async () => {
+    document.addEventListener('click', async function(e) {
+        if (e.target && e.target.classList.contains('btn-cerrar-fase')) {
             const confirmed = await confirmAction("¿Cerrar la fase?");
+            const btnFase = e.target;
             if (confirmed) {
                 const originalBtnContent = btnFase.innerHTML;
                 showSpinner(btnFase);
                 try {
                     const response = await fetch(`/api/ficha/cerrar_fase/${fichaId}/`);
-                    const data = await response.json(); // Extrae el JSON siempre
+                    const data = await response.json();
     
                     if (response.ok) {
                         toastSuccess(data.message || "Fase actualizada");
@@ -1207,15 +1390,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     hideSpinner(btnFase, originalBtnContent);
                 }
             }
-        });
-    }
-
-    //== Boton devolver ficha
-    const btnDevolverFase = document.querySelector(".btn-devolver-fase");
-
-    if (btnDevolverFase) {
-        btnDevolverFase.addEventListener("click", async () => {
+        } else if (e.target && e.target.classList.contains('btn-devolver-fase')){
             const confirmed = await confirmAction("¿devolver la fase?");
+            const btnDevolverFase = e.target;
             if(confirmed){
                 const originalBtnContent = btnDevolverFase.innerHTML;
                 showSpinner(btnDevolverFase);
@@ -1242,23 +1419,86 @@ document.addEventListener("DOMContentLoaded", function () {
                     hideSpinner(btnDevolverFase, originalBtnContent);
                 }
             }
-        });
-    }
-    
+        }
+    });    
 
     // *******************************************************************
     // *                                                                 *
-    // *        ¡ADVERTENCIA! ZONA DE INASISTENCIA CRONOGRAMA            *
+    // *        ¡ADVERTENCIA! ZONA DE INASISTENCIA                       *
     // *                                                                 *
     // *******************************************************************
 
     const modalAsistenciaElement = document.getElementById('detalleEncuentroModal');
     const modalAsistencia = new bootstrap.Modal(modalAsistenciaElement);
     const tablaAsistencia = document.getElementById('encuentros_ficha');
+    const formCrearEncuentro = document.getElementById('formCrearEncuentro');
+    const formEditarEncuentro = document.getElementById('formEditarEncuentro');
 
-    const botonesDetalle = document.querySelectorAll('.btn-detalle-encuentro').forEach(el => {
-        el.addEventListener('click', async () => {
-            const btn = el;
+    cargarDatosTablaEncuentros();
+
+    // ======= Inicialización de DataTables =======
+    const tableEncuentros = new DataTable(tablaAsistencia, {
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+            drawCallback: () => {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                new bootstrap.Tooltip(el);
+            });
+        }
+        }
+    });
+
+    //== Enviar formulario crear encuentro
+    formCrearEncuentro.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const form = e.target;
+        const submitBtn = document.getElementById('btnCrearEncuentro');
+        const originalBtnContent = submitBtn.innerHTML;
+        const errorDiv = document.getElementById('errorCrearEncuentro');
+
+        const formData = new FormData(form);
+        for (let pair of formData.entries()) {
+            console.log(`${pair[0]}: ${pair[1]}`);
+        }
+        showSpinner(submitBtn);
+        form.querySelectorAll('select, button, input').forEach(el => el.disabled = true);
+
+        try {
+            const response = await fetch(`/api/ficha/crear_encuentro/${fichaId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+
+            if (response.ok ){
+                const data = await response.json();
+                toastSuccess(data.message);
+                form.reset()
+                bootstrap.Modal.getInstance(document.getElementById('crearEncuentroModal')).hide();
+                cargarDatosTablaEncuentros();
+            } else {
+                const data = await response.json();
+                toastError("Error al guardar: "+ data.message)
+                errorDiv.innerHTML = data.errors || "Error desconocido al crear la actividad.";
+            }
+        } catch (error) {
+            toastError("Error al guardar el formulario.");
+            errorDiv.innerHTML = error || "Error desconocido al crear la actividad.";
+        } finally {
+            hideSpinner(submitBtn, originalBtnContent);
+            form.querySelectorAll('select, button, input').forEach(el => el.disabled = false);
+        }
+    });
+
+    //== Listeners tabla encuentros
+    tablaAsistencia.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button');
+        
+        if (!btn) return;
+        
+    //== Boton ver detalle encuentro
+        if  (btn.classList.contains('btn-detalle-encuentro')){
             const encuentroId = btn.getAttribute('data-id');
             const originalBtnContent = btn.innerHTML;
             showSpinner(btn);
@@ -1280,10 +1520,89 @@ document.addEventListener("DOMContentLoaded", function () {
                 hideSpinner(btn, originalBtnContent);
                 tablaAsistencia.querySelectorAll('button').forEach(el => el.disabled = false);
             }
-        });
+
+        };
+        
+    //== Boton editar encuentro
+        if (btn.classList.contains('btnEditarEncuentro')){
+            const encuentroId = btn.getAttribute('data-id');
+            const originalBtnContent = btn.innerHTML;
+            showSpinner(btn);
+
+            const modalEl = document.getElementById('editarEncuentroModal');
+            const modalInstance = new bootstrap.Modal(modalEl);
+            modalInstance.show();
+
+            await cargarDatosEditarEncuentro(encuentroId);
+            hideSpinner(btn, originalBtnContent);
+
+        };
+
     });
 
+    //== Poblar formulario para editar encuentro
+    async function cargarDatosEditarEncuentro(encuentroId) {
+        formEditarEncuentro.querySelectorAll('input, select, button').forEach(el => el.disabled=true);
+
+        try {
+            const response = await fetch(`/api/ficha/encuentro/${encuentroId}/`);
+            const data = await response.json();
+
+            formEditarEncuentro.querySelector('input[name="tema"]').value = data.tema;
+            formEditarEncuentro.querySelector('input[name="lugar"]').value = data.lugar;
+            formEditarEncuentro.querySelector('input[name="fecha"]').value = data.fecha;
+
+            const checkboxes = formEditarEncuentro.querySelectorAll('input[type="checkbox"][name="aprendices"]');
+            checkboxes.forEach(cb => {
+                cb.checked = data.ausentes.includes(parseInt(cb.value));
+            });
+
+            formEditarEncuentro.setAttribute('action', `/api/ficha/encuentro/editar/${encuentroId}/`);
+        } catch (error) {
+            toastError(error)
+        } finally {
+            formEditarEncuentro.querySelectorAll('input, select, button').forEach(el => el.disabled=false);
+        }
+    };
+
+    formEditarEncuentro.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        const formData = new FormData(formEditarEncuentro);
+        const btn = document.getElementById('btnEditarEncuentro');
+        const originalBtnContent = btn.innerHTML;
+        showSpinner(btn);
+
+        formEditarEncuentro.querySelectorAll('button, select, input').forEach(el => el.disabled=true);
+        try {
+            const response = await fetch(formEditarEncuentro.action, {
+                method: 'POST',
+                headers: {'X_CSRFToken': csrfToken},
+                body: formData
+            });
+            const data = await response.json();
+            if (!response.ok){
+                toastError(data.message);
+                return
+            }
+
+            toastSuccess(data.message);
+            const modalEl = document.getElementById('editarEncuentroModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+            cargarDatosTablaEncuentros();
+        } catch (error) {
+            toastError(error)
+        } finally {
+            hideSpinner(btn, originalBtnContent);
+            formEditarEncuentro.querySelectorAll('button, select, input').forEach(el => el.disabled=false);
+        }
+
+    });
+
+    //==Cargar detalle encuentro
     function cargarDetalleEncuentro(encuentroData){
+        reiniciarTooltips();
         document.getElementById('modal-lugar'). textContent = encuentroData.data.lugar;
         document.getElementById('modal-fecha'). textContent = encuentroData.data.fecha;
         document.getElementById('modal-participantes'). textContent = encuentroData.data.participantes;
@@ -1308,5 +1627,77 @@ document.addEventListener("DOMContentLoaded", function () {
             listaFaltaron.appendChild(li);
         });
     }
+
+    //== LLamar API encuentros
+    async function cargarDatosTablaEncuentros(){
+        fadeIn(loadingDiv);
+        try {
+            const response = await fetch(`/api/ficha/encuentros/${fichaId}/`);
+            const data = await response.json();
+            actualizarTablaEncuentros(data);
+        } catch (error){
+            toastError("Error al cargar las actividades: ", error);
+        } finally {
+            fadeOut(loadingDiv);
+        }
+    }
+
+    //== Poblar tabla encuentros
+    function actualizarTablaEncuentros(data){
+        tableEncuentros.clear();
+
+        data.forEach(item => {
+            const fecha = new Date(item.fecha);
+            const fechaFormateada = fecha.toLocaleDateString('es-CO', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            let botones =`
+                <button class="btn btn-outline-primary btn-sm btn-detalle-encuentro"
+                        data-id="${item.id}"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Detalle">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="btn btn-outline-warning btn-sm btnEditarEncuentro"
+                        data-id="${item.id}"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Editar Encuentro">
+                    <i class="bi bi-pencil-square"></i>
+                </button>
+            `;
+            tableEncuentros.row.add([
+                fechaFormateada,
+                item.tema,
+                item.lugar,
+                botones
+            ]);
+        });
+
+        tableEncuentros.draw();
+
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            const tooltipInstance = bootstrap.Tooltip.getInstance(el);
+            if (tooltipInstance) {
+                tooltipInstance.dispose();
+            }
+        });
+
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
+
+    }
+    
+
+    // *******************************************************************
+    // *                                                                 *
+    // *        ¡ADVERTENCIA! ZONA DE REPORTES                           *
+    // *                                                                 *
+    // *******************************************************************
+
 
 });

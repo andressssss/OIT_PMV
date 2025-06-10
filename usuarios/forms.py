@@ -163,7 +163,7 @@ class InstructorForm(forms.ModelForm):
             'contra': forms.TextInput(attrs={'class': 'form-control'}),
             'fecha_ini': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'profe': forms.TextInput(attrs={'class': 'form-control'}),
+            'profe': forms.Select(attrs={'class': 'form-control'}),
             'tipo_vincu': forms.Select(attrs={'class': 'form-select'}),
         }
         labels = {
@@ -380,6 +380,12 @@ class CentroFormacionForm(forms.ModelForm):
         }
 
 class CargarAprendicesMasivoForm(forms.Form):
+    archivo = forms.FileField(
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+        label="Seleccione un archivo CSV"
+    )
+
+class CargarInstructoresMasivoForm(forms.Form):
     archivo = forms.FileField(
         widget=forms.FileInput(attrs={'class': 'form-control'}),
         label="Seleccione un archivo CSV"

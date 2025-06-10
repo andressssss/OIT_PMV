@@ -8,141 +8,14 @@
         <div class="row">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center pb-4">
-                    <h1 class="display-5">Panel del Aprendiz 
-                        {% if ficha %}
-                            - Ficha {{ ficha.num }}
-                        {% else %}
-                            (Sin ficha asignada)
-                        {% endif %}
-                    </h1>
+                    <h1 class="display-5">Panel del Aprendiz</h1>
                 </div>
-
-        {% if ficha %}
-        <!-- NavPills -->
-        <ul class="nav nav-tabs mb-4 nav-fill" id="aprendizTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="portafolio-tab" data-bs-toggle="pill" href="#portafolio" role="tab" aria-controls="portafolio" aria-selected="true">
-                    Portafolio
-                </a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="entregas-tab" data-bs-toggle="pill" href="#entregas" role="tab" aria-controls="entregas" aria-selected="false">
-                    Entregas
-                </a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="documentacion-tab" data-bs-toggle="pill" href="#documentacion" role="tab" aria-controls="documentacion" aria-selected="false">
-                    Documentación
-                </a>
-            </li>
-        </ul>
-
-        <!-- Contenido de las Pills -->
-        <div class="tab-content" id="aprendizTabContent">
-            <!-- Portafolio -->
-            <div class="tab-pane fade show active" id="portafolio" role="tabpanel" aria-labelledby="portafolio-tab">
-                <h4>Portafolio</h4>
-                <p>Aquí puedes consultar y gestionar el portafolio asignado a tu ficha.</p>
-                <div id="treePortafolio" class="wb-skeleton wb-initializing wb-fade-expander"></div>
-            </div>
-
-            <!-- Entregas -->
-            <div class="tab-pane fade" id="entregas" role="tabpanel" aria-labelledby="entregas-tab">
-                <h4>Entregas</h4>
-                <p>Aquí puedes visualizar y realizar entregas de tus actividades asignadas.</p>
-                <ul class="list-group">
-                    {% for entrega in entregas %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ entrega.nombre }}
-                            <a href="{{ entrega.url }}" class="btn btn-primary btn-sm">Entregar</a>
-                        </li>
-                    {% empty %}
-                        <li class="list-group-item">No tienes entregas pendientes.</li>
-                    {% endfor %}
-                </ul>
-            </div>
-
-            <!-- Documentación -->
-            <div class="tab-pane fade" id="documentacion" role="tabpanel" aria-labelledby="documentacion-tab">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4>Documentación</h4>
-                        <p>Aquí deberá cargar los documentos relacionados con la matrícula.</p>
-                    </div>
-                    <div>
-                        <h4 id="document-counter">{{ total_documentos }}/7</h4>
-                    </div>
-                </div>
-                
-                <div class="row g-4">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nombre del Documento</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for documento in documentos %}
-                            <tr>
-                                <td>{{ documento.nom }}</td>
-                                <td>
-                                    {% if documento.esta == "Pendiente" %}
-                                    <form method="post" action="{% url 'subir_documento_prematricula' documento.id %}" enctype="multipart/form-data">
-                                        {% csrf_token %}
-                                        <input type="file" name="archivo" class="form-control mb-2" required>
-                                        <button type="submit" class="btn btn-primary">Cargar</button>
-                                    </form>
-                                    {% else %}
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="text-success">✔ Cargado</span>
-                                        {% if documento.docu.archi %}
-                                        <a href="{{ documento.docu.archi.url }}" target="_blank" class="btn btn-link">
-                                            Ver/Descargar
-                                        </a>
-                                    </div>                                 {% else %}
-                                    <span class="text-danger">Archivo no disponible</span>
-                                    {% endif %}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    
+                <div class="alert alert-info text-center">
+                    Por el momento, el rol de <strong>aprendiz</strong> no tiene funciones activas en la aplicación.
                 </div>
             </div>
         </div>
-        {% else %}
-            <div class="alert alert-warning text-center">
-                No tienes una ficha asignada aún. Por favor, contacta a tu instructor.
-            </div>
-        {% endif %}
     </section>
 </main>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const tabs = document.querySelectorAll('.nav-link');
-        const activeTab = localStorage.getItem("activeTab");
-
-        // Activar la última pestaña seleccionada
-        if (activeTab) {
-            const tab = document.querySelector(activeTab);
-            const pane = document.querySelector(tab.getAttribute("href"));
-            tabs.forEach(t => t.classList.remove("active"));
-            tab.classList.add("active");
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove("show", "active"));
-            pane.classList.add("show", "active");
-        }
-
-        // Guardar la pestaña activa al cambiar
-        tabs.forEach(tab => {
-            tab.addEventListener("click", function () {
-                localStorage.setItem("activeTab", `#${this.id}`);
-            });
-        });
-    });
-</script>
 
 {% endblock %}

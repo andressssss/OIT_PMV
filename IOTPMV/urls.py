@@ -30,6 +30,9 @@ urlpatterns = [
     # Ruta Admin
     path('admin/', admin.site.urls),
 
+    path('api/', include('api.urls')),
+
+
     # Ruta default
     path('', usuarios_views.home, name='home'),
 
@@ -42,6 +45,7 @@ urlpatterns = [
 
     # Log In
     path('signin/', usuarios_views.signin, name='signin'),
+    path('api/consultar_usuario_por_cedula/', usuarios_views.consultar_usuario_por_cedula, name='consultar_usuario_por_cedula'),
     
     # Perfil
     path('perfil/', usuarios_views.perfil, name='perfil'),
@@ -51,7 +55,6 @@ urlpatterns = [
     path('eliminar_documentoinstru/<int:hv_id>/', usuarios_views.eliminar_documentoinstru, name='eliminar_documentoinstru'),
     
     # Recuperacion de contraseña
-
     path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
@@ -92,6 +95,7 @@ urlpatterns = [
     path('api/instructor/crear/', usuarios_views.crear_instructor,name='crear_instructor'),
     path('api/instructor/<int:instructor_id>/', usuarios_views.obtener_instructor ,name='api_obtener_instructor'),
     path('api/instructor/editar/<int:instructor_id>/', usuarios_views.editar_instructor, name='api_editar_instructor'),
+    path('cargar_instructores_masivo/', usuarios_views.cargar_instructores_masivo, name='cargar_instructores_masivo'),
 
     # Rol Administradores
     path('administradores/', usuarios_views.administradores, name='administradores'),
@@ -162,25 +166,26 @@ urlpatterns = [
 
     # ROL Instructores
     path('gestion_instructor/', gestion_instructores_views.gestion_instructor,name='gestion_instructor'),
-    path('get_tree_instructor/', formacion_views.tree_detalle,name='get_tree_instructor'),
 
     # Panel instructor
     path('fichas_inst/', formacion_views.listar_fichas, name='listar_fichas'),
-    path('fichas/<int:ficha_id>/crear_encuentro/', formacion_views.crear_encuentro, name='crear_encuentro'),
 
     # Tree
     path("api/tree/obtener_carpetas/<int:ficha_id>/", formacion_views.obtener_carpetas, name="api_obtener_carpetas"),
     path("api/tree/cargar_doc/", formacion_views.cargar_documento, name="api_cargar_documento"),
     path('api/tree/eliminar_documento/<int:documento_id>', formacion_views.eliminar_documento_portafolio_ficha, name='api_eliminar_documento_portafolio_ficha'),
     path('api/tree/obtener_hijos_carpeta/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta, name='api_obtener_hijos_carpeta'),
+    path('tree/descargar_portafolio/<int:ficha_id>', formacion_views.descargar_portafolio_zip, name='descargar_portafolio_zip'),
 
     # Tree aprendiz
     path("api/tree/obtener_carpetas_aprendiz/<int:aprendiz_id>/", formacion_views.obtener_carpetas_aprendiz, name="api_obtener_carpetas_aprendiz"),
     path("api/tree/cargar_doc_aprendiz/", formacion_views.cargar_documento_aprendiz, name="api_cargar_documento_aprendiz"),
     path('api/tree/eliminar_documento_aprendiz/<int:documento_id>', formacion_views.eliminar_documento_portafolio_aprendiz, name='api_eliminar_documento_portafolio_aprendiz'),
     path('api/tree/obtener_hijos_carpeta_aprendiz/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta_aprendiz, name='api_obtener_hijos_carpeta_aprendiz'),
+    path('tree/descargar_portafolio_aprendiz/<int:aprendiz_id>', formacion_views.descargar_portafolio_aprendiz_zip, name='descargar_portafolio_aprendiz_zip'),
+    path('tree/descargar_portafolios_ficha/<int:ficha_id>', formacion_views.descargar_portafolios_ficha_zip, name='descargar_portafolios_ficha_zip'),
 
-    #Fichas
+    #Fichas Panel
     path('ficha/<int:ficha_id>/', formacion_views.panel_ficha, name='panel_ficha'),
     path('api/ficha/crear_actividad/<int:ficha_id>/', formacion_views.crear_actividad, name='api_crear_actividad'),
     path('api/ficha/calificar_actividad/', formacion_views.calificarActividad, name='api_calificar_actividad_ficha'),
@@ -191,10 +196,18 @@ urlpatterns = [
     path('api/ficha/cerrar_fase/<int:ficha_id>/', formacion_views.cerrar_fase_ficha, name='api_cerrar_fase_ficha'),
     path('api/ficha/devolver_fase/<int:ficha_id>/', formacion_views.devolver_fase_ficha, name='api_devolver_fase_ficha'),
     path('api/ficha/actividad/<int:actividad_id>/', formacion_views.obtener_actividad, name='api_obtener_actividad'),
-    
+    path('api/ficha/actividad/editar/<int:actividad_id>/', formacion_views.editar_actividad, name='api_editar_actividad'),
+    path('api/ficha/actividades/<int:ficha_id>/', formacion_views.obtener_actividades, name='api_obtener_actividades'),
+    path('api/ficha/obtener_estado_fase/<int:ficha_id>/', formacion_views.obtener_estado_fase, name='api_obtener_estado_fase'),
+    path('api/ficha/crear_encuentro/<int:ficha_id>/', formacion_views.crear_encuentro, name='api_crear_encuentro'),
+    path('api/ficha/encuentros/<int:ficha_id>/', formacion_views.obtener_encuentros, name='api_obtener_encuentros'),
+    path('api/ficha/encuentro/<int:encuentro_id>/', formacion_views.obtener_encuentro, name='api_obtener_encuentro'),
+    path('api/ficha/encuentro/editar/<int:encuentro_id>/', formacion_views.editar_encuentro, name='api_editar_encuentro'),
+
     # Reportes ficha
     path('api/reporte/ficha/generar_acta_asistencia/', formacion_views.generar_acta_asistencia, name='generar_acta_asistencia'),
     path('api/reporte/ficha/generar_acta_asistencia_aprendiz/', formacion_views.generar_acta_asistencia_aprendiz, name='generar_acta_asistencia_aprendiz'),
+    path('api/reporte/ficha/generar_informe_calificaciones/', formacion_views.generar_informe_calificaciones, name='generar_informe_calificaciones'),
 
     # ROL Aprendices
     path('panel_aprendiz/', formacion_views.panel_aprendiz, name='panel_aprendiz'),
@@ -206,6 +219,20 @@ urlpatterns = [
     # Fichas
     path('fichas/', formacion_views.fichas, name='fichas'), 
     path('api/formalizar_ficha/', matricula_views.formalizar_ficha, name='api_formalizar_ficha'), 
+    path('api/fichas/estados/', formacion_views.obtener_opciones_fichas_estados, name='api_obtener_opciones_fichas_estados'), 
+    path('api/fichas/instructores/', formacion_views.obtener_opciones_fichas_instructores, name='api_obtener_opciones_fichas_instructores'), 
+    path('api/fichas/programas/', formacion_views.obtener_opciones_fichas_programas, name='api_obtener_opciones_fichas_programas'), 
+    path('api/fichas/filtrar/', formacion_views.filtrar_fichas, name='api_filtrar_fichas'), 
+    path('api/ficha/cambiar_num/<int:ficha_id>/', formacion_views.cambiar_numero_ficha, name='api_cambiar_numero_ficha'), 
+
+    # Fichas masivo
+    path('fichas/crear_masivo/', formacion_views.cargar_fichas_masivo, name='fichas_crear_masivo'),
+    path('api/fichas/crear_masivo/', formacion_views.cargar_fichas, name='fichas_crear'),
+    path('api/fichas/crear_masivo/departamentos/', formacion_views.obtener_opciones_fichas_masivo_departamentos, name='obtener_opciones_fichas_masivo_departamentos'),
+    path('api/fichas/crear_masivo/municipios/', formacion_views.obtener_opciones_fichas_masivo_municipios, name='obtener_opciones_fichas_masivo_municipios'),
+    path('api/fichas/crear_masivo/colegios/', formacion_views.obtener_opciones_fichas_masivo_colegios, name='obtener_opciones_fichas_masivo_colegios'),
+    path('api/fichas/crear_masivo/centros/', formacion_views.obtener_opciones_fichas_masivo_centros, name='obtener_opciones_fichas_masivo_centros'),
+    path('api/fichas/crear_masivo/programas/', formacion_views.obtener_opciones_fichas_masivo_programas, name='obtener_opciones_fichas_masivo_programas'),
 
     # Programas
     path('programas/', formacion_views.listar_programas, name='programas'),
@@ -213,16 +240,36 @@ urlpatterns = [
     path('api/programa/detalle/<int:programa_id>/', formacion_views.detalle_programa, name='api_detalle_programa'),
 
     # Competencias
-    path('competencias/', formacion_views.listar_competencias, name='competencias'),
-    path('competencias/crear/', formacion_views.crear_competencias, name='crear_competencias'),
+    path('competencias/', formacion_views.competencias, name='competencias'),
+    path('api/competencia/crear/', formacion_views.crear_competencia, name="api_crear_competencia"),
+    path('api/competencias/filtrar/', formacion_views.filtrar_competencias, name="api_filtrar_competencias"),
+    path('api/competencias/fases/', formacion_views.obtener_opciones_fases, name="api_opciones_fases"),
+    path('api/competencias/programas/', formacion_views.obtener_opciones_programas, name="api_opciones_programas"),
+    path('api/competencia/<int:competencia_id>/', formacion_views.obtener_competencia, name="api_obtener_competencia"),
+    path('api/competencia/editar/<int:competencia_id>/', formacion_views.editar_competencia, name="api_editar_competencia"),
 
-    # Raps
+    # RAPS
     path('raps/', formacion_views.listar_raps, name = 'raps'),
-    path('raps/crear/', formacion_views.crear_raps, name='crear_raps'),
+    path('api/rap/crear/', formacion_views.crear_rap, name = 'api_crear_rap'),
+    path('api/rap/eliminar/<int:rap_id>', formacion_views.crear_rap, name = 'api_crear_rap'),
+    path('api/raps/filtrar/', formacion_views.filtrar_raps, name="api_filtrar_raps"),
+    path('api/raps/fases/', formacion_views.obtener_opciones_fases_raps, name="api_opciones_fases_raps"),
+    path('api/raps/programas/', formacion_views.obtener_opciones_programas_raps, name="api_opciones_programas_raps"),
+    path('api/raps/competencias/', formacion_views.obtener_opciones_competencias_raps, name="api_opciones_competencias_raps"),
+    path('api/rap/<int:rap_id>/', formacion_views.obtener_rap, name="api_obtener_rap"),
+
+    path('api/competencias/', formacion_views.obtener_opciones_competencias, name="api_opciones_competencias"),
+    path('api/rap/editar/<int:rap_id>/', formacion_views.editar_rap, name="api_editar_rap"),
+
+
+    path('api/competencias_progra/<int:id_progra>/', formacion_views.obtener_competencias_programa, name = 'api_obtener_competencias_programa'),
+    
 
     # Guias
     path('guias/', formacion_views.listar_guias, name = 'guias'),
-    path('guia/crear/', formacion_views.crear_guia, name='crear_guia'),
+    path('api/guia/crear/', formacion_views.crear_guia, name='api_crear_guia'),
+    path('api/guia/<int:guia_id>/', formacion_views.obtener_guia, name='api_obtener_guia'),
+    path('api/guia/editar/<int:guia_id>/', formacion_views.editar_guia, name='api_editar_guia'),
 
     # Tree
     path('api/carpetas/<int:ficha_id>/', formacion_views.obtener_carpetas, name='obtener_carpetas'),

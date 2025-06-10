@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 Swal.fire({
                     title: '¿Está seguro?',
-                    text: "Esta acción confirmará toda la documentación del grupo y no se podran modificar los documentos ni los aprendices asociados.",
+                    text: "Esta acción confirmará toda la documentación del grupo y no se podrá modificar ni eliminar los documentos ni los aprendices asociados.",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#28a745',  // Verde

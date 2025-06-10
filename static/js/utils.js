@@ -263,3 +263,271 @@ showToast(text, color, time, position, gravity);
     });
   }
   
+  export function reiniciarTooltips() {
+    // Quitar tooltips anteriores que estén activos en el DOM (flotantes)
+    document.querySelectorAll('.tooltip').forEach(el => el.remove());
+
+    // Buscar elementos con tooltip y destruir instancias anteriores si existen
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach((el) => {
+        const tooltip = bootstrap.Tooltip.getInstance(el);
+        if (tooltip) {
+            tooltip.dispose();
+        }
+    });
+
+    // Crear nuevas instancias
+    tooltipTriggerList.forEach((el) => {
+        new bootstrap.Tooltip(el);
+    });
+  }
+
+  // ======= Cargar opciones dinámicas para filtros =======
+  export async function cargarOpciones(url, selector, placeholderTexto = 'Seleccione una opción') {
+    const container = document.querySelector(selector).parentElement;
+    const originalSelect = document.querySelector(selector);
+    const placeholderId = `ph-${selector.replace('#', '')}`;
+
+    // Ocultar el select original temporalmente
+    originalSelect.style.display = 'none';
+
+    // Crear el placeholder de carga
+    const placeholderDiv = document.createElement('div');
+    placeholderDiv.id = placeholderId;
+    placeholderDiv.className = 'placeholder-glow';
+    placeholderDiv.innerHTML = `
+        <span class="placeholder col-12 rounded"></span>
+    `;
+
+    container.appendChild(placeholderDiv);
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // Limpiar opciones y mostrar placeholder por defecto
+        originalSelect.innerHTML = `<option value="" disabled selected>${placeholderTexto}</option>`;
+
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            originalSelect.appendChild(option);
+        });
+
+        // Eliminar placeholder y mostrar select
+        placeholderDiv.remove();
+        originalSelect.style.display = '';
+
+        // Inicializar TomSelect
+        new TomSelect(originalSelect, {
+            placeholder: placeholderTexto,
+            allowEmptyOption: true,
+            plugins: ['remove_button'],
+            persist: false,
+            create: false,
+            closeAfterSelect: true,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+    } catch (error) {
+        console.error(`Error al cargar las opciones para ${selector}`, error);
+        placeholderDiv.innerHTML = `<div class="text-danger small">Error al cargar opciones</div>`;
+    }
+}
+
+
+export function showPlaceholder(container, placeholderId = 'placeholder-loader') {
+  if (container.querySelector(`#${placeholderId}`)) return;
+
+  const placeholder = document.createElement('div');
+  placeholder.id = placeholderId;
+  placeholder.innerHTML = `
+      <div class="placeholder-glow my-2">
+          <span class="placeholder col-12" style="height: 2rem;"></span>
+      </div>
+      <div class="placeholder-glow my-2">
+          <span class="placeholder col-10"></span>
+      </div>
+      <div class="placeholder-glow my-2">
+          <span class="placeholder col-8"></span>
+      </div>
+  `;
+  container.appendChild(placeholder);
+}
+
+export function hidePlaceholder(container, placeholderId = 'placeholder-loader') {
+  const el = container.querySelector(`#${placeholderId}`);
+  if (el) el.remove();
+}
+
+export async function crearSelectForm({
+    id,
+    nombre,
+    url,
+    placeholderTexto = 'Seleccione una opción',
+    contenedor,
+    multiple = false,
+    disabled = false,
+    required = false
+}) {
+    const contenedorEl = document.querySelector(contenedor);
+    contenedorEl.innerHTML = `
+        <div class="placeholder-glow">
+            <span class="placeholder col-12 rounded"></span>
+        </div>
+    `;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // Crear el elemento <select>
+        const select = document.createElement('select');
+        select.id = id;
+        select.name = nombre;
+        select.className = 'form-select';
+
+        if (multiple) select.multiple = true;
+        if (disabled) select.disabled = true;
+        if (required) select.required = true;
+
+        // Agregar opción vacía si no es múltiple
+        if (!multiple) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            defaultOption.textContent = placeholderTexto;
+            select.appendChild(defaultOption);
+        }
+
+        // Agregar opciones desde { id, nom }
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.nom;
+            select.appendChild(option);
+        });
+
+        // Reemplazar placeholder por el <select>
+        contenedorEl.innerHTML = '';
+        contenedorEl.appendChild(select);
+
+        // Inicializar TomSelect
+        new TomSelect(select, {
+            placeholder: placeholderTexto,
+            allowEmptyOption: !multiple,
+            plugins: multiple ? ['remove_button'] : [],
+            persist: false,
+            create: false,
+            closeAfterSelect: true,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
+    } catch (error) {
+        console.error(`Error al cargar las opciones para ${id}`, error);
+        contenedorEl.innerHTML = `<div class="text-danger small">Error al cargar opciones</div>`;
+    }
+}
+
+export async function crearSelect({ id, nombre, url, placeholderTexto = 'Seleccione una opción', contenedor }) {
+    const contenedorEl = document.querySelector(contenedor);
+    contenedorEl.innerHTML = `
+        <div class="placeholder-glow">
+            <span class="placeholder col-12 rounded"></span>
+        </div>
+    `;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // Crear el elemento select
+        const select = document.createElement('select');
+        select.id = id;
+        select.name = nombre;
+        select.multiple = true;
+        select.className = 'form-select';
+
+        // Agregar opciones
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            select.appendChild(option);
+        });
+
+        // Reemplazar placeholder por el select
+        contenedorEl.innerHTML = '';
+        contenedorEl.appendChild(select);
+
+        // Inicializar TomSelect
+        new TomSelect(select, {
+            placeholder: placeholderTexto,
+            allowEmptyOption: true,
+            plugins: ['remove_button'],
+            persist: false,
+            create: false,
+            closeAfterSelect: true,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
+    } catch (error) {
+        console.error(`Error al cargar las opciones para ${id}`, error);
+        contenedorEl.innerHTML = `<div class="text-danger small">Error al cargar opciones</div>`;
+    }
+}
+
+export function validarArchivo(file, extensionesPermitidas = [], maxMB = 2) {
+    if (!file) {
+        return { valido: false, mensaje: 'No se seleccionó ningún archivo.' };
+    }
+
+    const extension = file.name.split('.').pop().toLowerCase();
+    const esExtensionValida = extensionesPermitidas.map(ext => ext.toLowerCase()).includes(extension);
+    const esTamanoValido = file.size <= maxMB * 1024 * 1024;
+
+    if (!esExtensionValida) {
+        return {
+            valido: false,
+            mensaje: `Extensión no permitida. Solo se permiten: ${extensionesPermitidas.join(', ')}.`,
+        };
+    }
+
+    if (!esTamanoValido) {
+        return {
+            valido: false,
+            mensaje: `El archivo supera el tamaño máximo de ${maxMB}MB.`,
+        };
+    }
+
+    return { valido: true, mensaje: '' };
+}
+
+
+export function setFormDisabled(form, disabled) {
+    // Deshabilitar todos los inputs, selects y textareas normales
+    form.querySelectorAll('input, select, textarea').forEach(el => {
+        el.disabled = disabled;
+    });
+
+    // Deshabilitar/activar TomSelects correctamente
+    form.querySelectorAll('select').forEach(select => {
+        if (select.tomselect) {
+            if (disabled) {
+                select.tomselect.disable();
+            } else {
+                select.tomselect.enable();
+            }
+        }
+    });
+}

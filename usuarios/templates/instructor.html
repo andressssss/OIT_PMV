@@ -12,7 +12,10 @@
                 <div>
                 <a class="btn btn-primary me-2" id="btnCrearInstructorModal" data-toggle="tooltip" data-placement="top" title="Crear instructor" data-bs-toggle="modal" data-bs-target="#crearInstructorModal">
                         {% icon 'plus' %}
-                    </a>
+                </a>
+                <a href="{% url 'cargar_instructores_masivo' %}" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Crear instructor masivamente">
+                    {% icon 'archivo' %}
+                </a>
                 </div>
             </div>
             <div class="table-responsive">
@@ -39,12 +42,38 @@
                         <td>{{ instructor.perfil.apelli}}</td>
                         <td>{{ instructor.perfil.tele}}</td>
                         <td>{{ instructor.perfil.mail}}</td>
-                        <td>{{ instructor.contra}}</td>
-                        <td>{{ instructor.fecha_ini}}</td>
-                        <td>{{ instructor.fecha_fin}}</td>
+                        <td>{{ instructor.contra|default:"Sin registro"}}</td>
+                        <td>{{ instructor.fecha_ini|default:"Sin registro"}}</td>
+                        <td>{{ instructor.fecha_fin|default:"Sin registro"}}</td>
                         <td>{{ instructor.esta}}</td>
-                        <td>{{ instructor.profe}}</td>
-                        <td>{{ instructor.tipo_vincu}}</td>
+                        <td>
+                            {% if instructor.profe == "ingenieros" %}
+                                Ingeniero de sistemas
+                            {% elif instructor.profe == "ingenieroe" %}
+                                Ingeniero electrónico
+                            {% elif instructor.profe == "ingenierosof" %}
+                                Ingeniero de software
+                            {% elif instructor.profe == "tecnologodf" %}
+                                Tecnólogo en desarrollo de software
+                            {% else %}
+                                No especificado
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if instructor.tipo_vincu == "termino indefinido" %}
+                                Término indefinido
+                            {% elif instructor.tipo_vincu == "colaborador externo" %}
+                                Colaborador externo
+                            {% elif instructor.tipo_vincu == "obra" %}
+                                Obra labor
+                            {% elif instructor.tipo_vincu == "presta" %}
+                                Prestación de Servicios
+                            {% elif instructor.tipo_vincu == "sindefinir" %}
+                                Sin definir
+                            {% else %}
+                                No especificado
+                            {% endif %}
+                        </td>
                         <td>
                             <button class="btn btn-outline-primary btn-sm edit-btn" data-id="{{ instructor.id }}" data-toggle="tooltip" data-placement="top" title="Editar">
                             <i class="bi bi-pencil-square"></i>
@@ -61,7 +90,7 @@
 </main>
 <!-- Modal para crear Instructor -->
 <div class="modal fade" id="crearInstructorModal" tabindex="-1" aria-labelledby="modalInstructorLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalInstructorLabel">Crear Instructor</h5>
@@ -119,7 +148,7 @@
                         </div>
                     </div>
 
-                    <h3>Datos del Instructor</h3>
+                    <h3>Datos de Contratación</h3>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ instructor_form.contra.id_for_label }}">{{ instructor_form.contra.label }}</label>
@@ -147,24 +176,31 @@
                         </div>
                     </div>
 
-                    <h3>Asignar Ficha</h3>
+                    <h3>Asignar Fichas</h3>
                     <div class="row">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="programaSelect">Programa</label>
+                            <select name="programaSelect" id="programaSelect" class="form-select">
+                                {% for programa in programas %}
+                                    <option value="{{ programa.id }}">{{ programa.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label for="fichaSelect">Ficha</label>
-                            <select name="ficha_id" id="fichaSelect" class="form-select">
-                                <option value="">-- Seleccione una ficha (opcional) --</option>
+                            <select name="ficha_id[]" id="fichaSelect" class="form-select tomselect" disabled>
                                 {% for ficha in fichas %}
-                                    <option value="{{ ficha.id }}">{{ ficha.num }}</option>
+                                    <option value="{{ ficha.id }}">{{ ficha }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
                     <div id="errorCrearInstructor" class="text-danger mt-2"></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button id="btnCrearInstructor" type="submit" class="btn btn-primary">Guardar</button>
-                    </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="btnCrearInstructor" type="submit" form="formCrearInstructor" class="btn btn-primary">Guardar</button>
             </div>
         </div>
     </div>
@@ -172,7 +208,7 @@
 
 <!-- Modal para editar Instructor -->
 <div class="modal fade" id="editarInstructorModal" tabindex="-1" aria-labelledby="modalEditarInstructorLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalEditarInstructorLabel">Editar Instructor</h5>
@@ -232,7 +268,7 @@
                         </div>
                     </div>
 
-                    <h3>Datos del Instructor</h3>
+                    <h3>Datos de Contratación</h3>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ instructor_form.contra.id_for_label }}">{{ instructor_form.contra.label }}</label>
@@ -260,25 +296,25 @@
                         </div>
                     </div>
 
-                    <h3>Asignar Ficha</h3>
+                    <h3>Asignar Fichas</h3>
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label for="editarFichaSelect">Ficha</label>
-                            <select name="ficha_id" id="editarFichaSelect" class="form-select">
-                                <option value="">-- Seleccione una ficha (opcional) --</option>
+                            <select name="ficha_id" id="editarFichaSelect" class="form-select tomselect">
+                                <option value="">-- Ninguna --</option>
                                 {% for ficha in fichas %}
-                                    <option value="{{ ficha.id }}">{{ ficha.num }}</option>
+                                    <option value="{{ ficha.id }}">{{ ficha }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                     </div>
 
                     <div id="errorEditarInstructor" class="text-danger mt-2"></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button id="btnEditarInstructor" type="submit" class="btn btn-primary">Actualizar</button>
-                    </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="btnEditarInstructor" type="submit" form="formEditarInstructor" class="btn btn-primary">Actualizar</button>
             </div>
         </div>
     </div>

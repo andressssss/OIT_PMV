@@ -167,6 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .finally(()=>{
                     hideSpinner(btn, originalBtnContent);
                 });
+            } else {
+                hideSpinner(btn, originalBtnContent);
             }
         }
     });

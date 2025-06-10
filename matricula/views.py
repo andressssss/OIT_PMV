@@ -1,4 +1,5 @@
 import json
+from django.db.models import Subquery
 import logging
 from django.utils import timezone 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -31,7 +32,8 @@ from commons.models import (
     T_prematri_docu,
     T_apre,
     T_gestor,
-    T_gestor_insti_edu
+    T_gestor_insti_edu,
+    T_compe_progra
 )
 from .forms import AsignarAprendicesGrupoForm, GrupoForm, AsignarAprendicesMasivoForm, AsignarInstiForm
 from .scripts.cargar_tree import crear_datos_prueba 
@@ -226,6 +228,12 @@ def ver_docs_prematricula_grupo(request, grupo_id):
     perfil = getattr(request.user, 't_perfil', None)
     rol = perfil.rol
 
+    ficha = T_ficha.objects.filter(grupo=grupo).first()
+
+    if ficha and ficha.instru:
+        instructor = ficha.instru
+    else:
+        instructor = None
     # Obtener los aprendices de la ficha
     aprendices = T_apre.objects.filter(grupo=grupo)
     
@@ -243,7 +251,8 @@ def ver_docs_prematricula_grupo(request, grupo_id):
         'grupo': grupo,
         'documentos_por_aprendiz': documentos_por_aprendiz,
         'documentos_institucion': documentos_institucion,  # Documentos de la institución
-        'rol': rol
+        'rol': rol,
+        'instructor': instructor
     })
 
 def obtener_documentos_prematricula(request, aprendiz_id):
@@ -342,18 +351,21 @@ def rechazar_documento_prematricula(request, doc_id):
 def dividir_pdf(request):
     if request.method == 'POST':
         if 'pdf_file' not in request.FILES:
-            return JsonResponse({"error": "No se ha subido ningún archivo PDF."}, status=400)
+            return JsonResponse({"message": "No se ha subido ningún archivo PDF."}, status=400)
         
         pdf_file = request.FILES['pdf_file']
 
         if not pdf_file.name.endswith('.pdf'):
-            return JsonResponse({"error": "Por favor, suba un archivo PDF válido."}, status=400)
+            return JsonResponse({"message": "Por favor, suba un archivo PDF válido."}, status=400)
 
         try:
             pdf_reader = PdfReader(pdf_file)
 
+            if pdf_reader.is_encrypted:
+                return JsonResponse({"message": "El archivo PDF está protegido con contraseña y no se puede procesar."}, status=400)
+
             if len(pdf_reader.pages) == 0:
-                return JsonResponse({"error": "El archivo PDF está vacío."}, status=400)
+                return JsonResponse({"message": "El archivo PDF está vacío."}, status=400)
             
             # Crear el ZIP en memoria
             zip_buffer = io.BytesIO()
@@ -386,9 +398,9 @@ def dividir_pdf(request):
 
         except Exception as e:
             print(f"Error interno: {e}")
-            return JsonResponse({"error": f"Ocurrió un error al procesar el PDF: {str(e)}"}, status=500)
+            return JsonResponse({"message": f"Ocurrió un error al procesar el PDF: {str(e)}"}, status=500)
 
-    return JsonResponse({"error": "Método no permitido."}, status=405)
+    return JsonResponse({"message": "Método no permitido."}, status=405)
 
 @login_required
 def descargar_documentos_grupo(request, grupo_id, documento_tipo):
@@ -824,6 +836,12 @@ def eliminar_relacion_aprendiz_grupos(request, id):
     if request.method == 'DELETE':
         try:
             aprendiz = T_apre.objects.get(id=id)
+            
+            if (T_prematri_docu.objects.filter(apren=aprendiz, vali = 1).exists()):
+                return JsonResponse({'status': 'error', 'message': 'El aprendiz tiene documentos aprobados.'})
+            
+            if (aprendiz.ficha):
+                return JsonResponse({'status': 'error', 'message': 'No se puede eliminar, aprendiz en formacion'})
 
             # Eliminar todos los registros en t_prematri_docu relacionados al aprendiz
             T_prematri_docu.objects.filter(apren=aprendiz).delete()
@@ -832,10 +850,10 @@ def eliminar_relacion_aprendiz_grupos(request, id):
             aprendiz.grupo = None
             aprendiz.save()
 
-            return JsonResponse({"success": True, "mensaje": "Aprendiz y documentos asociados eliminados correctamente."}, status=200)
+            return JsonResponse({"status": 'success', "message": "Aprendiz y documentos asociados eliminados correctamente."}, status=200)
 
         except T_apre.DoesNotExist:
-            return JsonResponse({"success": False, "mensaje": "Aprendiz no encontrado."}, status=404)
+            return JsonResponse({"status": 'success', "message": "Aprendiz no encontrado."}, status=404)
     else:
         return HttpResponseNotAllowed(['DELETE'])
 
@@ -1218,6 +1236,10 @@ def obtener_historial_institucion(request, institucion_id):
     
     return JsonResponse({"historial": data})
 
+###############################################################################################################
+#        VISTAS FICHA
+###############################################################################################################
+
 def formalizar_ficha(request):
     if request.method == "POST":
         try:
@@ -1253,15 +1275,25 @@ def formalizar_ficha(request):
             )
 
             T_fase_ficha.objects.create(
-                fase = "analisis",
+                fase_id = 1,
                 ficha = ficha,
                 fecha_ini = timezone.now(),
                 instru = None,
                 vige  = 1
             )
 
-            raps = T_raps.objects.filter(compe__in = T_compe.objects.filter(progra = ficha.progra))
-            T_raps_ficha.objects.bulk_create([T_raps_ficha(ficha = ficha, rap = rap) for rap in raps])
+            compe_ids = T_compe_progra.objects.filter(progra=ficha.progra).values('compe_id')
+            raps = T_raps.objects.filter(compe__in=Subquery(compe_ids))
+
+            raps_ficha_objs = []
+
+            for rap in raps:
+                for fase in rap.compe.fase.all():
+                    raps_ficha_objs.append(
+                        T_raps_ficha(ficha=ficha, rap=rap, fase=fase)
+                    )
+
+            T_raps_ficha.objects.bulk_create(raps_ficha_objs)
 
             T_apre.objects.filter(grupo=grupo).update(ficha=ficha)
 
@@ -1283,3 +1315,4 @@ def formalizar_ficha(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+

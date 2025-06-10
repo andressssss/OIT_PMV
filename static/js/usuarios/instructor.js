@@ -15,6 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btnCrearInstructorModal').focus();
     });
 
+    document.querySelectorAll('.tomselect').forEach(function(select) {
+        new TomSelect(select, {
+            create: false,
+            persist: false,
+            maxItems: null,
+            plugins: ['remove_button'],
+            allowEmptyOption: true,
+        });
+    });
+
     //== Boton crear
     formCrearInstructor.addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -55,6 +65,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const programaSelect = document.getElementById('programaSelect');
+    const fichaSelect = document.getElementById('fichaSelect');
+    const fichaTomSelect = fichaSelect.tomselect;
+
+    programaSelect.addEventListener('change', async e =>{
+        const programaId = programaSelect.value;
+
+        fichaTomSelect.clear();
+        fichaTomSelect.clearOptions()
+
+        if (!programaId) {
+            fichaSelect.disabled = true;
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/formacion/fichas/por_programa/${programaId}/`);
+            if (!response.ok) throw new Error('Error al cargar las fichas');
+            const fichas = await response.json();
+
+            if(fichas.length == 0){
+                fichaTomSelect.disable();
+            } else {
+                fichaTomSelect.enable();
+                fichas.forEach(f => {
+                    fichaTomSelect.addOption({ value: f.id, text: f.num});
+                })
+                fichaTomSelect.refreshOptions();
+            }
+        } catch (error) {
+            toastError(error)
+        }
+    })
+
     //== Boton editar
     tabla.addEventListener('click', async (e) => {
         const btn = e.target.closest('.edit-btn');
@@ -85,11 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     formEditar.querySelector('#id_fecha_ini').value = data.fecha_ini || '';
                     formEditar.querySelector('#id_fecha_fin').value = data.fecha_fin || '';
                     formEditar.querySelector('#id_tipo_vincu').value = data.tipo_vincu ?? '';
-                    formEditar.querySelector('#editarFichaSelect').value = data.ficha_id ?? '';
+
+                    const fichaSelect = formEditar.querySelector('#editarFichaSelect');
+                    const tomSelectInstance = fichaSelect.tomselect;
+                    
+                    const fichaIds = data.fichas.map(f => f.id.toString());
+                    tomSelectInstance.setValue(fichaIds);
 
                     formEditar.setAttribute('action', `/api/instructor/editar/${instructorId}/`);
 
-    
                 }
             } catch (error) {
                 console.error('Error al obtener los datos del instructor:', error);
@@ -102,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     //== Boton guardar formulario editar instructor
-    formEditar.addEventListener('submit', async function (e) {
+    formEditar.addEventListener('submit', async e => {
         e.preventDefault();
     
         const url = formEditar.action;
@@ -111,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         const inputs = formEditar.querySelectorAll('input, select, button');
         inputs.forEach(el => el.disabled = true);
-    
+
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -120,11 +168,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: data
             });
-    
-            const result = await response.json(); // Solo una vez aquí
+
+            const result = await response.json();
     
             if (!response.ok) {
-                // Lanzamos un Error real con el mensaje desde el backend
                 throw new Error(result.message || 'Ocurrió un error desconocido');
             }
     

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
@@ -126,4 +126,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script type ="module" src="{% static 'js/matricula/asignar_aprendices.js' %}"></script>
 {% endblock %}

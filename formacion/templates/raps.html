@@ -10,13 +10,33 @@
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de RAP</h1>
                 <div>
-                    <a href="/raps/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear rap">
+                    <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear RAP" data-bs-toggle="modal" data-bs-target="#crearRAPModal">
                         {% icon 'plus' %}
                     </a>
                 </div>
             </div>
+            <div id="contenedor-filtros">
+                <h5>Filtrar y organizar:</h5>
+                <form id="filtros-form" class="row mb-3">
+                    <div class="col-md-3" id="contenedor-fase">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3" id="contenedor-competencia">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6" id="contenedor-programa">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
             <div class="table-responsive">
-                <table id="instructores" class="table table-hover table-bordered align-middle">
+                <table id="raps_table" class="table table-hover table-bordered align-middle">
                     <thead class="table-secondary text-center">
                     <tr>
                         <th>RAP</th>
@@ -27,18 +47,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for rap in raps %}
-                    <tr>
-                        <td>{{ rap.nom}}</td>
-                        <td>{{ rap.compe.fase}}</td>
-                        <td>{{ rap.compe.nom}}</td>
-                        <td>{{ rap.compe.progra.nom}}</td>
-                        <td>
-                            <a href="/" class="btn btn-outline-warning btn-sm " data-toggle="tooltip" data-placement="top" title="Editar">
-                            <i class="bi bi-pencil-square"></i></a>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                    <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
+                    <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
+                    <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                    <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                    <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span></td>
                 </tbody>
             </table>
         </div>
@@ -46,4 +59,92 @@
     </div>
     </section>
 </main>
+<!-- Modal para crear RAP -->
+<div class="modal fade" id="crearRAPModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="crearRAPModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="crearRAPModalLabel">Crear RAP</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCrearRAP">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    
+                    {{ rap_form.nom.label_tag }}
+                    {{ rap_form.nom }}
+                    
+                    <div class="mb-3">
+                        <label for="programaSelect" class="form-label">Programa</label>
+                        <select id="programaSelect" class="form-select">
+                            <option value="">Seleccione un programa</option>
+                            {% for programa in programas %}
+                                <option value="{{ programa.id }}">{{ programa.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+            
+                    <div class="mb-3">
+                        <label for="compeSelect" class="form-label">Competencia</label>
+                        <select id="compeSelect" name="compe" class="form-select" required disabled>
+                            <option value="">Seleccione una competencia</option>
+                        </select>
+                    </div>
+            
+                    <div id="errorCrearRAP" class="text-danger mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="btnCrearRAP" class="btn btn-primary">Crear RAP</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal para editar RAP -->
+<div class="modal fade" id="editarRAPModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarRAPModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarRAPModalLabel">Editar RAP</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEditarRAP">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    
+                    {{ rap_form.nom.label_tag }}
+                    {{ rap_form.nom }}
+            
+                    <div class="mb-3">
+                        <label for="programaSelectEdit" class="form-label">Programa</label>
+                        <select id="programaSelectEdit" class="form-select">
+                            <option value="">Seleccione un programa</option>
+                            {% for programa in programas %}
+                                <option value="{{ programa.id }}">{{ programa.nom }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">
+                            Seleccione nuevamente el programa de ser necesario.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="compeSelectEdit" class="form-label">Competencia</label>
+                        <select id="compeSelectEdit" name="compe" class="form-select tomselect" required disabled>
+                        </select>
+                    </div>
+            
+                    <div id="errorEditarRAP" class="text-danger mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="btnEditarRAP" class="btn btn-primary">Editar RAP</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type ="module" src="{% static 'js/formacion/rap.js' %}"></script>
 {% endblock %}
