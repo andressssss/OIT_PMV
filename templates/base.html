@@ -200,7 +200,13 @@
                                 <span class="d-inline d-sm-none">Salir</span> <!-- Mostrar texto en móviles -->
                             </a>
                         </li>
-                        
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="mostrarSwalSoporte()" title="¿Necesitas ayuda?">
+                                <span class="d-none d-sm-inline"><i class="bi bi-question-square"></i></span>
+                                <span class="d-inline d-sm-none">Ayuda</span>
+                            </a>
+                        </li>
+
                 
                         
                     {% else %}
@@ -254,4 +260,20 @@
     {% block content %}
     {% endblock %}
 </body>
+<script>
+    function mostrarSwalSoporte() {
+        Swal.fire({
+            title: 'Soporte Técnico',
+            html: `
+                <p>Si tiene alguna inquietud o detecta alguna inconsistencia,<br>
+                no dude escalarlo a nuestro equipo de soporte:</p>
+                <p class="fw-bold text-primary">soporte@OIT.com</p>
+            `,
+            icon: 'info',
+            confirmButtonText: 'Cerrar',
+            allowOutsideClick: false,
+            allowEscapeKey: true
+        });
+    }
+</script>
 </html>
