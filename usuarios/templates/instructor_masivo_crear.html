@@ -1,138 +1,148 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<main class="container mt-5">
-    <h1 class="text-center">Carga Masiva de Instructores</h1>
+<main class="container py-5">
+    <section class="card card-body shadow-sm p-4">
+        <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center pb-4">
+                <h1 class="display-5">Carga masiva de instructores</h1>
+            </div>
+            <!-- Botones de acciones -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#instruccionesModal">
+                    Ver Instrucciones CSV
+                </button>
+                <a href="/media/formatos/formato_carga_masiva_instructores.csv" class="btn btn-success" download>
+                    Descargar Formato Oficial
+                </a>
+            </div>
 
-    <!-- Botones de acciones -->
-    <div class="d-flex justify-content-between mb-3">
-        <div>
-        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#instruccionesModal">
-            Ver Instrucciones CSV
-        </button>
+            <!-- Formulario -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">Cargar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Errores -->
+            {% if errores %}
+            <div class="alert alert-danger mt-4" style="white-space: pre-wrap; font-family: monospace;">
+                <h5>Errores detectados:</h5>
+                <ul class="mb-0">
+                    {% for error in errores %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Resumen -->
+            {% if resumen %}
+            <div class="alert alert-success mt-4">
+                <h5>Resumen del proceso:</h5>
+                <ul class="mb-0">
+                    <li><strong>Registros insertados:</strong> {{ resumen.insertados }}</li>
+                    <li><strong>Errores:</strong> {{ resumen.errores }}</li>
+                    <li><strong>Duplicados:</strong> {{ resumen.duplicados_dni|default:"0" }}</li>
+                </ul>
+            </div>
+            {% endif %}
         </div>
-        <div>
-        <a href="/media/formatos/formato_carga_masiva_instructores.csv" class="btn btn-success" download>
-            Descargar Formato Oficial
-        </a>
-        </div>
     </div>
-
-    <form method="post" enctype="multipart/form-data" class="mt-4">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Cargar</button>
-    </form>
-
-    {% if errores %}
-    <div class="alert alert-danger" style="white-space: pre-wrap; font-family: monospace;">
-        {% for error in errores %}
-        {{ error }}
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if resumen %}
-    <div class="alert alert-success mt-3">
-        <ul>
-        <li>Registros insertados: {{ resumen.insertados }}</li>
-        <li>Errores: {{ resumen.errores }}</li>
-        <li>Duplicados: {{ resumen.duplicados_dni|default:"0" }}</li>
-        </ul>
-    </div>
-    {% endif %}
-    </main>
+    </section>
+</main>
 
 <!-- Modal de Instrucciones -->
 <div class="modal fade" id="instruccionesModal" tabindex="-1" aria-labelledby="instruccionesModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" id="instruccionesModalLabel">Instrucciones para el formato CSV - Instructores</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-            <h5>Requisitos del archivo CSV:</h5>
-            <ul class="list-group list-group-flush mb-4">
-            <li class="list-group-item">✅ El archivo debe estar en formato <strong>CSV</strong></li>
-            <li class="list-group-item">✅ Mantener los nombres de las columnas tal como se indican</li>
-            <li class="list-group-item">✅ Codificación UTF-8</li>
-            <li class="list-group-item">✅ Delimitador: coma (,)</li>
-            </ul>
-
-            <h5>Instrucciones de llenado:</h5>
-            <div class="alert alert-warning">
-            <strong>Campos obligatorios:</strong> Todos excepto <code>contra</code>, <code>fecha_ini</code> y <code>fecha_fin</code> deben estar completos.
+            <div class="modal-header">
+                <h5 class="modal-title" id="instruccionesModalLabel">Instrucciones para el formato CSV - Instructores</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
+            <div class="modal-body">
+                <h5>Requisitos del archivo CSV:</h5>
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item">✅ El archivo debe estar en formato <strong>CSV</strong></li>
+                    <li class="list-group-item">✅ Mantener los nombres de las columnas tal como se indican</li>
+                    <li class="list-group-item">✅ Codificación UTF-8</li>
+                    <li class="list-group-item">✅ Delimitador: coma (,)</li>
+                </ul>
 
-            <table class="table table-striped">
-            <thead>
-                <tr>
-                <th>Campo</th>
-                <th>Descripción / Requisitos</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>email</td><td>Correo electrónico válido</td></tr>
-                <tr><td>nom</td><td>Nombres del instructor</td></tr>
-                <tr><td>apelli</td><td>Apellidos del instructor</td></tr>
-                <tr>
-                <td>tipo_dni</td>
-                <td>Tipo de documento: <code>ti</code>, <code>cc</code>, <code>pp</code>, <code>ce</code></td>
-                </tr>
-                <tr><td>dni</td><td>Número de documento, sin puntos ni espacios</td></tr>
-                <tr><td>tele</td><td>Teléfono sin caracteres especiales</td></tr>
-                <tr><td>dire</td><td>Dirección de residencia</td></tr>
-                <tr>
-                <td>gene</td>
-                <td>Género: <code>H</code> (Masculino), <code>M</code> (Femenino)</td>
-                </tr>
-                <tr><td>fecha_naci</td><td>Fecha de nacimiento en formato <code>DD/MM/AAAA</code></td></tr>
-                <tr><td>contra</td><td>(Opcional) Número de contrato</td></tr>
-                <tr><td>fecha_ini</td><td>(Opcional) Fecha inicio del contrato <code>DD/MM/AAAA</code></td></tr>
-                <tr><td>fecha_fin</td><td>(Opcional) Fecha fin del contrato <code>DD/MM/AAAA</code></td></tr>
-                <tr>
-                <td>profe</td>
-                <td>
-                    Profesión del instructor. En negrilla las opciones válidas (en minúsculas y sin tildes): 
-                    <ul>
-                        <li><strong>ingenieros</strong>: Ingeniero de sistemas </li>
-                        <li><strong>ingenieroe</strong>: Ingeniero electrónico</li>
-                        <li><strong>tecnologodf</strong>: Tecnólogo en desarrollo de software</li>
-                        <li><strong>ingenierosof</strong>: Ingeniero de software</li>
-                    </ul>
-                </td>
-                </tr>
-                <tr>
-                <td>tipo_vincu</td>
-                <td>Tipo de vinculación. En negrilla las opciones válidas (en minúsculas y sin tildes): 
-                    <ul>
-                    <li><strong>termino indefinido</strong>: Termino indefinido</li>
-                    <li><strong>colaborador externo</strong>: Colaborador externo</li>
-                    <li><strong>obra</strong>: Obra labor</li>
-                    <li><strong>presta</strong>: Prestación de Servicios</li>
-                    <li><strong>sindefinir</strong>: Sin definir</li>
-                    </ul>
-                </td>
-                </tr>
-            </tbody>
-            </table>
+                <h5>Instrucciones de llenado:</h5>
+                <div class="alert alert-warning">
+                    <strong>Campos obligatorios:</strong> Todos excepto <code>contra</code>, <code>fecha_ini</code> y <code>fecha_fin</code> deben estar completos.
+                </div>
 
-            <div class="alert alert-danger mt-3">
-            <strong>⚠️ Importante:</strong>
-            <ul>
-                <li>No modificar el orden de las columnas</li>
-                <li>No usar tildes ni la letra ñ</li>
-                <li>Verifica que los DNI no estén duplicados</li>
-            </ul>
+                <table class="table table-bordered table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Campo</th>
+                            <th>Descripción / Requisitos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>email</td><td>Correo electrónico válido</td></tr>
+                        <tr><td>nom</td><td>Nombres del instructor</td></tr>
+                        <tr><td>apelli</td><td>Apellidos del instructor</td></tr>
+                        <tr><td>tipo_dni</td><td>Tipo de documento: <code>ti</code>, <code>cc</code>, <code>pp</code>, <code>ce</code></td></tr>
+                        <tr><td>dni</td><td>Número de documento, sin puntos ni espacios</td></tr>
+                        <tr><td>tele</td><td>Teléfono sin caracteres especiales</td></tr>
+                        <tr><td>dire</td><td>Dirección de residencia</td></tr>
+                        <tr><td>gene</td><td>Género: <code>H</code> (Masculino), <code>M</code> (Femenino)</td></tr>
+                        <tr><td>fecha_naci</td><td>Fecha de nacimiento en formato <code>DD/MM/AAAA</code></td></tr>
+                        <tr><td>contra</td><td>(Opcional) Número de contrato</td></tr>
+                        <tr><td>fecha_ini</td><td>(Opcional) Fecha inicio del contrato <code>DD/MM/AAAA</code></td></tr>
+                        <tr><td>fecha_fin</td><td>(Opcional) Fecha fin del contrato <code>DD/MM/AAAA</code></td></tr>
+                        <tr>
+                            <td>profe</td>
+                            <td>
+                                Profesión del instructor (minúsculas, sin tildes):
+                                <ul>
+                                    <li><strong>ingenieros</strong>: Ingeniero de sistemas</li>
+                                    <li><strong>ingenieroe</strong>: Ingeniero electrónico</li>
+                                    <li><strong>tecnologodf</strong>: Tecnólogo en desarrollo de software</li>
+                                    <li><strong>ingenierosof</strong>: Ingeniero de software</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>tipo_vincu</td>
+                            <td>
+                                Tipo de vinculación (minúsculas, sin tildes):
+                                <ul>
+                                    <li><strong>termino indefinido</strong>: Termino indefinido</li>
+                                    <li><strong>colaborador externo</strong>: Colaborador externo</li>
+                                    <li><strong>obra</strong>: Obra labor</li>
+                                    <li><strong>presta</strong>: Prestación de Servicios</li>
+                                    <li><strong>sindefinir</strong>: Sin definir</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-danger mt-4">
+                    <strong>⚠️ Importante:</strong>
+                    <ul>
+                        <li>No modificar el orden de las columnas</li>
+                        <li>No usar tildes ni la letra ñ</li>
+                        <li>Verifica que los DNI no estén duplicados</li>
+                    </ul>
+                </div>
             </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
         </div>
     </div>
 </div>
-
 
 {% endblock %}

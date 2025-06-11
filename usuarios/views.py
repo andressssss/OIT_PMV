@@ -623,109 +623,110 @@ def cargar_instructores_masivo(request):
             "errores": 0,
             "duplicados_dni": []
         }
+
         form = CargarInstructoresMasivoForm(request.POST, request.FILES)
         if form.is_valid():
             archivo = request.FILES['archivo']
             datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
 
-            # Validaciones iniciales
             if not archivo.name.lower().endswith('.csv'):
                 errores.append(formatear_error_csv({}, ["Solo se permiten archivos CSV (.csv)"]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
-            allowed_mime_types = ['text/csv', 'application/csv', 'text/plain']
-            if archivo.content_type not in allowed_mime_types:
+            if archivo.content_type not in ['text/csv', 'application/csv', 'text/plain']:
                 errores.append(formatear_error_csv({}, ["Tipo de archivo no válido (solo CSV)."]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
             contenido_csv = datos_csv.read().replace(';', ',')
-            lector = csv.DictReader(contenido_csv.splitlines())
+            lector = list(csv.DictReader(contenido_csv.splitlines()))
 
+            # 1. Validación completa primero
             for fila in lector:
                 try:
-                    with transaction.atomic():
-                        # Validar campos requeridos
-                        campos_requeridos = ['email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele', 'dire', 'gene', 'fecha_naci', 'profe', 'tipo_vincu']
-                        for campo in campos_requeridos:
-                            if campo not in fila or not fila[campo].strip():
-                                raise ValidationError(f"Campo requerido faltante: '{campo}'")
+                    campos_requeridos = ['email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele', 'dire', 'gene', 'fecha_naci', 'profe', 'tipo_vincu']
+                    for campo in campos_requeridos:
+                        if campo not in fila or not fila[campo].strip():
+                            raise ValidationError(f"Campo requerido faltante: '{campo}'")
 
-                        dni = fila['dni']
-                        if T_perfil.objects.filter(dni=dni).exists():
-                            resumen["duplicados_dni"].append(dni)
-                            raise ValidationError(f"DNI duplicado: {dni}")
+                    dni = fila['dni']
+                    if T_perfil.objects.filter(dni=dni).exists():
+                        resumen["duplicados_dni"].append(dni)
+                        raise ValidationError(f"DNI duplicado: {dni}")
 
-                        validate_email(fila['email'])
-                        if T_perfil.objects.filter(mail=fila['email']).exists():
-                            raise ValidationError(f"Email ya existe: {fila['email']}")
+                    validate_email(fila['email'])
+                    if T_perfil.objects.filter(mail=fila['email']).exists():
+                        raise ValidationError(f"Email ya existe: {fila['email']}")
 
-                        # Parseo de fechas
-                        fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
-                        fecha_ini = datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
-                        fecha_fin = datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
-
-                        # Generación de username único
-                        base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
-                        username = base_username
-                        i = 1
-                        while User.objects.filter(username=username).exists():
-                            username = f"{base_username}{i}"
-                            i += 1
-
-                        # Crear usuario
-                        # contraseña = generar_contraseña()
-                        user = User.objects.create_user(
-                            username=username,
-                            password=str(dni),
-                            email=fila['email']
-                        )
-
-                        # Crear perfil
-                        perfil = T_perfil.objects.create(
-                            user=user,
-                            nom=fila['nom'],
-                            apelli=fila['apelli'],
-                            tipo_dni=fila['tipo_dni'],
-                            dni=dni,
-                            tele=fila['tele'],
-                            dire=fila['dire'],
-                            gene=fila['gene'],
-                            mail=fila['email'],
-                            fecha_naci=fecha_naci,
-                            rol="instructor"
-                        )
-
-                        perfil.full_clean()
-
-                        # Crear instructor
-                        instructor = T_instru(
-                            perfil=perfil,
-                            esta="activo",
-                            contra=fila.get('contra', ''),
-                            profe=fila['profe'],
-                            tipo_vincu=fila['tipo_vincu'],
-                            fecha_ini=fecha_ini,
-                            fecha_fin=fecha_fin
-                        )
-
-                        # Validar y guardar instructor
-                        instructor.full_clean()
-                        instructor.save()
-
-                        resumen["insertados"] += 1
+                    datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y')
+                    if fila.get('fecha_ini', '').strip():
+                        datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y')
+                    if fila.get('fecha_fin', '').strip():
+                        datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y')
 
                 except Exception as e:
-                    errores.append(formatear_error_csv(fila, [force_str(e)]))
                     resumen["errores"] += 1
-                    continue
+                    errores.append(formatear_error_csv(fila, [force_str(e)]))
 
-            if resumen["insertados"]:
-                messages.success(request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
-            else:
-                messages.error(request, "No se ha cargado información, corrija los errores e inténtelo de nuevo.")
+            # 2. Si hay errores, no insertar nada
+            if resumen["errores"] > 0:
+                messages.warning(request, f"{resumen['errores']} errores encontrados. No se insertó ningún registro.")
+                return render(request, 'instructor_masivo_crear.html', {
+                    'form': form,
+                    'errores': errores,
+                    'resumen': resumen
+                })
 
+            # 3. Si todo está validado, proceder con la inserción
+            with transaction.atomic():
+                for fila in lector:
+                    dni = fila['dni']
+                    fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                    fecha_ini = datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
+                    fecha_fin = datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
+
+                    base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
+                    username = base_username
+                    i = 1
+                    while User.objects.filter(username=username).exists():
+                        username = f"{base_username}{i}"
+                        i += 1
+
+                    user = User.objects.create_user(
+                        username=username,
+                        password=str(dni),
+                        email=fila['email']
+                    )
+
+                    perfil = T_perfil.objects.create(
+                        user=user,
+                        nom=fila['nom'],
+                        apelli=fila['apelli'],
+                        tipo_dni=fila['tipo_dni'],
+                        dni=dni,
+                        tele=fila['tele'],
+                        dire=fila['dire'],
+                        gene=fila['gene'],
+                        mail=fila['email'],
+                        fecha_naci=fecha_naci,
+                        rol="instructor"
+                    )
+                    perfil.full_clean()
+
+                    instructor = T_instru.objects.create(
+                        perfil=perfil,
+                        esta="activo",
+                        contra=fila.get('contra', ''),
+                        profe=fila['profe'],
+                        tipo_vincu=fila['tipo_vincu'],
+                        fecha_ini=fecha_ini,
+                        fecha_fin=fecha_fin
+                    )
+                    instructor.full_clean()
+                    resumen["insertados"] += 1
+
+            messages.success(request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
             return render(request, 'instructor_masivo_crear.html', {
                 'form': form,
                 'errores': errores,
@@ -734,8 +735,8 @@ def cargar_instructores_masivo(request):
 
     else:
         form = CargarInstructoresMasivoForm()
-
     return render(request, 'instructor_masivo_crear.html', {'form': form})
+
 
 
 ### CUENTAS ###
