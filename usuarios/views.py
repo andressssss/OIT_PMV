@@ -1,4 +1,6 @@
 import re
+import unicodedata
+from io import StringIO
 from django.utils.encoding import force_str
 from django.views.decorators.http import require_POST, require_GET
 from django.forms import ValidationError
@@ -610,6 +612,15 @@ def formatear_error_csv(fila, errores_campos):
         "----------------------------------------"
     )
 
+def validar_formato_csv_basico(contenido_csv, campos_esperados):
+    errores = []
+    reader = csv.reader(StringIO(contenido_csv), delimiter=';')
+    for i, row in enumerate(reader, start=1):
+        if len(row) != len(campos_esperados):
+            errores.append(
+                f"Línea {i}: se esperaban {len(campos_esperados)} columnas, pero se encontraron {len(row)}. Contenido: {row}"
+            )
+    return errores
 @login_required
 def cargar_instructores_masivo(request):
     if request.method == 'POST':
@@ -619,41 +630,109 @@ def cargar_instructores_masivo(request):
             "errores": 0,
             "duplicados_dni": []
         }
-
+        MAX_FILAS = 100
         form = CargarInstructoresMasivoForm(request.POST, request.FILES)
+
         if form.is_valid():
             archivo = request.FILES['archivo']
+            if not (archivo.name.lower().endswith('.csv') and archivo.content_type in ['text/csv', 'application/csv', 'text/plain']):
+                errores.append(formatear_error_csv({}, ["Tipo de archivo no válido. Solo se permiten archivos CSV (.csv)"]))
+                resumen["errores"] += 1
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
+
             datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
+            contenido_csv = datos_csv.read()
 
-            if not archivo.name.lower().endswith('.csv'):
-                errores.append(formatear_error_csv({}, ["Solo se permiten archivos CSV (.csv)"]))
+            if not contenido_csv.strip():
+                errores.append(formatear_error_csv({}, ["El archivo está vacío."]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
-            if archivo.content_type not in ['text/csv', 'application/csv', 'text/plain']:
-                errores.append(formatear_error_csv({}, ["Tipo de archivo no válido (solo CSV)."]))
+            CAMPOS_ESPERADOS = [
+                'email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele',
+                'dire', 'gene', 'fecha_naci', 'contra',
+                'fecha_ini', 'fecha_fin', 'profe', 'tipo_vincu'
+            ]
+
+            errores_formato = validar_formato_csv_basico(contenido_csv, CAMPOS_ESPERADOS)
+            if errores_formato:
+                for e in errores_formato:
+                    errores.append(formatear_error_csv({}, [e]))
+                    resumen["errores"] += 1
+                messages.warning(request, "El archivo tiene filas mal formateadas. No se insertó ningún registro.")
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
+
+            try:
+                filas_crudas = list(csv.DictReader(StringIO(contenido_csv), delimiter=';'))
+            except Exception as e:
+                errores.append(formatear_error_csv({}, [f"Error al leer el archivo CSV: {e}"]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
-            contenido_csv = datos_csv.read().replace(';', ',')
-            lector = list(csv.DictReader(contenido_csv.splitlines()))
+            if not filas_crudas or not all(filas_crudas[0].keys()):
+                errores.append(formatear_error_csv({}, [
+                    "El archivo no tiene una fila de encabezado válida.",
+                    "Verifique si el delimitador es ';' y que el archivo tenga encabezados correctos."
+                ]))
+                resumen["errores"] += 1
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
-            # 1. Validación completa primero
-            for fila in lector:
+            campos_csv = [campo.strip().lower() for campo in filas_crudas[0].keys()]
+            esperados = [campo.strip().lower() for campo in CAMPOS_ESPERADOS]
+
+            if set(campos_csv) != set(esperados):
+                errores.append(formatear_error_csv({}, [
+                    "El encabezado del archivo no coincide con el formato esperado.",
+                    f"Encabezado recibido: {campos_csv}",
+                    f"Encabezado esperado: {esperados}"
+                ]))
+                resumen["errores"] += 1
+                messages.warning(request, "El archivo no tiene un encabezado válido.")
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
+
+            filas = [f for f in filas_crudas if any(valor.strip() for valor in f.values())]
+
+            if len(filas) > MAX_FILAS:
+                errores.append(formatear_error_csv({}, [f"El archivo tiene {len(filas)} filas, pero el máximo permitido es {MAX_FILAS}."]))
+                resumen["errores"] += 1
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
+
+            dnis_vistos = set()
+            emails_vistos = set()
+
+            for fila in filas:
+                dni = fila.get('dni')
+                email = fila.get('email')
+                fila_errores = []
+
+                if dni in dnis_vistos:
+                    fila_errores.append(f"DNI duplicado en el archivo: {dni}")
+                else:
+                    dnis_vistos.add(dni)
+
+                if email in emails_vistos:
+                    fila_errores.append(f"Email duplicado en el archivo: {email}")
+                else:
+                    emails_vistos.add(email)
+
+                if fila_errores:
+                    errores.append(formatear_error_csv(fila, fila_errores))
+                    resumen["errores"] += 1
+
+            for fila in filas:
                 try:
-                    campos_requeridos = ['email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele', 'dire', 'gene', 'fecha_naci', 'profe', 'tipo_vincu']
-                    for campo in campos_requeridos:
-                        if campo not in fila or not fila[campo].strip():
+                    for campo in ['email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele', 'dire', 'gene', 'fecha_naci', 'profe', 'tipo_vincu']:
+                        if not fila.get(campo, '').strip():
                             raise ValidationError(f"Campo requerido faltante: '{campo}'")
 
                     dni = fila['dni']
                     if T_perfil.objects.filter(dni=dni).exists():
                         resumen["duplicados_dni"].append(dni)
-                        raise ValidationError(f"DNI duplicado: {dni}")
+                        raise ValidationError(f"DNI duplicado en el sistema: {dni}")
 
-                    validate_email(fila['email'])
+                    validate_email(fila['email'].strip())
                     if T_perfil.objects.filter(mail=fila['email']).exists():
-                        raise ValidationError(f"Email ya existe: {fila['email']}")
+                        raise ValidationError(f"Email ya existe en el sistema: {fila['email']}")
 
                     datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y')
                     if fila.get('fecha_ini', '').strip():
@@ -665,75 +744,74 @@ def cargar_instructores_masivo(request):
                     resumen["errores"] += 1
                     errores.append(formatear_error_csv(fila, [force_str(e)]))
 
-            # 2. Si hay errores, no insertar nada
             if resumen["errores"] > 0:
                 messages.warning(request, f"{resumen['errores']} errores encontrados. No se insertó ningún registro.")
-                return render(request, 'instructor_masivo_crear.html', {
-                    'form': form,
-                    'errores': errores,
-                    'resumen': resumen
-                })
+                return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
-            # 3. Si todo está validado, proceder con la inserción
-            with transaction.atomic():
-                for fila in lector:
-                    dni = fila['dni']
-                    fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
-                    fecha_ini = datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
-                    fecha_fin = datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
+            try:
+                with transaction.atomic():
+                    for fila in filas:
+                        dni = fila['dni']
+                        fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                        fecha_ini = datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
+                        fecha_fin = datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
 
-                    base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
-                    username = base_username
-                    i = 1
-                    while User.objects.filter(username=username).exists():
-                        username = f"{base_username}{i}"
-                        i += 1
+                        base_username = ''.join(c for c in unicodedata.normalize('NFKD', fila['nom'][:3] + fila['apelli'][:3]) if c.isalnum()).lower()
+                        username = base_username
+                        i = 1
+                        while User.objects.filter(username=username).exists():
+                            username = f"{base_username}{i}"
+                            i += 1
 
-                    user = User.objects.create_user(
-                        username=username,
-                        password=str(dni),
-                        email=fila['email']
-                    )
+                        user = User.objects.create_user(username=username, password=str(dni), email=fila['email'])
 
-                    perfil = T_perfil.objects.create(
-                        user=user,
-                        nom=fila['nom'],
-                        apelli=fila['apelli'],
-                        tipo_dni=fila['tipo_dni'],
-                        dni=dni,
-                        tele=fila['tele'],
-                        dire=fila['dire'],
-                        gene=fila['gene'],
-                        mail=fila['email'],
-                        fecha_naci=fecha_naci,
-                        rol="instructor"
-                    )
-                    perfil.full_clean()
+                        perfil = T_perfil(
+                            user=user,
+                            nom=fila['nom'],
+                            apelli=fila['apelli'],
+                            tipo_dni=fila['tipo_dni'],
+                            dni=dni,
+                            tele=fila['tele'],
+                            dire=fila['dire'],
+                            gene=fila['gene'],
+                            mail=fila['email'],
+                            fecha_naci=fecha_naci,
+                            rol="instructor"
+                        )
+                        perfil.full_clean()
+                        perfil.save()
 
-                    instructor = T_instru.objects.create(
-                        perfil=perfil,
-                        esta="activo",
-                        contra=fila.get('contra', ''),
-                        profe=fila['profe'],
-                        tipo_vincu=fila['tipo_vincu'],
-                        fecha_ini=fecha_ini,
-                        fecha_fin=fecha_fin
-                    )
-                    instructor.full_clean()
-                    resumen["insertados"] += 1
+                        instructor = T_instru(
+                            perfil=perfil,
+                            esta="activo",
+                            contra=fila.get('contra', ''),
+                            profe=fila['profe'],
+                            tipo_vincu=fila['tipo_vincu'],
+                            fecha_ini=fecha_ini,
+                            fecha_fin=fecha_fin
+                        )
+                        instructor.full_clean()
+                        instructor.save()
 
-            messages.success(request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
-            return render(request, 'instructor_masivo_crear.html', {
-                'form': form,
-                'errores': errores,
-                'resumen': resumen
-            })
+                        resumen["insertados"] += 1
+
+                messages.success(request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
+
+            except ValidationError as e:
+                resumen["errores"] += 1
+                resumen["insertados"] = 0
+                errores.append(formatear_error_csv(fila, [force_str(e)]))
+            except Exception as e:
+                resumen["errores"] += 1
+                resumen["insertados"] = 0
+                errores.append(formatear_error_csv(fila, [force_str(e)]))
+
+            return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
     else:
         form = CargarInstructoresMasivoForm()
+
     return render(request, 'instructor_masivo_crear.html', {'form': form})
-
-
 
 ### CUENTAS ###
 

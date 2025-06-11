@@ -10,7 +10,12 @@
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de perfiles cuentas</h1>
                 <div>
-                    <a href="/cuentas/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear perfil cuentas">
+                    <a href="#" class="btn btn-primary me-2" onclick="Swal.fire({
+                        icon: 'warning',
+                        title: 'Función no disponible',
+                        text: 'Esta función aún no está disponible.',
+                        confirmButtonText: 'Entendido'
+                    })" title="Crear perfil cuentas">
                         {% icon 'plus' %}
                     </a>
                 </div>
@@ -22,8 +27,8 @@
                         <th></th>
                         <th>Nombre</th>
                         <th>Apellido</th>
-                        <th>Telefono</th>
-                        <th>Direccion</th>
+                        <th>Teléfono</th>
+                        <th>Dirección</th>
                         <th>Mail</th>
                         <th>Fecha nacimiento</th>
                         <th>Estado</th>
