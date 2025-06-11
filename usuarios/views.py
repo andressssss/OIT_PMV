@@ -619,12 +619,12 @@ def cargar_instructores_masivo(request):
             "errores": 0,
             "duplicados_dni": []
         }
+
         form = CargarInstructoresMasivoForm(request.POST, request.FILES)
         if form.is_valid():
             archivo = request.FILES['archivo']
             datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
 
-            # Validaciones iniciales
             if not archivo.name.lower().endswith('.csv'):
                 errores.append(formatear_error_csv({}, ["Solo se permiten archivos CSV (.csv)"]))
                 resumen["errores"] += 1
@@ -639,10 +639,9 @@ def cargar_instructores_masivo(request):
             contenido_csv = datos_csv.read().replace(';', ',')
             lector = csv.DictReader(contenido_csv.splitlines())
 
-            for fila in lector:
-                try:
-                    with transaction.atomic():
-                        # Validar campos requeridos
+            with transaction.atomic():
+                for fila in lector:
+                    try:
                         campos_requeridos = ['email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele', 'dire', 'gene', 'fecha_naci', 'profe', 'tipo_vincu']
                         for campo in campos_requeridos:
                             if campo not in fila or not fila[campo].strip():
@@ -657,12 +656,10 @@ def cargar_instructores_masivo(request):
                         if T_perfil.objects.filter(mail=fila['email']).exists():
                             raise ValidationError(f"Email ya existe: {fila['email']}")
 
-                        # Parseo de fechas
                         fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
                         fecha_ini = datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
                         fecha_fin = datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
 
-                        # Generación de username único
                         base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
                         username = base_username
                         i = 1
@@ -670,15 +667,12 @@ def cargar_instructores_masivo(request):
                             username = f"{base_username}{i}"
                             i += 1
 
-                        # Crear usuario
-                        # contraseña = generar_contraseña()
                         user = User.objects.create_user(
                             username=username,
                             password=str(dni),
                             email=fila['email']
                         )
 
-                        # Crear perfil
                         perfil = T_perfil.objects.create(
                             user=user,
                             nom=fila['nom'],
@@ -692,10 +686,8 @@ def cargar_instructores_masivo(request):
                             fecha_naci=fecha_naci,
                             rol="instructor"
                         )
-
                         perfil.full_clean()
 
-                        # Crear instructor
                         instructor = T_instru(
                             perfil=perfil,
                             esta="activo",
@@ -705,22 +697,19 @@ def cargar_instructores_masivo(request):
                             fecha_ini=fecha_ini,
                             fecha_fin=fecha_fin
                         )
-
-                        # Validar y guardar instructor
                         instructor.full_clean()
                         instructor.save()
 
                         resumen["insertados"] += 1
 
-                except Exception as e:
-                    errores.append(formatear_error_csv(fila, [force_str(e)]))
-                    resumen["errores"] += 1
-                    continue
+                    except Exception as e:
+                        resumen["errores"] += 1
+                        errores.append(formatear_error_csv(fila, [f"Ocurrió un error al procesar esta fila. Detalles: {force_str(e)}"]))
 
             if resumen["insertados"]:
                 messages.success(request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
-            else:
-                messages.error(request, "No se ha cargado información, corrija los errores e inténtelo de nuevo.")
+            if resumen["errores"]:
+                messages.warning(request, f"{resumen['errores']} filas contenían errores y no fueron cargadas.")
 
             return render(request, 'instructor_masivo_crear.html', {
                 'form': form,
@@ -732,7 +721,6 @@ def cargar_instructores_masivo(request):
         form = CargarInstructoresMasivoForm()
 
     return render(request, 'instructor_masivo_crear.html', {'form': form})
-
 
 ### CUENTAS ###
 
