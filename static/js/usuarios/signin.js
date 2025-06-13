@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', e => {
 
     btnForget.addEventListener('click', () => {
         Toastify({
-            text: "Si no puede ingresar con su documento de identidad, por favor contacte al equipo de soporte: soporte@OIT.com",
+            text: "Si no puede ingresar con su documento de identidad, por favor contacte al equipo de soporte: mesadeayuda@senatic.com.co",
             duration: 15000,
             close: true,
             gravity: "bottom",
