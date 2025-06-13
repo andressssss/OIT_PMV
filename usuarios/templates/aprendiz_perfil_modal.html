@@ -80,9 +80,13 @@
         <h5 class="card-header">Fichas Inscritas</h5>
         <div class="card-body">
             {% if aprendiz.ficha %}
-            <p>{{ aprendiz.ficha }}</p>
+                {% if aprendiz.ficha.num %}
+                    <p>{{ aprendiz.ficha.num }}</p>
+                {% else %}
+                    <p>Sin número de ficha. Grupo G{{ aprendiz.ficha.grupo.id }}</p>
+                {% endif %}
             {% else %}
-            <p>No tiene fichas inscritas.</p>
+                <p>No tiene fichas inscritas.</p>
             {% endif %}
         </div>
         </div>

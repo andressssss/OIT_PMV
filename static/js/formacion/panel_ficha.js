@@ -282,9 +282,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     
         // Validación de tamaño
-        const maxSize = 3 * 1024 * 1024; // 3MB
+        const maxSize = 7 * 1024 * 1024; // 7MB
         if (file.size > maxSize) {
-            toastError("El archivo supera el tamaño máximo permitido (3 MB).");
+            toastError("El archivo supera el tamaño máximo permitido (7 MB).");
             return;
         }
     
@@ -413,7 +413,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("portafolioAprendizModalLabel").textContent = `Portafolio de ${aprendizNombre}`;
 
             document.getElementById("folderTreeAprendiz").innerHTML = "";
-            document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
+            //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
 
             cargarPortafolio(aprendizId);
             // cargarTablaHistorial(aprendizId);
@@ -703,9 +703,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     
         // Validación de tamaño
-        const maxSize = 3 * 1024 * 1024; // 3MB
+        const maxSize = 7 * 1024 * 1024; // 7MB
         if (file.size > maxSize) {
-            toastError("El archivo supera el tamaño máximo permitido (3 MB).");
+            toastError("El archivo supera el tamaño máximo permitido (7 MB).");
             return;
         }
     

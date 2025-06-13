@@ -274,7 +274,7 @@
             <div class="modal-body">
                 <div id="folderTreeAprendiz"></div>
                 <!-- Sección de Historial -->
-                <div class="card mt-4">
+                <!-- <div class="card mt-4">
                     <div class="card-header bg-secondary text-white">
                         <h6 class="m-0">Historial de Acciones</h6>
                     </div>
@@ -294,7 +294,7 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </div> -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -729,16 +729,25 @@
                 <div class="col-md-12 mb-3">
                     <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
                     {{ encuentro_form.tema }}
+                    <small class="form-text text-muted">
+                        Escriba el tema que representa el enfoque principal del encuentro.
+                    </small>
                 </div>
             </div>
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
                     {{ encuentro_form.lugar }}
+                    <small class="form-text text-muted">
+                        Indique el espacio físico o virtual donde se realizó el encuentro, por ejemplo: aula 301, laboratorio de sistemas, o Google Meet.
+                    </small>
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="{{ encuentro_form.fecha.id_for_label }}" class="form-label">Fecha</label>
                     {{ encuentro_form.fecha }}
+                    <small class="form-text text-muted">
+                        Seleccione la fecha en la que se llevó a cabo la sesión o clase. Asegúrese de que corresponda al calendario real del encuentro.
+                    </small>
                 </div>
             </div>
 
@@ -746,7 +755,11 @@
 
             <h5 class="mb-3">Seleccione los aprendices ausentes:</h5>
             <div class="mb-3">
-            {{encuapre_form.as_p}}
+                <label for="{{ encuapre_form.aprendices.id_for_label }}" class="form-label">Aprendices</label>
+                {{ encuapre_form.aprendices }}
+                <small class="form-text text-muted">
+                    Seccione solo aquellos aprendices que no asistieron al encuentro.
+                </small>
             </div>
 
             <div id="errorCrearEncuentro" class="text-danger mt-2"></div>
