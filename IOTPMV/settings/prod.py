@@ -13,6 +13,7 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 60)),
     }
 }
 
@@ -33,5 +34,3 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
-
-
