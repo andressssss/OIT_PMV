@@ -73,7 +73,7 @@ def home(request):
 @never_cache
 def signin(request):
     if request.user.is_authenticated:
-        return redirect('home')  # Reemplaza 'home' por la ruta real si cambia
+        return redirect('home')
 
     if request.method == 'GET':
         return render(request, 'signin.html', {
