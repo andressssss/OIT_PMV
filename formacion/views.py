@@ -1228,7 +1228,14 @@ def cargar_fichas(request):
     datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
     contenido_csv = datos_csv.read().replace(';', ',')
     lector = list(csv.DictReader(contenido_csv.splitlines()))
-
+    
+    if len(lector) > 60:
+        return JsonResponse({
+            "success": False,
+            "message": "El archivo contiene más de 60 registros.",
+            "errores": ["El archivo no debe exceder los 60 registros."]
+        }, status=400)
+    
     try:
         with transaction.atomic():
             aprendices_creados = []

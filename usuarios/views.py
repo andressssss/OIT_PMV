@@ -332,35 +332,30 @@ def perfil(request):
             return redirect(request.META.get('HTTP_REFERER', '/'))
         
         elif request.POST.get('form_id') == 'perfil_form':  # Actualización de perfil
+            logger.warning("llega?")
             form_perfil = PerfilForm(request.POST, instance=request.user.t_perfil)
 
             if form_perfil.is_valid():
                 datos_actualizados = form_perfil.cleaned_data
-                print(datos_actualizados)
+                logger.warning(datos_actualizados)
+
                 if 'fecha_naci' not in datos_actualizados or datos_actualizados['fecha_naci'] is None:
-                    print("No viene fecha")
+                    logger.warning("No viene fecha")
                     perfil_fe = T_perfil.objects.get(id = request.user.t_perfil.id)
                     form_perfil.instance.fecha_naci = perfil_fe.fecha_naci
-                    print(form_perfil.instance.fecha_naci)
+                    logger.warning(form_perfil.instance.fecha_naci)
                 form_perfil.save()
-                messages.success(request, "Perfil actualizado correctamente.")
-                return redirect('perfil')
-
                 
             # Manejo del correo electrónico
-            nuevo_email = request.POST.get('email')
+            nuevo_email = form_perfil.cleaned_data.get('mail')
             if nuevo_email:
                 usuario_act = User.objects.get(id=request.user.id)
                 usuario_act.email = nuevo_email
                 usuario_act.save()
-                perfil_act = T_perfil.objects.get(user=usuario_act)
-                perfil_act.mail = nuevo_email
-                perfil_act.save()
 
                 request.user.refresh_from_db()
                 #request.user.save()  # Guardar el nuevo correo en auth_user
-                messages.success(request, "Correo electrónico actualizado correctamente.")
-            
+                messages.success(request, "Perfil actualizado correctamente.")
             return redirect('perfil')
         else:
             print(form_documento.errors)  # Imprimir errores para depuración

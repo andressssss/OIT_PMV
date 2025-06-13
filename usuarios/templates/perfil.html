@@ -289,7 +289,7 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6">
-                            <label for="id_tipo_dni class="form-label">Tipo de documento</label>
+                            <label for="id_tipo_dni" class="form-label">Tipo de documento</label>
                             {{ form_perfil.tipo_dni }}
                         </div>
                         <div class="col-md-6">
@@ -299,7 +299,7 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6">
-                            <label for="id_tele class="form-label">Telefono</label>
+                            <label for="id_tele" class="form-label">Telefono</label>
                             {{ form_perfil.tele }}
                         </div>
                         <div class="col-md-6">
@@ -309,13 +309,13 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6">
-                            <label for="id_gene class="form-label">Genero</label>
+                            <label for="id_gene" class="form-label">Genero</label>
                             {{ form_perfil.gene }}
                         </div>
                         <div class="col-md-6">
                             <p>
-                                <label for="email">Correo Electrónico:</label>
-                                <input type="email" name="email" id="email" class="form-control" value="{{ request.user.email }}">
+                                <label for="id_mail">Correo Electrónico:</label>
+                                {{ form_perfil.mail }}
                             </p>
                         </div>
                     </div>  
