@@ -351,7 +351,7 @@ def perfil(request):
 
                 request.user.refresh_from_db()
                 #request.user.save()  # Guardar el nuevo correo en auth_user
-                messages.success(request, "Correo electrónico actualizado correctamente.")
+                messages.success(request, "Perfil actualizado correctamente.")
             return redirect('perfil')
         else:
             print(form_documento.errors)  # Imprimir errores para depuración
