@@ -1608,7 +1608,36 @@ def crear_competencia(request):
             return JsonResponse({'status': 'error', 'message': 'Competencia creada'}, status = 200)
     return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status =  405)
 
-require_GET
+def eliminar_competencia(request, competencia_id):
+    if request.method == 'DELETE':
+        try:
+            competencia = get_object_or_404(T_compe, id=competencia_id)
+
+            if T_raps.objects.filter(compe=competencia).exists():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No se puede eliminar la competencia porque tiene RAPs asociadas.'
+                }, status=400)
+
+            competencia.delete()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Competencia eliminada con éxito.'
+            }, status=200)
+
+        except T_compe.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Competencia no encontrada.'
+            }, status=404)
+
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Método no permitido.'
+    }, status=405)
+
+
+@require_GET
 @login_required
 def filtrar_competencias(request):
     programa = request.GET.getlist('programas', [])
