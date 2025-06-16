@@ -80,6 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">
                     <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm mb-1 deleteBtn" 
+                    data-id="${item.id}"
+                    title="Eliminar"
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top">
+                    <i class="bi bi-trash"></i>
                 </button>`
             ]);
         });
@@ -191,6 +198,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await cargarDatosEditarCompetencia(competenciaId);
             hideSpinner(btn, originalBtnContent);
+        } else if (e.target.closest('.deleteBtn')){
+            const btn = e.target.closest('.deleteBtn');
+            const originalBtnContent = btn.innerHTML;
+            const rapId = btn.dataset.id;
+            showSpinner(btn);
+
+            const confirmed = await confirmDeletion('¿Desea eliminar esta competencia?')
+            if (confirmed){
+                try {
+                    const response = await fetch(`/api/competencia/eliminar/${rapId}/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        }
+                    });
+                    if (!response.ok){
+                        const data = await response.json();
+                        toastError(data.message || 'Error eliminando la competencia');
+                    } else {
+                        toastSuccess('Competencia eliminada correctamente');
+                        aplicarFiltros();
+                    }
+                } catch (error) {
+                    toastError(error.message)
+                }
+            }
+            hideSpinner(btn, originalBtnContent)
+            reiniciarTooltips();
         }
     });
 
