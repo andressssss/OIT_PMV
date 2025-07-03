@@ -7,9 +7,7 @@
             <form action="/signin/" method="post" class="card card-body">
                 <h1 class="text-center">Log In</h1>
                 {% if error %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
-                </div>
+                    <div class="alert alert-danger">{{ error }}</div>
                 {% endif %}
                 {% csrf_token %}
                 

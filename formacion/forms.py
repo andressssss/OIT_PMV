@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from commons.models import T_acti,T_guia,T_compe_fase, T_centro_forma,T_fase_ficha, T_docu,T_departa, T_insti_edu, T_munici, T_DocumentFolder, T_encu,T_apre, T_raps_ficha, T_acti_docu, T_acti_ficha, T_acti_apre, T_acti_descri, T_crono, T_progra, T_compe, T_raps, T_ficha
+from commons.models import T_acti,T_fase, T_guia,T_compe_fase, T_centro_forma,T_fase_ficha, T_docu,T_departa, T_insti_edu, T_munici, T_DocumentFolder, T_encu,T_apre, T_raps_ficha, T_acti_docu, T_acti_ficha, T_acti_apre, T_acti_descri, T_crono, T_progra, T_compe, T_raps, T_ficha
 from django.db.models import Subquery, Exists, OuterRef
 import logging
 
@@ -29,7 +29,7 @@ class CascadaMunicipioInstitucionForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_departamento'})
     )
     municipio = forms.ModelChoiceField(
-        queryset=T_munici.objects.none(),  # Inicialmente vacío
+        queryset=T_munici.objects.none(),
         required=False,
         empty_label="Selecciona un municipio",
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_municipio'})
@@ -41,7 +41,7 @@ class CascadaMunicipioInstitucionForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_centro'})
     )
     insti = forms.ModelChoiceField(
-        queryset=T_insti_edu.objects.none(),  # Inicialmente vacío
+        queryset=T_insti_edu.objects.none(),
         required=False,
         empty_label="Selecciona una institución",
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_insti'})
@@ -110,7 +110,7 @@ class CronogramaForm(forms.ModelForm):
     class Meta:
         model = T_crono
         fields = ['nove', 'fecha_ini_acti', 'fecha_fin_acti',
-                  'fecha_ini_cali', 'fecha_fin_cali']
+                'fecha_ini_cali', 'fecha_fin_cali']
         widgets = {
             'nove': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Escriba las novedades si aplican'}),
             'fecha_ini_acti': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -176,35 +176,38 @@ class ProgramaForm(forms.ModelForm):
 class CompetenciaForm(forms.ModelForm):
     class Meta:
         model = T_compe
-        fields = ['nom', 'progra', 'fase']
+        fields = ['nom', 'progra']
         widgets = {
             'nom': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ingrese el nombre de la competencia'
             }),
             'progra': forms.SelectMultiple(attrs={
-                'class': 'form-control tomselect',
+                'class': 'form-control tomselect,',
                 'data-placeholder': 'Seleccione uno o varios programas'
-            }),
-            'fase': forms.SelectMultiple(attrs={
-                'class': 'form-control tomselect',
-                'data-placeholder': 'Seleccione una o varias fases'
-            }),
+            })
         }
         labels = {
             'nom': 'Nombre',
-            'progra': 'Programas',
-            'fase': 'Fases'
+            'progra': 'Programas'
         }
 
-
-
 class RapsForm(forms.ModelForm):
+    fase = forms.ModelMultipleChoiceField(
+        queryset=T_fase.objects.all(),
+        required=True,
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-control tomselectm',
+            'data-placeholder': 'Seleccione una o varias fases'
+        }),
+        label="Fases"
+    )
+
     class Meta:
         model = T_raps
         exclude = ['comple']
         widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control', 'label': 'Ingrese el nombre'}),
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
             'compe': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {

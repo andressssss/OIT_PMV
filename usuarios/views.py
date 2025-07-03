@@ -77,7 +77,8 @@ def signin(request):
 
     if request.method == 'GET':
         return render(request, 'signin.html', {
-            'form': AuthenticationForm()
+            'form': AuthenticationForm(),
+            'error': None
         })
     else:
         # Autenticación del usuario
@@ -192,36 +193,29 @@ def perfil(request):
     elif perfil.rol == 'cuentas':
         usuario = T_cuentas.objects.get(perfil=perfil)
 
-    # Mostrar documentos laborales
     documentos = T_docu_labo.objects.filter(usu=request.user, tipo='laboral')
 
-    # Mostrar documentos laborales
     documentos_aca = T_docu_labo.objects.filter(usu=request.user, tipo='academico')
 
-    # Obtener la hoja de vida del usuario (si existe)
     hoja_vida = T_docu_labo.objects.filter(usu=request.user, tipo='hv').first()
 
-    # Inicializar los formularios por defecto
     form_contraseña = CustomPasswordChangeForm(user=request.user)
     form_documento = DocumentoLaboralForm()
     form_perfil = PerfilForm(instance=perfil)
 
-    # Manejo de las solicitudes POST
     if request.method == 'POST':
         if 'old_password' in request.POST:
             form_contraseña = CustomPasswordChangeForm(user=request.user, data=request.POST)
             if form_contraseña.is_valid():
                 form_contraseña.save()
-                update_session_auth_hash(request, form_contraseña.user)  # Mantener la sesión activa con la nueva contraseña
-                logout(request)  # Cerrar sesión para forzar al usuario a iniciar sesión nuevamente
+                update_session_auth_hash(request, form_contraseña.user)
+                logout(request)  
 
-                # Si es una solicitud AJAX, enviar la respuesta adecuada con SweetAlert
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'status': 'success', 'message': 'Cambio satisfactorio, inicie sesión nuevamente.'})
                 else:
-                    return redirect('login')  # Si no es AJAX, redirigir al inicio de sesión
+                    return redirect('login')
             else:
-                # Responder con los errores en formato JSON (cuando es AJAX)
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'status': 'error', 'errors': form_contraseña.errors})
                 else:
@@ -229,105 +223,91 @@ def perfil(request):
         elif request.POST.get('form_id') == 'documento_form':
             form_documento = DocumentoLaboralForm(request.POST, request.FILES)
             if form_documento.is_valid():
-                # Obtener el archivo cargado
                 archivo = request.FILES['documento']
 
-                # Ruta de almacenamiento del archivo
                 ruta = f'documentos/instructores/{usuario.perfil.nom}{usuario.perfil.apelli}{usuario.perfil.dni}/laboral/{archivo.name}'
                 ruta_guardada = default_storage.save(ruta, archivo)
 
-                # Crear el registro en T_docu
                 t_docu = T_docu.objects.create(
                     nom=archivo.name,
                     tipo=archivo.name.split('.')[-1],
-                    tama=str(archivo.size // 1024) + " KB",  # Tamaño en KB
+                    tama=str(archivo.size // 1024) + " KB",
                     archi=ruta_guardada,
-                    priva='No',  # O cualquier valor adecuado
-                    esta='Activo'  # O cualquier estado inicial adecuado
+                    priva='No', 
+                    esta='Activo'
                 )
 
-                # Guardar el formulario de DocumentoLaboralForm (sin guardar aún)
                 documento = form_documento.save(commit=False)
-                documento.usu = request.user  # Asociar el documento al usuario actual
-                documento.esta = 'Cargado'  # Estado inicial del documento
-                documento.docu = t_docu  # Asignar el documento de T_docu
-                documento.tipo = 'laboral'  # Asignar el documento de T_docu
-                documento.save()  # Guardar el documento
+                documento.usu = request.user 
+                documento.esta = 'Cargado' 
+                documento.docu = t_docu  
+                documento.tipo = 'laboral' 
+                documento.save() 
                 messages.success(request, "Documento guardado satisfactoriamente.")
 
-                # Redirigir al perfil después de guardar
                 return redirect(request.META.get('HTTP_REFERER', '/'))
             else:
-                print(form_documento.errors)  # Imprimir errores para depuración
+                print(form_documento.errors) 
                 messages.error(request, 'Por favor, corrige los errores en el formulario.')
 
         elif request.POST.get('form_id') == 'documento_aca_form':
             form_documento = DocumentoLaboralForm(request.POST, request.FILES)
             if form_documento.is_valid():
 
-                # Obtener el archivo cargado
                 archivo = request.FILES['documento']
 
-                # Ruta de almacenamiento del archivo
                 ruta = f'documentos/instructores/{usuario.perfil.nom}{usuario.perfil.apelli}{usuario.perfil.dni}/academico/{archivo.name}'
                 ruta_guardada = default_storage.save(ruta, archivo)
 
-                # Crear el registro en T_docu
                 t_docu = T_docu.objects.create(
                     nom=archivo.name,
                     tipo=archivo.name.split('.')[-1],
-                    tama=str(archivo.size // 1024) + " KB",  # Tamaño en KB
+                    tama=str(archivo.size // 1024) + " KB",
                     archi=ruta_guardada,
-                    priva='No',  # O cualquier valor adecuado
-                    esta='Activo'  # O cualquier estado inicial adecuado
+                    priva='No', 
+                    esta='Activo'
                 )
 
-                # Guardar el formulario de DocumentoLaboralForm (sin guardar aún)
                 documento = form_documento.save(commit=False)
-                documento.usu = request.user  # Asociar el documento al usuario actual
-                documento.esta = 'Cargado'  # Estado inicial del documento
-                documento.docu = t_docu  # Asignar el documento de T_docu
-                documento.tipo = 'academico'  # Asignar el documento de T_docu
-                documento.save()  # Guardar el documento
+                documento.usu = request.user
+                documento.esta = 'Cargado' 
+                documento.docu = t_docu  
+                documento.tipo = 'academico' 
+                documento.save() 
                 messages.success(request, "Documento guardado satisfactoriamente.")
 
-                # Redirigir al perfil después de guardar
                 return redirect(request.META.get('HTTP_REFERER', '/'))
             else:
-                print(form_documento.errors)  # Imprimir errores para depuración
+                print(form_documento.errors) 
                 messages.error(request, 'Por favor, corrige los errores en el formulario.')
         elif 'cv_file' in request.FILES:
             archivo = request.FILES['cv_file']
 
-            # Ruta de almacenamiento del archivo
             ruta = f'documentos/instructores/{usuario.perfil.nom}{usuario.perfil.apelli}{usuario.perfil.dni}/HV/{archivo.name}'
             ruta_guardada = default_storage.save(ruta, archivo)
 
-            # Crear el registro en T_docu
             t_docu = T_docu.objects.create(
                 nom=archivo.name,
                 tipo=archivo.name.split('.')[-1],
-                tama=str(archivo.size // 1024) + " KB",  # Tamaño en KB
+                tama=str(archivo.size // 1024) + " KB",
                 archi=ruta_guardada,
-                priva='No',  # O cualquier valor adecuado
-                esta='Activo'  # O cualquier estado inicial adecuado
+                priva='No', 
+                esta='Activo'
             )
 
-            # Guardar el formulario de DocumentoLaboralForm (sin guardar aún)
             documento = form_documento.save(commit=False)
-            documento.usu = request.user  # Asociar el documento al usuario actual
-            documento.esta = 'Cargado'  # Estado inicial del documento
-            documento.docu = t_docu  # Asignar el documento de T_docu
-            documento.tipo = 'hv'  # Asignar el documento de T_docu
-            documento.nom = 'Hoja de Vida'  # Asignar el documento de T_docu
-            documento.cate = 'hv'  # Asignar el documento de T_docu
-            documento.save()  # Guardar el documento
+            documento.usu = request.user  
+            documento.esta = 'Cargado'
+            documento.docu = t_docu  
+            documento.tipo = 'hv'  
+            documento.nom = 'Hoja de Vida'  
+            documento.cate = 'hv'  
+            documento.save() 
             messages.success(request, "Documento guardado satisfactoriamente.")
 
-            # Redirigir al perfil después de guardar
             return redirect(request.META.get('HTTP_REFERER', '/'))
         
-        elif request.POST.get('form_id') == 'perfil_form':  # Actualización de perfil
+        elif request.POST.get('form_id') == 'perfil_form':
             logger.warning("llega?")
             form_perfil = PerfilForm(request.POST, instance=request.user.t_perfil)
 
@@ -342,7 +322,6 @@ def perfil(request):
                     logger.warning(form_perfil.instance.fecha_naci)
                 form_perfil.save()
                 
-            # Manejo del correo electrónico
             nuevo_email = form_perfil.cleaned_data.get('mail')
             if nuevo_email:
                 usuario_act = User.objects.get(id=request.user.id)
@@ -350,11 +329,11 @@ def perfil(request):
                 usuario_act.save()
 
                 request.user.refresh_from_db()
-                #request.user.save()  # Guardar el nuevo correo en auth_user
+                #request.user.save()
                 messages.success(request, "Perfil actualizado correctamente.")
             return redirect('perfil')
         else:
-            print(form_documento.errors)  # Imprimir errores para depuración
+            print(form_documento.errors)
             messages.error(request, 'Por favor, corrige los errores en el formulario.')
             
         

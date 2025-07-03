@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from .forms import CascadaMunicipioInstitucionForm,GuiaForm, CargarFichasMasivoForm, CargarDocuPortafolioFichaForm, ActividadForm,RapsFichaForm, EncuApreForm, EncuentroForm, DocumentosForm, CronogramaForm, ProgramaForm, CompetenciaForm, RapsForm, FichaForm
-from commons.models import T_encu,T_departa, T_munici, T_compe_progra,T_gestor_depa, T_fase, T_centro_forma,T_guia, T_cali, T_prematri_docu ,T_docu, T_munici, T_insti_edu, T_acti_apre,T_raps_acti,T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha ,T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
+from commons.models import T_encu,T_departa,T_raps_fase, T_munici, T_compe_progra,T_gestor_depa, T_fase, T_centro_forma,T_guia, T_cali, T_prematri_docu ,T_docu, T_munici, T_insti_edu, T_acti_apre,T_raps_acti,T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha ,T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
 from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
@@ -38,7 +38,7 @@ from io import TextIOWrapper
 from django.forms import ValidationError
 from django.core.validators import validate_email
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 
 ###############################################################################################################
 #        VISTAS FICHA
@@ -402,7 +402,6 @@ def obtener_carpetas(request, ficha_id):
         nodo_id = nodo["id"]
         parent_id = nodo["parent_id"]
         
-        # Construcción del nodo base
         nodo_data = {
             "id": nodo_id,
             "name": nodo["name"],
@@ -411,7 +410,6 @@ def obtener_carpetas(request, ficha_id):
             "children": []
         }
 
-        # Si es un documento, añadir los datos adicionales
         if nodo["tipo"] == "documento":
             nodo_data.update({
                 "documento_id": nodo["documento__id"],
@@ -419,12 +417,10 @@ def obtener_carpetas(request, ficha_id):
                 "url": nodo["documento__archi"],  # La URL del archivo
             })
 
-        # Guardar en el mapa de nodos
         folder_map[nodo_id] = nodo_data
 
     root_nodes = []
 
-    # Construcción de la jerarquía
     for nodo in folder_map.values():
         parent_id = nodo["parent_id"]
         if parent_id:
@@ -1162,16 +1158,6 @@ def editar_actividad(request, actividad_id):
 #        VISTAS FICHA MASIVO
 ###############################################################################################################
 
-def formatear_error_csv(fila, errores_campos):
-    fila_str = '\n  '.join([f"{k}: '{v}'" for k, v in fila.items()])
-    return (
-        "⚠️ Error de validación en una fila del archivo:\n"
-        "----------------------------------------\n"
-        f"Datos de la fila:\n  {fila_str}\n\n"
-        f"Errores encontrados:\n" + '\n'.join(errores_campos) + "\n"
-        "----------------------------------------"
-    )
-
 # Función para generar contraseña aleatoria
 def generar_contraseña(length=8):
     caracteres = string.ascii_letters + string.digits
@@ -1182,15 +1168,150 @@ def cargar_fichas_masivo(request):
     return render(request, 'fichas_masivo_crear.html')
 
 def formatear_error_csv(fila, errores_campos):
-    fila_str = '\n  '.join([f"{k}: '{v}'" for k, v in fila.items()])
+    fila_str = '\n  '.join([f"{k}: '{v}'" for k, v in fila.items() if k != '__line__'])
+    linea = fila.get('__line__', '?')
     return (
-        "⚠️ Error de validación en una fila del archivo:\n"
-        "----------------------------------------\n"
+        f"⚠️ Error en la línea {linea} del archivo CSV:\n"
+        f"----------------------------------------\n"
         f"Datos de la fila:\n  {fila_str}\n\n"
-        f"Errores encontrados:\n" + '\n'.join(errores_campos) + "\n"
-        "----------------------------------------"
+        f"Errores encontrados:\n" + '\n'.join(f"- {e}" for e in errores_campos) + "\n"
+        f"----------------------------------------"
     )
 
+def validar_campos_csv(fila, emails_csv=None, dnis_csv=None):
+    errores = []
+
+    emails_csv = emails_csv if emails_csv is not None else set()
+    dnis_csv = dnis_csv if dnis_csv is not None else set()
+
+    TIPOS_DNI_VALIDOS = {'ti', 'cc', 'pp', 'ce', 'ppt'}
+    GENEROS_VALIDOS = {'H', 'M'}
+    PARENTEZCOS_VALIDOS = {
+        'padre', 'madre', 'abuelo', 'abuela', 'hermano', 'hermana', 'tio', 'tia', 'otro'
+    }
+
+    campos_requeridos = [
+        'email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele',
+        'dire', 'gene', 'fecha_naci', 'nom_repre', 'dni_repre',
+        'tele_repre', 'dire_repre', 'mail_repre', 'parentezco'
+    ]
+    
+    for campo in campos_requeridos:
+        if campo not in fila or not fila[campo].strip():
+            errores.append(f"Campo requerido faltante: '{campo}'")
+
+    # -----------------------
+    # Validaciones del aprendiz
+    # -----------------------
+
+    # Email aprendiz
+    email = fila['email'].strip().lower()
+    try:
+        validate_email(email)
+    except ValidationError:
+        errores.append(f"Email del aprendiz inválido: '{email}'")
+    else:
+        if email in emails_csv:
+            errores.append(f"Email del aprendiz duplicado en el archivo: '{email}'")
+        elif T_perfil.objects.filter(mail=email).exists():
+            errores.append(f"Email del aprendiz ya registrado en el sistema: '{email}'")
+        else:
+            emails_csv.add(email)
+
+    # Nombres
+    nom = fila['nom'].strip()
+    if not (2 <= len(nom) <= 50):
+        errores.append(f"Nombres del aprendiz inválidos (mínimo 2, máximo 50 caracteres): '{nom}'")
+
+    # Apellidos
+    apelli = fila['apelli'].strip()
+    if not (2 <= len(apelli) <= 50):
+        errores.append(f"Apellidos del aprendiz inválidos (mínimo 2, máximo 50 caracteres): '{apelli}'")
+
+    # Tipo de documento
+    tipo_dni = fila['tipo_dni'].strip().lower()
+    if tipo_dni not in TIPOS_DNI_VALIDOS:
+        errores.append(f"Tipo de documento inválido: '{tipo_dni}'. Debe ser uno de: {', '.join(sorted(TIPOS_DNI_VALIDOS))}")
+
+    # DNI aprendiz
+    dni = fila['dni'].strip()
+    if not dni.isdigit() or int(dni) <= 0:
+        errores.append(f"DNI del aprendiz inválido, debe ser un número: '{dni}'")
+    elif not (6 <= len(dni) <= 15):
+        errores.append(f"DNI del aprendiz inválido, longitud fuera de rango (6-15): '{dni}'")
+    else:
+        if dni in dnis_csv:
+            errores.append(f"DNI del aprendiz duplicado en el archivo: '{dni}'")
+        elif T_perfil.objects.filter(dni=dni).exists():
+            errores.append(f"DNI del aprendiz ya registrado en el sistema: '{dni}'")
+        else:
+            dnis_csv.add(dni)
+
+    # Teléfono aprendiz
+    tele = fila['tele'].strip()
+    if not tele.isdigit() or int(tele) <= 0:
+        errores.append(f"Teléfono del aprendiz inválido, debe contener solo números: '{tele}'")
+    elif not (7 <= len(tele) <= 15):
+        errores.append(f"Teléfono del aprendiz inválido, longitud fuera de rango (7-15): '{tele}'")
+
+    # Dirección
+    dire = fila['dire'].strip()
+    if len(dire) < 5:
+        errores.append(f"Dirección del aprendiz demasiado corta (mínimo 5 caracteres): '{dire}'")
+
+    # Género
+    gene = fila['gene'].strip().upper()
+    if gene not in GENEROS_VALIDOS:
+        errores.append(f"Género inválido: '{gene}'. Debe ser 'H' o 'M'.")
+
+    # Fecha de nacimiento
+    try:
+        datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+    except ValueError:
+        errores.append(f"Fecha de nacimiento inválida: '{fila['fecha_naci']}'. Formato correcto: DD/MM/AAAA.")
+
+
+    # -----------------------
+    # Validaciones del representante
+    # -----------------------
+
+    # Nombre representante
+    nom_repre = fila['nom_repre'].strip()
+    if not (2 <= len(nom_repre) <= 50):
+        errores.append(f"Nombre del representante inválido (mínimo 2, máximo 50 caracteres): '{nom_repre}'")
+
+    # DNI representante
+    dni_repre = fila['dni_repre'].strip()
+    if not dni_repre.isdigit() or int(dni_repre) <= 0:
+        errores.append(f"DNI del representante inválido, debe contener solo números positivos: '{dni_repre}'")
+    elif not (6 <= len(dni_repre) <= 15):
+        errores.append(f"DNI del representante inválido, longitud fuera de rango (6-15): '{dni_repre}'")
+
+    # Teléfono representante
+    tele_repre = fila['tele_repre'].strip()
+    if not tele_repre.isdigit() or int(tele_repre) <= 0:
+        errores.append(f"Teléfono del representante inválido, debe contener solo números positivos: '{tele_repre}'")
+    elif not (7 <= len(tele_repre) <= 15):
+        errores.append(f"Teléfono del representante inválido, longitud fuera de rango (7-15): '{tele_repre}'")
+
+    # Dirección representante
+    dire_repre = fila['dire_repre'].strip()
+    if len(dire_repre) < 5:
+        errores.append(f"Dirección del representante demasiado corta (mínimo 5 caracteres): '{dire_repre}'")
+
+    # Email representante
+    email_repre = fila['mail_repre'].strip()
+    try:
+        validate_email(email_repre)
+    except ValidationError:
+        errores.append(f"Correo electrónico del representante inválido: '{email_repre}'")
+
+    # Parentezco
+    paren = fila['parentezco'].strip().lower()
+    if paren not in PARENTEZCOS_VALIDOS:
+        errores.append(f"Parentesco inválido: '{paren}'. Debe ser uno de: {', '.join(sorted(PARENTEZCOS_VALIDOS))}")
+
+    return errores
 
 @login_required
 @require_POST
@@ -1226,9 +1347,13 @@ def cargar_fichas(request):
         }, status=400)
 
     datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
-    contenido_csv = datos_csv.read().replace(';', ',')
-    lector = list(csv.DictReader(contenido_csv.splitlines()))
-    
+    lector_csv = csv.DictReader(datos_csv, delimiter=';')
+
+    lector = [
+        fila for fila in lector_csv
+        if any(campo.strip() for campo in fila.values())
+    ]
+
     if len(lector) > 60:
         return JsonResponse({
             "success": False,
@@ -1239,42 +1364,23 @@ def cargar_fichas(request):
     try:
         with transaction.atomic():
             aprendices_creados = []
+            emails_csv = set()
+            dnis_csv = set()
 
-            for fila in lector:
+            for i, fila in enumerate(lector, start=2):
+
+                fila['__line__'] = i
+
                 try:
-                    campos_requeridos = [
-                        'email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele',
-                        'dire', 'gene', 'fecha_naci', 'nom_repre', 'dni_repre',
-                        'tele_repre', 'dire_repre', 'mail_repre', 'parentezco'
-                    ]
-                    errores_fila = []
 
-                    for campo in campos_requeridos:
-                        if campo not in fila or not fila[campo].strip():
-                            errores_fila.append(f"Campo requerido faltante: '{campo}'")
-
-                    dni = fila['dni']
-                    if T_perfil.objects.filter(dni=dni).exists():
-                        resumen["duplicados_dni"].append(dni)
-                        errores_fila.append(f"DNI duplicado en el sistema: {dni}")
-
-                    try:
-                        validate_email(fila['email'])
-                    except ValidationError:
-                        errores_fila.append(f"Email inválido: {fila['email']}")
-
-                    if T_perfil.objects.filter(mail=fila['email']).exists():
-                        errores_fila.append(f"Email ya registrado: {fila['email']}")
-
-                    try:
-                        fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
-                    except ValueError:
-                        errores_fila.append(f"Fecha de nacimiento inválida: {fila['fecha_naci']}")
+                    errores_fila = validar_campos_csv(fila, emails_csv, dnis_csv)
 
                     if errores_fila:
                         error_msg = formatear_error_csv(fila, errores_fila)
                         raise ValidationError(error_msg)
 
+                    dni = fila['dni']
+                    fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
                     base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
                     username = base_username
                     i = 1
@@ -1449,9 +1555,9 @@ def cargar_fichas(request):
             raps_ficha_objs = []
 
             for rap in raps:
-                for fase in rap.compe.fase.all():
+                for rap_fase  in rap.t_raps_fase_set.all():
                     raps_ficha_objs.append(
-                        T_raps_ficha(ficha=ficha, rap=rap, fase=fase)
+                        T_raps_ficha(ficha=ficha, rap=rap, fase=rap_fase.fase)
                     )
 
             T_raps_ficha.objects.bulk_create(raps_ficha_objs)
@@ -1641,20 +1747,16 @@ def eliminar_competencia(request, competencia_id):
 @login_required
 def filtrar_competencias(request):
     programa = request.GET.getlist('programas', [])
-    fase = request.GET.getlist('fases', [])
 
     competencias = T_compe.objects.all()
 
     if programa:
         competencias = competencias.filter(progra__nom__in = programa)
-    if fase:
-        competencias = competencias.filter(fase__nom__in = fase)
-    
+
     data = [
         {
             'id': c.id,
             'nom': c.nom,
-            'fase': [f.nom for f in c.fase.all()],
             'progra': [p.nom for p in c.progra.all()]
         } for c in competencias
     ]
@@ -1678,7 +1780,6 @@ def obtener_competencia(request, competencia_id):
             'id': competencia.id,
             'nom': competencia.nom,
             'progra': list(competencia.progra.values_list('id', flat=True)),
-            'fase': list(competencia.fase.values_list('id', flat=True))
         }
         return JsonResponse(data)
     return JsonResponse({'status': 'error', 'message': 'Competencia no encontrada'}, status=404)
@@ -1720,54 +1821,25 @@ def listar_raps(request):
         })
 
 @login_required
-def crear_rap(request):
-    rap_form = RapsForm(request.POST)
-
-    if rap_form.is_valid():
-        nombre = rap_form.cleaned_data['nom']
-        if T_raps.objects.filter(nom=nombre).exists():
-            return JsonResponse({'status': 'error', 'message': 'Ya existe un RAP con el nombre indicado'}, status=400)
-
-        # Obtener la competencia desde el select manual
-        compe_id = request.POST.get('compe')
-        if not compe_id:
-            return JsonResponse({'status': 'error', 'message': 'Debe seleccionar una competencia'}, status=400)
-
-        try:
-            competencia = T_compe.objects.get(id=compe_id)
-        except T_compe_progra.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Competencia no encontrada'}, status=404)
-
-        # Crear el RAP manualmente
-        nuevo_rap = rap_form.save(commit=False)
-        nuevo_rap.compe = competencia
-        nuevo_rap.comple="No"
-        nuevo_rap.save()
-
-        return JsonResponse({'status': 'success', 'message': 'RAP creado correctamente'}, status=200)
-
-    return JsonResponse({'status': 'error', 'message': 'Formulario inválido', 'errors': rap_form.errors}, status=400)
-
-@login_required
 def filtrar_raps(request):
     if request.method == 'GET':
         programas = request.GET.getlist('programas', [])
         fases = request.GET.getlist('fases', [])
         competencias = request.GET.getlist('competencias', [])
 
-        raps = T_raps.objects.select_related('compe').prefetch_related('compe__progra', 'compe__fase')
+        raps = T_raps.objects.select_related('compe').prefetch_related('compe__progra', 'fase')
 
         if programas:
             raps = raps.filter(compe__progra__nom__in=programas)
         if fases:
-            raps = raps.filter(compe__fase__nom__in=fases)
+            raps = raps.filter(fase__nom__in=fases)
         if competencias:
             raps = raps.filter(compe__nom__in=competencias)
 
         data = []
         for rap in raps:
             compe = rap.compe
-            fases = list(compe.fase.values_list('nom', flat=True)) if compe else []
+            fases = list(rap.fase.values_list('nom', flat=True))
             programas = list(compe.progra.values_list('nom', flat=True)) if compe else []
 
             data.append({
@@ -1785,7 +1857,7 @@ def filtrar_raps(request):
 @login_required
 def obtener_opciones_fases_raps(request):
     fases = T_fase.objects.filter(
-        t_compe_fase__compe__t_raps__isnull=False
+        t_raps_fase__isnull=False
     ).distinct().values_list('nom', flat=True)
 
     return JsonResponse(list(fases), safe=False)
@@ -1816,10 +1888,12 @@ def obtener_competencias_programa(request, id_progra):
 def obtener_rap(request, rap_id):
     rap = T_raps.objects.filter(pk=rap_id).first()
     if rap:
+        fases = list(rap.fase.values('id', 'nom'))
         data = {
             'id': rap.id,
             'nom': rap.nom,
-            'compe': rap.compe.id
+            'compe': rap.compe.id,
+            'fases': fases
         }
         return JsonResponse(data)
     return JsonResponse({'status': 'error', 'message': 'RAP no encontrado'}, status=404)
@@ -1831,20 +1905,26 @@ def obtener_opciones_competencias(request):
 
 @login_required
 def editar_rap(request, rap_id):
-    rap = T_raps.objects.filter(pk = rap_id).first()
+    rap = T_raps.objects.filter(pk=rap_id).first()
+
+    if not rap:
+        return JsonResponse({'status': 'error', 'message': 'RAP no encontrado'}, status=404)
 
     if request.method == 'POST':
-        form_rap = RapsForm(request.POST, instance = rap)
+        form_rap = RapsForm(request.POST, instance=rap)
 
         if form_rap.is_valid():
             nom = form_rap.cleaned_data['nom']
-            if T_raps.objects.filter(nom = nom).exclude(pk=rap_id).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un RAP con el nombre indicado'}, status = 400)
-            form_rap.save();
-            return JsonResponse({'status': 'success', 'message': 'RAP actualizado con exito'}, status = 200)
+            if T_raps.objects.filter(nom=nom).exclude(pk=rap_id).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un RAP con el nombre indicado'}, status=400)
+
+            form_rap.save
+            return JsonResponse({'status': 'success', 'message': 'RAP actualizado con éxito'}, status=200)
         else:
-            return JsonResponse({'status': 'error', 'message': 'Error al actualizar la competencia', 'errors': form_rap.errors}, status = 400)
-    return JsonResponse({'status': 'error', 'message': 'metodo no permitido'}, status = 405)
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el RAP', 'errors': form_rap.errors}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
 
 ###############################################################################################################
 #        VISTAS GUIAS
