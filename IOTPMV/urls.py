@@ -25,6 +25,7 @@ from gestion_instructores import views as gestion_instructores_views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from django.http import HttpResponse
 
 urlpatterns = [
     # Ruta Admin
@@ -251,8 +252,6 @@ urlpatterns = [
 
     # RAPS
     path('raps/', formacion_views.listar_raps, name = 'raps'),
-    path('api/rap/crear/', formacion_views.crear_rap, name = 'api_crear_rap'),
-    path('api/rap/eliminar/<int:rap_id>', formacion_views.crear_rap, name = 'api_crear_rap'),
     path('api/raps/filtrar/', formacion_views.filtrar_raps, name="api_filtrar_raps"),
     path('api/raps/fases/', formacion_views.obtener_opciones_fases_raps, name="api_opciones_fases_raps"),
     path('api/raps/programas/', formacion_views.obtener_opciones_programas_raps, name="api_opciones_programas_raps"),
@@ -381,3 +380,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+urlpatterns += [
+    path('.well-known/appspecific/com.chrome.devtools.json', lambda request: HttpResponse(status=204)),
+]

@@ -34,3 +34,4 @@ required_env_vars = [
 for var in required_env_vars:
     if os.getenv(var) is None:
         raise ValueError(f"Missing required environment variable: {var}")
+    

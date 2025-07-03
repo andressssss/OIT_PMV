@@ -1,5 +1,7 @@
 from pathlib import Path
+import sys
 import os
+import warnings
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -12,11 +14,15 @@ if env_path.exists():
 else:
     print(f"¡Advertencia! El archivo {env_file} no se encuentra.")
 
+
 # Cargar las variables de entorno
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # Ahora DEBUG debería estar correctamente definido después de cargar el .env
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
+warnings.filterwarnings("ignore", message="StreamingHttpResponse must consume synchronous iterators*")
+
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
@@ -55,6 +61,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'usuarios.middleware.ExpiredSessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'usuarios.middleware.TemplateDebugMiddleware'
 ]
 
 ROOT_URLCONF = 'IOTPMV.urls'
@@ -165,33 +172,3 @@ DJANGO_ICONS = {
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1048576000
 
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{asctime} [{levelname}] {name} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '[{levelname}] {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'django_error.log'),
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
-    },
-}

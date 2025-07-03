@@ -27,13 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await Promise.all([
                 crearSelect({
-                    id: 'fase',
-                    nombre: 'fases',
-                    url: '/api/competencias/fases/',
-                    placeholderTexto: 'Seleccione una fase',
-                    contenedor: '#contenedor-fase'
-                }),
-                crearSelect({
                     id: 'programa',
                     nombre: 'programas',
                     url: '/api/competencias/programas/',
@@ -68,12 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         data.forEach(item => {
             const listaProgramas = `<ul class="lista-estilo">${item.progra.map(p => `<li><i class="bi bi-dot"></i> ${p}</li>`).join('')}</ul>`;
-            const listaFases = `<ul class="lista-estilo">${item.fase.map(f => `<li><i class="bi bi-dot"></i> ${nombresFase[f] || f}</li>`).join('')}</ul>`;
     
             table.row.add([
                 item.nom,
                 listaProgramas,
-                listaFases,
                 `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${item.id}"
                     title="Editar"
@@ -108,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.innerHTML = `
             <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
             <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
             <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span></td>
         `;
         tbody.appendChild(tr);
@@ -249,18 +239,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
             // Asignar valores múltiples al select con TomSelect
             const prograSelect = formEditarCompetencia.querySelector('select[name="progra"]');
-            const faseSelect = formEditarCompetencia.querySelector('select[name="fase"]');
     
             if (prograSelect.tomselect) {
                 prograSelect.tomselect.setValue(data['progra']);
             } else {
                 prograSelect.value = data['progra'][0];
-            }
-    
-            if (faseSelect.tomselect) {
-                faseSelect.tomselect.setValue(data['fase']);
-            } else {
-                faseSelect.value = data['fase'][0];
             }
     
             formEditarCompetencia.setAttribute('action', `/api/competencia/editar/${competenciaId}/`);

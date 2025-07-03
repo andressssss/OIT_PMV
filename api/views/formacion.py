@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from api.serializers.formacion import RapsCreateSerializer, RAPSerializer, CompetenciaSerializer, FichaSerializer
+from api.serializers.formacion import RAPSerializer, CompetenciaSerializer, FichaSerializer, BaseRapsSerializer
 from commons.models import T_raps, T_compe, T_ficha
 
 import logging
@@ -16,15 +16,10 @@ class RapsViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        if self.action in ['list', 'retrieve', 'partial_update', 'update']:
-            return RAPSerializer  # serializer para leer y editar
-        if self.action == 'create':
-            return RapsCreateSerializer  # serializer para creación
-        return RAPSerializer  # fallback
+        return RAPSerializer if self.action in ['list', 'retrieve'] else BaseRapsSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
             self.perform_create(serializer)
             return Response({
@@ -32,12 +27,29 @@ class RapsViewSet(ModelViewSet):
                 'message': 'RAP creado correctamente',
                 'data': serializer.data
             }, status=status.HTTP_201_CREATED)
-        
+
         return Response({
             'status': 'error',
             'message': 'Formulario inválido',
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, *args, **kwargs):
+        response = super().partial_update(request, *args, **kwargs)
+        return response
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        rap_id = instance.id
+        rap_nom = instance.nom
+
+        instance.fase.clear()
+        instance.delete()
+
+        return Response({
+            'status': 'success',
+            'message': f'RAP {rap_nom} eliminado correctamente'
+        }, status=status.HTTP_200_OK)
 
 class CompetenciasViewSet(ModelViewSet):
     serializer_class = CompetenciaSerializer

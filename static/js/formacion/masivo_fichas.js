@@ -139,6 +139,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const form = document.getElementById('form-cargar-ficha');
 
+    function verificarArchivoLegible(archivo) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(true);
+            reader.onerror = () => reject(new Error("Archivo ilegible o eliminado."));
+            reader.readAsArrayBuffer(archivo);
+        });
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -147,8 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('submitBtn');
         const originalBtnContent = btn.innerHTML;
 
-        const numFicha = formData.get('num_ficha').trim();
+        // Evitar doble envío
+        if (btn.disabled) return;
 
+        const numFicha = formData.get('num_ficha').trim();
         if (!numFicha) {
             const confirmed = await confirmAction("¿Está seguro de crear una ficha sin número?");
             if (!confirmed) return;
@@ -157,17 +168,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const archivoInput = document.getElementById('archivo');
         const archivo = archivoInput.files[0];
 
-        const { valido, mensaje } = validarArchivo(archivo, ['csv'], 3)
-
-        if (!valido) {
-            toastError(mensaje)
-            return
+        if (!archivo) {
+            toastError('Debe seleccionar un archivo antes de enviar.');
+            return;
         }
 
-        // Verificar si los select están deshabilitados
+        const { valido, mensaje } = validarArchivo(archivo, ['csv'], 3);
+        if (!valido) {
+            toastError(mensaje);
+            return;
+        }
+
         const selectMunicipio = document.getElementById('municipio');
         const selectColegio = document.getElementById('colegio');
-
         if (selectMunicipio.disabled || selectColegio.disabled) {
             toastError('Debe seleccionar un municipio y un colegio antes de continuar.');
             return;
@@ -178,11 +191,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('alert-success').classList.add('d-none');
         document.getElementById('alert-error').innerText = '';
         document.getElementById('alert-success-content').innerHTML = '';
+        document.getElementById('alert-message').classList.add('d-none');
+        document.getElementById('alert-message').textContent = '';
 
         setFormDisabled(form, true);
         showSpinner(btn);
-        
+
         try {
+            // ✅ Validar que el archivo no haya sido eliminado del sistema
+            await verificarArchivoLegible(archivo);
+            
             const response = await fetch(`/api/fichas/crear_masivo/`, {
                 method: 'POST',
                 body: formData
@@ -209,14 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li><strong>Errores:</strong> ${data.resumen.errores}</li>
                 ${data.resumen.duplicados_dni.length > 0 ? `<li><strong>DNI duplicados:</strong> ${data.resumen.duplicados_dni.join(', ')}</li>` : ''}
             `;
-
             alertSuccess.classList.remove('d-none');
 
-            // Mostrar mensaje en el div adicional #alert-message
-            const alertMessage = document.getElementById('alert-message');
-            alertMessage.textContent = data.message || 'Carga finalizada';
-            alertMessage.classList.remove('d-none');
-
+            document.getElementById('alert-message').textContent = data.message || 'Carga finalizada';
+            document.getElementById('alert-message').classList.remove('d-none');
 
             if (data.errores && data.errores.length > 0) {
                 const alertError = document.getElementById('alert-error');
@@ -226,13 +240,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             toastSuccess(data.message || 'Carga finalizada');
             form.reset();
+            archivoInput.value = '';  // limpiar manualmente input file
+
         } catch (error) {
-            toastError('Error de red o servidor');
+            console.error(error);
+            toastError('El archivo fue eliminado o ya no está disponible. Por favor, selecciónelo de nuevo.');
+            archivoInput.value = '';
         } finally {
             setFormDisabled(form, false);
             hideSpinner(btn, originalBtnContent);
         }
     });
+
 
 
 });

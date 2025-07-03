@@ -40,9 +40,9 @@
                     <thead class="table-secondary text-center">
                     <tr>
                         <th>RAP</th>
-                        <th>Fase</th>
                         <th>Competencia</th>
                         <th>Programa</th>
+                        <th>Fase</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -73,6 +73,9 @@
                     
                     {{ rap_form.nom.label_tag }}
                     {{ rap_form.nom }}
+
+                    {{ rap_form.fase.label_tag }}
+                    {{ rap_form.fase }}
                     
                     <div class="mb-3">
                         <label for="programaSelect" class="form-label">Programa</label>
@@ -114,6 +117,9 @@
                     
                     {{ rap_form.nom.label_tag }}
                     {{ rap_form.nom }}
+
+                    {{ rap_form.fase.label_tag }}
+                    {{ rap_form.fase }}
             
                     <div class="mb-3">
                         <label for="programaSelectEdit" class="form-label">Programa</label>
