@@ -24,6 +24,7 @@ class T_perfil(models.Model):
         ('cc', 'Cedula de ciudadania'),
         ('pp', 'Pasaporte'),
         ('ce', 'Cedula de extranjeria'),
+        ('ppt', 'Permiso por protección temporal'),
 
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
