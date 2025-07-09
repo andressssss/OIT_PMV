@@ -1408,7 +1408,15 @@ def cargar_fichas(request):
                         fecha_naci=fecha_naci,
                         rol="aprendiz"
                     )
-                    perfil.full_clean()
+                    try:
+                        perfil.full_clean()
+                    except ValidationError as e:
+                        errores = []
+                        for campo, mensajes in e.message_dict.items():
+                            valor = getattr(perfil, campo, '')
+                            for msg in mensajes:
+                                errores.append(f"{msg} Valor recibido en campo '{campo}': '{valor}'")
+                        raise ValidationError(formatear_error_csv(fila, errores))
 
                     validate_email(fila['mail_repre'].strip())
 
@@ -1425,7 +1433,15 @@ def cargar_fichas(request):
                             mail=fila['mail_repre'],
                             paren=fila['parentezco']
                         )
-                        representante_legal.full_clean()
+                        try:
+                            representante_legal.full_clean()
+                        except ValidationError as e:
+                            errores = []
+                            for campo, mensajes in e.message_dict.items():
+                                valor = getattr(representante_legal, campo, '')
+                                for msg in mensajes:
+                                    errores.append(f"{msg} Valor recibido en campo '{campo}': '{valor}'")
+                            raise ValidationError(formatear_error_csv(fila, errores))
                         representante_legal.save()
 
                     aprendiz = T_apre.objects.create(
@@ -1439,8 +1455,11 @@ def cargar_fichas(request):
                     aprendices_creados.append(aprendiz)
                     resumen["insertados"] += 1
 
+                except ValidationError as ve:
+                    raise ve
                 except Exception as fila_error:
-                    raise ValidationError(str(fila_error))
+                    raise ValidationError(f"Error inesperado en la fila {fila.get('__line__', '?')}: {str(fila_error)}")
+
 
             # Crear ficha y grupo
             cod_ficha = request.POST.get('num_ficha', '').strip()
