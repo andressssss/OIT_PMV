@@ -13,6 +13,8 @@ def crear_datos_prueba(ficha_id):
         "6. ACTA PLAN DE MEJORAMIENTO",
         "7. EVIDENCIAS DE ESTRATEGIA DE NIVELACIÓN",
         "8. FORMATO DE HOMOLOGACIÓN",
+        "9. FORMATO PROGRAMACIÓN EVENTOS",
+        "10. REPORTES JUICIOS EVALUATIVOS"
     ]
 
     created_folders = {}  # Guardamos las carpetas para usarlas en la jerarquía
@@ -36,14 +38,25 @@ def crear_datos_prueba(ficha_id):
             T_DocumentFolder.objects.create(name=subsub, tipo="carpeta", parent=subfolder, ficha=ficha)
 
     # Sub carpetas FORMATO ACTA
-    sub_folders_3 = ["ELECCIÓN DEL VOCERO", "COMITÉ ACADÉMICO", "CERTIFICACIÓN DE TRANSVERSALES FINALIZACIONES", "DESERCIONES Y RETIROS VOLUNTARIOS"]
+    sub_folders_3 = ["ELECCIÓN REPRESENTANTE VOCERO", "ELEVACIÓN Y SEGUIMIENTO A COMITÉ ACADÉMICO", "CERTIFICACIÓN DE TRANSVERSALES FINALIZACIONES", "ENTREGA Y SOCIALIZACIÓN DE LA INDUCCIÓN APRENDICES", "SENSIBILIZACIÓN DE LA ETAPA PRODUCTIVA", "SOCIALIZACIÓN DE ESTRUCTURA CURRICULAR"]
     for sub in sub_folders_3:
         subfolder = T_DocumentFolder.objects.create(name=sub, tipo="carpeta", parent=created_folders["3. GORF-084-FORMATO ACTA"], ficha=ficha)
+
+    # Subcarpetas de 4. GFPI-F-023-PLANEACIÓN, SEGUIMIENTO Y EVALUACIÓN ETAPA PRODUCTIVA
+    sub_folders_5 = ["GFPI-F-023-PLANEACIÓN, SEGUIMIENTO Y EVALUACIÓN ETAPA PRODUCTIVA", "GFPI-F-147-BITACORAS SEGUIMIENTO ETAPA PRODUCTIVA", "GFPI-F-165-V3-INSCRIPCIÓN A ETAPA PRODUCTIVA", "PROCESO DE CERTIFICACIÓN"]
+    for sub in sub_folders_5:
+        T_DocumentFolder.objects.create(name=sub, tipo="carpeta", parent=created_folders["4. GFPI-F-023-PLANEACIÓN, SEGUIMIENTO Y EVALUACIÓN ETAPA PRODUCTIVA"], ficha=ficha)
+
 
     # Subcarpetas de 6. ACTA PLAN DE MEJORAMIENTO
     sub_folders_4 = ["1. ANÁLISIS", "2. PLANEACIÓN", "3. EJECUCIÓN", "4. EVALUACIÓN"]
     for sub in sub_folders_4:
         T_DocumentFolder.objects.create(name=sub, tipo="carpeta", parent=created_folders["6. ACTA PLAN DE MEJORAMIENTO"], ficha=ficha)
+
+    # Subcarpetas de 10. REPORTES JUICIOS EVALUATIVOS
+    sub_folders_4 = ["1. CRONOGRAMA DE JUICIOS EVALUATIVOS", "2. REPORTE DE JUICIOS EVALUATIVOS"]
+    for sub in sub_folders_4:
+        T_DocumentFolder.objects.create(name=sub, tipo="carpeta", parent=created_folders["10. REPORTES JUICIOS EVALUATIVOS"], ficha=ficha)
 
 
     print("Datos de portafolio creados exitosamente.")

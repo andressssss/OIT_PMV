@@ -151,6 +151,15 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        Swal.fire({
+            icon: 'info',
+            title: 'Función inhabilitada temporalmente',
+            text: 'Esta acción está inhabilitada temporalmente debido a migraciones internas. Lo invitamos a consultar su listado de fichas una vez termine la ventana de migración.',
+            confirmButtonText: 'Entendido',
+        });
+
+        return;
+
         const form = e.target;
         const formData = new FormData(form);
         const btn = document.getElementById('submitBtn');
@@ -198,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showSpinner(btn);
 
         try {
-            // ✅ Validar que el archivo no haya sido eliminado del sistema
             await verificarArchivoLegible(archivo);
             
             const response = await fetch(`/api/fichas/crear_masivo/`, {

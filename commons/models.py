@@ -422,7 +422,7 @@ class T_apre(models.Model):
     esta = models.CharField(max_length=200, choices=ESTADO_ESTUDIANTE_CHOICES)
     ficha = models.ForeignKey(T_ficha, on_delete= models.CASCADE, null=True, blank=True)
     grupo = models.ForeignKey(T_grupo, on_delete= models.CASCADE, null=True, blank=True)
-    repre_legal = models.ForeignKey(T_repre_legal , on_delete=models.CASCADE)
+    repre_legal = models.ForeignKey(T_repre_legal , on_delete=models.CASCADE, blank=True, null=True)
     usu_crea = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     esta_docu = models.CharField(max_length=200, blank=True, null=True)
 
