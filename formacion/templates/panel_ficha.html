@@ -69,11 +69,11 @@
             <div class="tab-pane fade" id="aprendicespes" role="tabpanel" aria-labelledby="aprendices-tab">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="d-flex justify-content-end mb-3">
+                        <!-- <div class="d-flex justify-content-end mb-3">
                             <a href="{% url 'descargar_portafolios_ficha_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-download"></i> Descargar portafolios
                             </a>
-                        </div>
+                        </div> -->
                         <table id="tabla_aprendices_ficha" class="table table-hover table-bordered align-middle">
                             <thead class="table-secondary text-center">
                             <tr>
@@ -109,13 +109,13 @@
                                             data-bs-placement="top">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
-                                    <a href="{% url 'descargar_portafolio_aprendiz_zip' aprendiz.id %}" 
+                                    <!-- <a href="{% url 'descargar_portafolio_aprendiz_zip' aprendiz.id %}" 
                                     class="btn btn-outline-success btn-sm mb-1"
                                     title="Descargar portafolio"
                                     data-bs-toggle="tooltip" 
                                     data-bs-placement="top">
                                         <i class="bi bi-download"></i>
-                                    </a>
+                                    </a> -->
                                 </td>
                             </tr>
                             {% endfor %}
