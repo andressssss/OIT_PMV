@@ -90,9 +90,15 @@
                             <tr>
                                 <td>{{ aprendiz.perfil.nom}}</td>
                                 <td>{{ aprendiz.perfil.apelli}}</td>
-                                <td>{{ aprendiz.repre_legal.nom}}</td>
-                                <td>{{ aprendiz.repre_legal.tele}}</td>
-                                <td>{{ aprendiz.repre_legal.mail}}</td>                        
+                                {% if aprendiz.repre_legal %}
+                                    <td>{{ aprendiz.repre_legal.nom}}</td>
+                                    <td>{{ aprendiz.repre_legal.tele}}</td>
+                                    <td>{{ aprendiz.repre_legal.mail}}</td>
+                                {% else %}
+                                    <td>No registrado</td>
+                                    <td>No registrado</td>
+                                    <td>No registrado</td>
+                                {% endif %}
                                 <td>
                                     <button class="btn btn-outline-warning btn-sm mb-1 ver-portafolio"
                                             data-id="{{aprendiz.id}}" 

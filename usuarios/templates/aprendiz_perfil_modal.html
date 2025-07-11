@@ -30,17 +30,27 @@
         </div>
 
         <!-- Acudiente -->
+        {% if repre_legal %}
         <div class="card shadow mb-4">
         <h5 class="card-header">Acudiente</h5>
         <div class="card-body">
             <p><strong>Nombre:</strong> {{ repre_legal.nom }}</p>
             <p><strong>Teléfono:</strong> {{ repre_legal.tele }}</p>
             <p><strong>Correo:</strong> {{ repre_legal.mail }}</p>
-            <p><strong>Direccion:</strong> {{ repre_legal.dire }}</p>
+            <p><strong>Dirección:</strong> {{ repre_legal.dire }}</p>
             <p><strong>Parentesco:</strong> {{ repre_legal.paren }}</p>
             <p><strong>DNI:</strong> {{ repre_legal.dni }}</p>
         </div>
         </div>
+        {% else %}
+        <div class="card shadow mb-4">
+        <h5 class="card-header">Acudiente</h5>
+        <div class="card-body">
+            <p class="text-muted">No se ha registrado acudiente.</p>
+        </div>
+        </div>
+        {% endif %}
+
     </div>
 
     <!-- Columna derecha -->
