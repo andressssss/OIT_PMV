@@ -235,17 +235,15 @@ class FichasViewSet(ModelViewSet):
     def asignar_aprendices_fichas(self, request):
         archivo = request.FILES.get('archivo')
         if not archivo:
-            return Response({"message": "No se envio ningun archivo"}, status = status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "No se envió ningún archivo"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             lector = csv.DictReader(TextIOWrapper(archivo.file, encoding='utf-8-sig'), delimiter=';')
         except Exception as e:
-            return Response({"message": "Archivo invalido", "errores": [str(e)]}, status= status.HTTP_400_BAD_REQUEST)
-        
+            return Response({"message": "Archivo inválido", "errores": [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
+
         errores = []
         resumen = {'insertados': 0}
-
-
         documentos_matricula = [
             'Documento de Identidad del aprendiz',
             'Registro civil',
@@ -254,47 +252,61 @@ class FichasViewSet(ModelViewSet):
             'Compromiso del Aprendiz',
         ]
 
+        fichas_modificadas = set()
+
         try:
             with transaction.atomic():
                 for i, fila in enumerate(lector, start=2):
                     try:
-                        required_fields = ['nom', 'apelli', 'email', 'tipo_dni', 'dni', 'tele', 'gene', 'fecha_naci', 'num_ficha']
+                        required_fields = ['nom', 'apelli', 'email', 'tipo_dni', 'dni', 'tele', 'gene', 'num_ficha']
                         missing = [field for field in required_fields if not fila.get(field, '').strip()]
                         if missing:
                             raise ValidationError(f"Campos faltantes: {', '.join(missing)}")
-                        
+
                         dni = fila['dni'].strip()
+                        email = fila['email'].strip()
                         ficha_num = fila['num_ficha'].strip()
 
-                        if not T_ficha.objects.filter(num= ficha_num).exists():
-                            raise ValidationError(f"La ficha {ficha_num} no existe!.")
-                        
-                        ficha = T_ficha.objects.get(num=ficha_num)
+                        # Validación de existencia de DNI o email
+                        if T_perfil.objects.filter(dni=dni).exists():
+                            raise ValidationError(f"El DNI '{dni}' ya está registrado.")
+                        if T_perfil.objects.filter(mail=email).exists():
+                            raise ValidationError(f"El correo '{email}' ya está registrado.")
 
-                        fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                        try:
+                            ficha = T_ficha.objects.get(num=ficha_num)
+                        except T_ficha.DoesNotExist:
+                            raise ValidationError(f"La ficha {ficha_num} no existe!")
+
+                        fichas_modificadas.add(ficha.id)
+                        fecha_naci = fila['fecha_naci']
+                        if fecha_naci:
+                            fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                        else:
+                            fecha_naci = None
                         base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
                         username = base_username
-                        i = 1
+                        contador = 1
                         while User.objects.filter(username=username).exists():
-                            username = f"{base_username}{i}"
-                            i += 1
+                            username = f"{base_username}{contador}"
+                            contador += 1
 
                         new_user = User.objects.create_user(
-                            username = username,
-                            password= str(dni),
-                            email=fila['email']
+                            username=username,
+                            password=str(dni),
+                            email=email
                         )
 
                         new_perfil = T_perfil.objects.create(
-                            user = new_user,
-                            nom= fila['nom'],
-                            apelli = fila['apelli'],
+                            user=new_user,
+                            nom=fila['nom'],
+                            apelli=fila['apelli'],
                             tipo_dni=fila['tipo_dni'],
                             dni=dni,
                             tele=fila['tele'],
                             dire=fila['dire'],
                             gene=fila['gene'],
-                            mail=fila['email'],
+                            mail=email,
                             fecha_naci=fecha_naci,
                             rol="aprendiz"
                         )
@@ -304,10 +316,10 @@ class FichasViewSet(ModelViewSet):
                             cod="z",
                             esta="activo",
                             perfil=new_perfil,
-                            grupo = ficha.grupo,
-                            ficha= ficha,
+                            grupo=ficha.grupo,
+                            ficha=ficha,
                             usu_crea=request.user,
-                            esta_docu = "Pendiente"
+                            esta_docu="Pendiente"
                         )
                         new_aprendiz.full_clean()
 
@@ -323,10 +335,17 @@ class FichasViewSet(ModelViewSet):
 
                     except Exception as e:
                         errores.append(f"Fila {i}: {str(e)}")
-                aprendices_totales = T_apre.objects.filter(ficha = ficha).count()
-                ficha.num_apre_pendi_regi = aprendices_totales
-                ficha.num_apre_proce = aprendices_totales
-                ficha.save()
+                        raise ValidationError(f"Fila {i}: {str(e)}")
+
+
+                # Actualiza las fichas afectadas
+                for ficha_id in fichas_modificadas:
+                    ficha = T_ficha.objects.get(id=ficha_id)
+                    aprendices_totales = T_apre.objects.filter(ficha=ficha).count()
+                    ficha.num_apre_pendi_regi = aprendices_totales
+                    ficha.num_apre_proce = aprendices_totales
+                    ficha.save()
+
             if errores:
                 return Response({'message': 'Errores al importar.', 'errores': errores}, status=400)
 

@@ -1012,18 +1012,26 @@ def filtrar_aprendices(request):
 @login_required
 def ver_perfil_aprendiz(request, aprendiz_id):
     aprendiz = get_object_or_404(T_apre, id=aprendiz_id)
-    repre_legal = get_object_or_404(T_repre_legal, id=aprendiz.repre_legal.id)
+
+    repre_legal = None
+    if aprendiz.repre_legal:
+        try:
+            repre_legal = T_repre_legal.objects.get(id=aprendiz.repre_legal.id)
+        except T_repre_legal.DoesNotExist:
+            repre_legal = None
+
     gestor = None
     if aprendiz.grupo:
         try:
             gestor = T_perfil.objects.get(user=aprendiz.grupo.autor)
         except T_perfil.DoesNotExist:
             gestor = None 
+
     return render(request, 'aprendiz_perfil_modal.html', {
         'aprendiz': aprendiz,
         'repre_legal': repre_legal,
         'gestor': gestor
-        })
+    })
 
 @login_required
 def crear_aprendices(request):
