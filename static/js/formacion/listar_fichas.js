@@ -1,4 +1,5 @@
-import { reiniciarTooltips,cargarOpciones,crearSelect, showPlaceholder, hidePlaceholder, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+import { setFormDisabled, validarArchivo, reiniciarTooltips, crearSelectForm,crearSelect, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const userRole = document.body.dataset.userRole;
@@ -173,4 +174,163 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
     });
+
+
+    // *******************************************************************
+    // *                                                                 *
+    // *        ¡ADVERTENCIA! ZONA DE CÓDIGO IMPORTAR FICHAS             *
+    // *                                                                 *
+    // *******************************************************************
+
+    const formImportarFichas = document.getElementById('formImportarFichas');
+
+    formImportarFichas.addEventListener('submit', async e => {
+        e.preventDefault();
+        const alertError = document.getElementById('erroresFichas');
+        alertError.textContent = '';
+        alertError.classList.add('d-none');
+        const formData = new FormData(formImportarFichas);
+        const btn = document.getElementById('btnImportar');
+        const originalBtnContent = btn.innerHTML;
+
+        if (btn.disabled) return;
+
+        const archivoInput = document.getElementById('archivoFichas');
+        const archivo = archivoInput.files[0];
+
+        if (!archivo){
+            toastError("Debe seleccionar un archivo antes de enviar.");
+            return;
+        }
+
+        if (!archivo.name.endsWith('.csv')) {
+            toastError("Solo se permiten archivos .csv");
+            return;
+        }
+
+        setFormDisabled(formImportarFichas, true);
+        showSpinner(btn);
+
+        try{
+            const response = await fetch(`/api/formacion/fichas/importar/`,{
+                method: 'POST',
+                body: formData,
+                headers:{'X-CSRFToken': csrfToken}
+            });
+
+            const data  = await response.json();
+
+            if (!response.ok){
+                if (data.errores){
+                    const alertError = document.getElementById('erroresFichas');
+                    alertError.textContent = data.errores.join('\n\n').replace(/\\n/g, '\n');
+                    alertError.classList.remove('d-none');
+                }
+                toastError(data.message || "Error desconocido");
+                return;
+            }
+            
+            const resumenFicha = document.getElementById('resumenFichas');
+
+            resumenFicha.innerHTML = `
+                <li><strong>Fichas insertadas:</strong> ${data.resumen.insertados}</li>
+            `;
+
+            toastSuccess(data.message || 'Carga finalizada');
+            formImportarFichas.reset();
+            archivoInput.value = '';
+        } catch (error){
+            console.error(error);
+            toastError(error.message || "Error inesperado al conectar con el servidor.");
+        }finally{
+            setFormDisabled(formImportarFichas, false);
+            hideSpinner(btn, originalBtnContent);
+        }
+    });
+
+    // *******************************************************************
+    // *                                                                 *
+    // *        ¡ADVERTENCIA! ZONA DE CÓDIGO IMPORTAR FICHAS             *
+    // *                                                                 *
+    // *******************************************************************
+
+    const formAsignarAprendices = document.getElementById('formAsignarAprendices');
+
+    formAsignarAprendices.addEventListener('submit', async e => {
+        e.preventDefault();
+        const alertError = document.getElementById('erroresAprendices');
+        alertError.textContent = '';
+        alertError.classList.add('d-none');
+        const formData = new FormData(formAsignarAprendices);
+        const btn = document.getElementById('btnAsignar');
+        const originalBtnContent = btn.innerHTML; 
+    
+        if (btn.disabled) return;
+
+        const archivoInput = document.getElementById('archivoAprendices');
+        const archivo = archivoInput.files[0];
+
+        if (!archivo){
+            toastError("Debe seleccionar un archivo antes de enviar.");
+            return;
+        }
+
+        if (!archivo.name.endsWith('.csv')) {
+            toastError("Solo se permiten archivos .csv");
+            return;
+        }
+
+        setFormDisabled(formAsignarAprendices, true);
+        showSpinner(btn);
+
+                try{
+            const response = await fetch(`/api/formacion/fichas/asignar_apre/`,{
+                method: 'POST',
+                body: formData,
+                headers:{'X-CSRFToken': csrfToken}
+            });
+
+            const data  = await response.json();
+
+            if (!response.ok){
+                if (data.errores){
+                    const alertError = document.getElementById('erroresAprendices');
+                    alertError.textContent = data.errores.join('\n\n').replace(/\\n/g, '\n');
+                    alertError.classList.remove('d-none');
+                }
+                toastError(data.message || "Error desconocido");
+                return;
+            }
+            
+            const resumenAprendices = document.getElementById('resumenAprendices');
+
+            resumenAprendices.innerHTML = `
+                <li><strong>Aprendices asignados:</strong> ${data.resumen.insertados}</li>
+            `;
+
+            toastSuccess(data.message || 'Carga finalizada');
+            formAsignarAprendices.reset();
+            archivoInput.value = '';
+        } catch (error){
+            console.error(error);
+            toastError(error.message || "Error inesperado al conectar con el servidor.");
+        }finally{
+            setFormDisabled(formAsignarAprendices, false);
+            hideSpinner(btn, originalBtnContent);
+        }
+    })
+
+    //Funcion temporal por mantenimiento y migracion de fichas
+    const btnFichasMasivo = document.getElementById('btnFichasMasivo');
+
+    btnFichasMasivo.addEventListener('click', e => {
+        e.preventDefault();
+        Swal.fire({
+            icon: 'info',
+            title: 'Función inhabilitada temporalmente',
+            text: 'Esta acción está inhabilitada temporalmente debido a migraciones internas. Lo invitamos a consultar su listado de fichas una vez termine la ventana de migración.',
+            confirmButtonText: 'Ok',
+        });
+    })
+
 })

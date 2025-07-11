@@ -70,7 +70,7 @@
     {% endblock %}
     
 </head>
-<body data-user-role="{{ perfil.rol }}">
+<body data-user-role="{% if perfil %}{{ perfil.rol }}{% else %}-{% endif %}">
     <nav class="navbar navbar-expand-lg" data-bs-theme="dark">
         <div class="container">
         <!-- Botón de Volver -->

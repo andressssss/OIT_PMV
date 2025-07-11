@@ -69,11 +69,11 @@
             <div class="tab-pane fade" id="aprendicespes" role="tabpanel" aria-labelledby="aprendices-tab">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="d-flex justify-content-end mb-3">
+                        <!-- <div class="d-flex justify-content-end mb-3">
                             <a href="{% url 'descargar_portafolios_ficha_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-download"></i> Descargar portafolios
                             </a>
-                        </div>
+                        </div> -->
                         <table id="tabla_aprendices_ficha" class="table table-hover table-bordered align-middle">
                             <thead class="table-secondary text-center">
                             <tr>
@@ -109,13 +109,13 @@
                                             data-bs-placement="top">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
-                                    <a href="{% url 'descargar_portafolio_aprendiz_zip' aprendiz.id %}" 
+                                    <!-- <a href="{% url 'descargar_portafolio_aprendiz_zip' aprendiz.id %}" 
                                     class="btn btn-outline-success btn-sm mb-1"
                                     title="Descargar portafolio"
                                     data-bs-toggle="tooltip" 
                                     data-bs-placement="top">
                                         <i class="bi bi-download"></i>
-                                    </a>
+                                    </a> -->
                                 </td>
                             </tr>
                             {% endfor %}
@@ -128,43 +128,19 @@
             <!-- Cronograma -->
             <div class="tab-pane fade" id="cronograma" role="tabpanel" aria-labelledby="cronograma-tab">
                 <div class="card shadow-sm">
-                    <div class="card-body">
-                        <!-- Botones superiores -->
-                        <div class="d-flex justify-content-end mb-3">
-                            <a class="btn btn-primary btn-sm me-2"data-toggle="tooltip" data-placement="top" title="Crear actividad" data-bs-toggle="modal" data-bs-target="#crearActividadModal" >
-                                <i class="bi bi-plus"></i>
-                            </a>
-                            <button class="btn btn-secondary btn-sm me-2" data-toggle="tooltip" data-placement="top" title="Ver calendario" data-bs-toggle="modal" data-bs-target="#calendarioActividadModal"><i class="bi bi-calendar-event"></i></button>
-                        </div>
-                        <!-- Tabla -->
-                        <div class="table-responsive">
-                            <table id="actividades_ficha" class="table table-bordered align-middle">
-                                <thead class="table-secondary text-center">
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Fecha apertura</th>
-                                        <th>Fecha cierre</th>
-                                        <th>Fecha calificación</th>
-                                        <th>Cierre calificación</th>
-                                        <th>Fase</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
-                
-                        <!-- Botón inferior y etiquetas -->
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <div id="botones-fase">
-                            </div>
-                            <div id="estado-fase">
-                            </div>
-                        </div>
+                    <div class="card-body text-center">
+                        <h5 class="text-primary fw-bold mb-3">Estamos trabajando en una mejor experiencia</h5>
+                        <p class="mb-2">
+                            El módulo de evaluación de RAPS se encuentra <strong>temporalmente inhabilitado</strong> debido a procesos de mejora.
+                        </p>
+                        <p class="mb-0">
+                            Muy pronto podrá acceder a una versión optimizada pensada especialmente para facilitar su gestión de actividades.
+                        </p>
+                        <p class="text-muted mt-3" style="font-size: 0.9rem;">
+                            Agradecemos su comprensión y lo invitamos a volver a consultar este espacio próximamente.
+                        </p>
                     </div>
                 </div>
-                
             </div>
 
             <!-- Inasistencias -->

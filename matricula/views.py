@@ -1288,9 +1288,9 @@ def formalizar_ficha(request):
             raps_ficha_objs = []
 
             for rap in raps:
-                for fase in rap.compe.fase.all():
+                for rap_fase  in rap.t_raps_fase_set.all():
                     raps_ficha_objs.append(
-                        T_raps_ficha(ficha=ficha, rap=rap, fase=fase)
+                        T_raps_ficha(ficha=ficha, rap=rap, fase=rap_fase.fase)
                     )
 
             T_raps_ficha.objects.bulk_create(raps_ficha_objs)

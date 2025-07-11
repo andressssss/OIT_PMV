@@ -21,11 +21,10 @@ class T_perfil(models.Model):
     ]
     DNI_CHOICES = [
         ('ti', 'Tarjeta de identidad'),
-        ('cc', 'Cedula de ciudadania'),
+        ('cc', 'Cédula de ciudadanía'),
         ('pp', 'Pasaporte'),
-        ('ce', 'Cedula de extranjeria'),
+        ('ce', 'Cédula de extranjería'),
         ('ppt', 'Permiso por protección temporal'),
-
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     nom = models.CharField(max_length=200)
@@ -423,7 +422,7 @@ class T_apre(models.Model):
     esta = models.CharField(max_length=200, choices=ESTADO_ESTUDIANTE_CHOICES)
     ficha = models.ForeignKey(T_ficha, on_delete= models.CASCADE, null=True, blank=True)
     grupo = models.ForeignKey(T_grupo, on_delete= models.CASCADE, null=True, blank=True)
-    repre_legal = models.ForeignKey(T_repre_legal , on_delete=models.CASCADE)
+    repre_legal = models.ForeignKey(T_repre_legal , on_delete=models.CASCADE, blank=True, null=True)
     usu_crea = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     esta_docu = models.CharField(max_length=200, blank=True, null=True)
 
@@ -490,11 +489,18 @@ class T_compe(models.Model):
         managed = True
         db_table = 't_compe'
     nom = models.CharField(max_length=200)
-    fase = models.ManyToManyField(T_fase, through=T_compe_fase)
+    fase = models.ManyToManyField(T_fase, through=T_compe_fase, blank=True)
     progra = models.ManyToManyField(T_progra, through=T_compe_progra)
 
     def __str__(self):
         return f"{self.nom} - Fase: {self.fase}"
+
+class T_raps_fase(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_raps_fase'
+    rap = models.ForeignKey('T_raps', on_delete=models.CASCADE)
+    fase = models.ForeignKey(T_fase, on_delete=models.CASCADE)
 
 class T_raps(models.Model):
     class Meta:
@@ -503,10 +509,12 @@ class T_raps(models.Model):
 
     nom = models.CharField(max_length=200)
     compe = models.ForeignKey(T_compe, on_delete=models.CASCADE)
+    fase = models.ManyToManyField(T_fase, through=T_raps_fase)
     comple = models.CharField(max_length=100, default='No')
 
     def __str__(self):
-        return f"{self.nom}"
+        return f"{self.nom} - Fase: {self.fase}"
+
 
 class T_raps_ficha(models.Model):
     class Meta:

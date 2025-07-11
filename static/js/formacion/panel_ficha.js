@@ -406,34 +406,42 @@ document.addEventListener("DOMContentLoaded", function () {
     tableAprendicesElement.addEventListener('click',  function (e) {
     //== Boton ver portafolio aprendiz  
         const target = e.target.closest('.ver-portafolio');
-        if (target) {
-            const aprendizId = target.getAttribute("data-id");
-            const aprendizNombre = target.getAttribute("data-nombre");
+        // if (target) {
+        //     const aprendizId = target.getAttribute("data-id");
+        //     const aprendizNombre = target.getAttribute("data-nombre");
 
-            document.getElementById("portafolioAprendizModalLabel").textContent = `Portafolio de ${aprendizNombre}`;
+        //     document.getElementById("portafolioAprendizModalLabel").textContent = `Portafolio de ${aprendizNombre}`;
 
-            document.getElementById("folderTreeAprendiz").innerHTML = "";
-            //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
+        //     document.getElementById("folderTreeAprendiz").innerHTML = "";
+        //     //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
 
-            cargarPortafolio(aprendizId);
-            // cargarTablaHistorial(aprendizId);
+        //     cargarPortafolio(aprendizId);
+        //     // cargarTablaHistorial(aprendizId);
     
         
-            const modalEl = document.getElementById("portafolioAprendizModal");
-            modalEl.removeAttribute('aria-hidden');
-            new bootstrap.Modal(modalEl).show();
+        //     const modalEl = document.getElementById("portafolioAprendizModal");
+        //     modalEl.removeAttribute('aria-hidden');
+        //     new bootstrap.Modal(modalEl).show();
 
-            modalEl.addEventListener("hidden.bs.modal", function () {
-                document.getElementById("folderTreeAprendiz").innerHTML = ""; 
-                modalEl.setAttribute('aria-hidden', 'true');
+        //     modalEl.addEventListener("hidden.bs.modal", function () {
+        //         document.getElementById("folderTreeAprendiz").innerHTML = ""; 
+        //         modalEl.setAttribute('aria-hidden', 'true');
 
-                if (document.activeElement && modalEl.contains(document.activeElement)) {
-                    document.activeElement.blur();
-                }
+        //         if (document.activeElement && modalEl.contains(document.activeElement)) {
+        //             document.activeElement.blur();
+        //         }
             
-                const btnAbrir = document.querySelector('.ver-portafolio');
-                if (btnAbrir) btnAbrir.focus();
-            });
+        //         const btnAbrir = document.querySelector('.ver-portafolio');
+        //         if (btnAbrir) btnAbrir.focus();
+        //     });
+        // }
+        if (target){
+        Swal.fire({
+            icon: 'info',
+            title: 'Función inhabilitada temporalmente',
+            text: 'Esta acción estará inhabilitada hasta el 14/07/2025 debido a migraciones internas.',
+            confirmButtonText: 'Ok',
+        });
         }
     //== Boton ver perfil aprendiz
         const target1 = e.target.closest('.perfil-btn');
@@ -818,609 +826,609 @@ document.addEventListener("DOMContentLoaded", function () {
     // *                                                                 *
     // *******************************************************************
 
-    const btnCrearActividad = document.getElementById('btnCrearActividad');
-    const formCrearActividad = document.getElementById('formCrearActividad');
-    const errorDiv = document.getElementById('errorCrearActividad');
-    const tableCaliElement = document.getElementById('actividades_ficha');
-    const formEditarActividad = document.getElementById('formEditarActividad');
-    const btnEditarActividad = document.getElementById('btnEditarActividad');
+    // const btnCrearActividad = document.getElementById('btnCrearActividad');
+    // const formCrearActividad = document.getElementById('formCrearActividad');
+    // const errorDiv = document.getElementById('errorCrearActividad');
+    // const tableCaliElement = document.getElementById('actividades_ficha');
+    // const formEditarActividad = document.getElementById('formEditarActividad');
+    // const btnEditarActividad = document.getElementById('btnEditarActividad');
     
-    // ======= Inicialización de DataTables =======
-    const tableCronograma = new DataTable(tableCaliElement, {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-        }
-    });
+    // // ======= Inicialización de DataTables =======
+    // const tableCronograma = new DataTable(tableCaliElement, {
+    //     language: {
+    //         url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+    //     }
+    // });
     
-    cargarDatosTablaCronograma();
+    // cargarDatosTablaCronograma();
 
-    //== LLamar a la API Actividades
-    async function cargarDatosTablaCronograma(){
-        fadeIn(loadingDiv);
-        try {
-            const response = await fetch(`/api/ficha/actividades/${fichaId}/`);
-            const data = await response.json();
-            actualizarTabla(data);
-            actualizarEstadoFase();
-        } catch (error) {
-            console.error('Error al cargar actividades:', error);
-        } finally {
-            fadeOut(loadingDiv);
-            reiniciarTooltips();
-        }
-    }
+    // //== LLamar a la API Actividades
+    // async function cargarDatosTablaCronograma(){
+    //     fadeIn(loadingDiv);
+    //     try {
+    //         const response = await fetch(`/api/ficha/actividades/${fichaId}/`);
+    //         const data = await response.json();
+    //         actualizarTabla(data);
+    //         actualizarEstadoFase();
+    //     } catch (error) {
+    //         console.error('Error al cargar actividades:', error);
+    //     } finally {
+    //         fadeOut(loadingDiv);
+    //         reiniciarTooltips();
+    //     }
+    // }
 
-    //== Poblar tabla Cronograma
-    function actualizarTabla(data) {
-        tableCronograma.clear();
+    // //== Poblar tabla Cronograma
+    // function actualizarTabla(data) {
+    //     tableCronograma.clear();
     
-        data.forEach(item => {
-            let botones = `
-                <button class="btn btn-outline-primary btn-sm btn-detalle-actividad mb-1" 
-                    data-id="${item.id}"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="Detalle">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-                <button class="btn btn-outline-success btn-sm btn-calificar mb-1" 
-                    data-actividad-id="${item.id}"
-                    data-nombre="${item.nom}"
-                    data-fase="${item.fase}"
-                    data-fecha-inicio="${item.fecha_ini_acti}"
-                    data-fecha-fin="${item.fecha_fin_acti}" 
-                    data-fecha-inicio-cali="${item.fecha_ini_cali}" 
-                    data-fecha-fin-cali="${item.fecha_fin_cali}"
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top" 
-                    title="Calificar">
-                    <i class="bi bi-clipboard-check"></i>
-                </button>`;
+    //     data.forEach(item => {
+    //         let botones = `
+    //             <button class="btn btn-outline-primary btn-sm btn-detalle-actividad mb-1" 
+    //                 data-id="${item.id}"
+    //                 data-bs-toggle="tooltip"
+    //                 data-bs-placement="top"
+    //                 title="Detalle">
+    //                 <i class="bi bi-plus-lg"></i>
+    //             </button>
+    //             <button class="btn btn-outline-success btn-sm btn-calificar mb-1" 
+    //                 data-actividad-id="${item.id}"
+    //                 data-nombre="${item.nom}"
+    //                 data-fase="${item.fase}"
+    //                 data-fecha-inicio="${item.fecha_ini_acti}"
+    //                 data-fecha-fin="${item.fecha_fin_acti}" 
+    //                 data-fecha-inicio-cali="${item.fecha_ini_cali}" 
+    //                 data-fecha-fin-cali="${item.fecha_fin_cali}"
+    //                 data-bs-toggle="tooltip" 
+    //                 data-bs-placement="top" 
+    //                 title="Calificar">
+    //                 <i class="bi bi-clipboard-check"></i>
+    //             </button>`;
     
-            // Verifica si la fase del item es igual a la fase actual para permitir botón Editar
-            if (item.fase.toLowerCase() === item.fase_ficha.toLowerCase()) {
-                botones += `
-                <button class="btn btn-outline-warning btn-sm btn-editar-actividad mb-1" 
-                    data-id="${item.id}" 
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top" 
-                    title="Editar">
-                    <i class="bi bi-pencil-square"></i>
-                </button>`;
-            }
+    //         // Verifica si la fase del item es igual a la fase actual para permitir botón Editar
+    //         if (item.fase.toLowerCase() === item.fase_ficha.toLowerCase()) {
+    //             botones += `
+    //             <button class="btn btn-outline-warning btn-sm btn-editar-actividad mb-1" 
+    //                 data-id="${item.id}" 
+    //                 data-bs-toggle="tooltip" 
+    //                 data-bs-placement="top" 
+    //                 title="Editar">
+    //                 <i class="bi bi-pencil-square"></i>
+    //             </button>`;
+    //         }
     
-            tableCronograma.row.add([
-                item.nom,
-                item.fecha_ini_acti,
-                item.fecha_fin_acti,
-                item.fecha_ini_cali,
-                item.fecha_fin_cali,
-                item.fase,
-                botones
-            ]);
-        });
+    //         tableCronograma.row.add([
+    //             item.nom,
+    //             item.fecha_ini_acti,
+    //             item.fecha_fin_acti,
+    //             item.fecha_ini_cali,
+    //             item.fecha_fin_cali,
+    //             item.fase,
+    //             botones
+    //         ]);
+    //     });
     
-        tableCronograma.draw();
+    //     tableCronograma.draw();
     
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            const tooltipInstance = bootstrap.Tooltip.getInstance(el);
-            if (tooltipInstance) {
-                tooltipInstance.dispose();
-            }
-        });
+    //     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    //         const tooltipInstance = bootstrap.Tooltip.getInstance(el);
+    //         if (tooltipInstance) {
+    //             tooltipInstance.dispose();
+    //         }
+    //     });
 
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            new bootstrap.Tooltip(el);
-        });
+    //     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    //         new bootstrap.Tooltip(el);
+    //     });
 
-    }
+    // }
     
-    async function actualizarEstadoFase() {
-        fadeIn(loadingDiv);
-        try {
-            const response = await fetch(`/api/ficha/obtener_estado_fase/${fichaId}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
+    // async function actualizarEstadoFase() {
+    //     fadeIn(loadingDiv);
+    //     try {
+    //         const response = await fetch(`/api/ficha/obtener_estado_fase/${fichaId}`, {
+    //             method: 'GET',
+    //             headers: {
+    //                 'Accept': 'application/json'
+    //             }
+    //         });
     
-            if (!response.ok) {
-                throw new Error('Error en la solicitud');
-            }
+    //         if (!response.ok) {
+    //             throw new Error('Error en la solicitud');
+    //         }
     
-            const data = await response.json();
+    //         const data = await response.json();
     
-            // Construir HTML de botones
-            let botonesHtml = '';
+    //         // Construir HTML de botones
+    //         let botonesHtml = '';
     
-            if (data.raps_count == 0) {
-                botonesHtml += `<button class="btn btn-warning btn-sm btn-cerrar-fase">Cerrar fase</button> `;
-            }
+    //         if (data.raps_count == 0) {
+    //             botonesHtml += `<button class="btn btn-warning btn-sm btn-cerrar-fase">Cerrar fase</button> `;
+    //         }
     
-            // Validar si el usuario es admin
-            if (userRole == 'admin') {
-                botonesHtml += `<button class="btn btn-danger btn-sm btn-devolver-fase">Devolver fase</button>`;
-            }
+    //         // Validar si el usuario es admin
+    //         if (userRole == 'admin') {
+    //             botonesHtml += `<button class="btn btn-danger btn-sm btn-devolver-fase">Devolver fase</button>`;
+    //         }
     
-            // Construir HTML del estado
-            let estadoHtml = '';
+    //         // Construir HTML del estado
+    //         let estadoHtml = '';
     
-            if (data.raps_count > 0) {
-                estadoHtml += `<span class="text-danger fw-bold" 
-                                    style="cursor: pointer; text-decoration: underline dotted;" 
-                                    data-bs-toggle="popover" 
-                                    data-bs-html="true" 
-                                    data-bs-placement="top" 
-                                    data-bs-content="${data.raps_pendientes}">
-                                    <i class="bi bi-info-circle" style="color: #0d6efd;"></i> 
-                                    Faltan ${data.raps_count} RAPS para la fase ${data.fase}
-                            </span><br>`;
-            }
+    //         if (data.raps_count > 0) {
+    //             estadoHtml += `<span class="text-danger fw-bold" 
+    //                                 style="cursor: pointer; text-decoration: underline dotted;" 
+    //                                 data-bs-toggle="popover" 
+    //                                 data-bs-html="true" 
+    //                                 data-bs-placement="top" 
+    //                                 data-bs-content="${data.raps_pendientes}">
+    //                                 <i class="bi bi-info-circle" style="color: #0d6efd;"></i> 
+    //                                 Faltan ${data.raps_count} RAPS para la fase ${data.fase}
+    //                         </span><br>`;
+    //         }
     
-            estadoHtml += `<span class="${data.raps_count == 0 ? 'text-success' : 'text-danger'}">
-                            Estado: ${data.raps_count == 0 ? 'Completo' : 'Incompleto'}
-                        </span>`;
+    //         estadoHtml += `<span class="${data.raps_count == 0 ? 'text-success' : 'text-danger'}">
+    //                         Estado: ${data.raps_count == 0 ? 'Completo' : 'Incompleto'}
+    //                     </span>`;
     
-            // Actualizar los contenedores
-            document.getElementById('botones-fase').innerHTML = botonesHtml;
-            document.getElementById('estado-fase').innerHTML = estadoHtml;
+    //         // Actualizar los contenedores
+    //         document.getElementById('botones-fase').innerHTML = botonesHtml;
+    //         document.getElementById('estado-fase').innerHTML = estadoHtml;
     
-            // Inicializar o reinicializar popovers
-            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-            popoverTriggerList.map(function (popoverTriggerEl) {
-                // Si ya hay un popover anterior, lo destruimos
-                const existingPopover = bootstrap.Popover.getInstance(popoverTriggerEl);
-                if (existingPopover) {
-                    existingPopover.dispose();
-                }
-                // Luego, creamos uno nuevo
-                return new bootstrap.Popover(popoverTriggerEl);
-            });
+    //         // Inicializar o reinicializar popovers
+    //         const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    //         popoverTriggerList.map(function (popoverTriggerEl) {
+    //             // Si ya hay un popover anterior, lo destruimos
+    //             const existingPopover = bootstrap.Popover.getInstance(popoverTriggerEl);
+    //             if (existingPopover) {
+    //                 existingPopover.dispose();
+    //             }
+    //             // Luego, creamos uno nuevo
+    //             return new bootstrap.Popover(popoverTriggerEl);
+    //         });
     
-        } catch (error) {
-            console.error('Hubo un error:', error);
-        } finally {
-            fadeOut(loadingDiv);
-        }
-    }
+    //     } catch (error) {
+    //         console.error('Hubo un error:', error);
+    //     } finally {
+    //         fadeOut(loadingDiv);
+    //     }
+    // }
     
 
-    //== Boton crear actividad
-    btnCrearActividad.addEventListener('click', async () => {
-        const formData = new FormData(formCrearActividad);
-        const originalBtnContent = btnCrearActividad.innerHTML;
-        formCrearActividad.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
-        showSpinner(btnCrearActividad)
-        try {
-            const response = await fetch(`/api/ficha/crear_actividad/${fichaId}/`, {
-                method: "POST",
-                headers: { 'X-CSRFToken': csrfToken },
-                body: formData
-            });
+    // //== Boton crear actividad
+    // btnCrearActividad.addEventListener('click', async () => {
+    //     const formData = new FormData(formCrearActividad);
+    //     const originalBtnContent = btnCrearActividad.innerHTML;
+    //     formCrearActividad.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+    //     showSpinner(btnCrearActividad)
+    //     try {
+    //         const response = await fetch(`/api/ficha/crear_actividad/${fichaId}/`, {
+    //             method: "POST",
+    //             headers: { 'X-CSRFToken': csrfToken },
+    //             body: formData
+    //         });
 
-            if (response.ok) {
-                toastSuccess("Actividad creada con éxito.");
-                bootstrap.Modal.getInstance(document.getElementById("crearActividadModal")).hide();
-                formCrearActividad.reset();
-                tomSelectMultiple.clear();
-                tomSelectRaps.clear();
-                cargarDatosTablaCronograma();
-            } else {
-                const data = await response.json();
-                console.warn("Respuesta del servidor:", data);
-                toastError(data.message)
-                errorDiv.innerHTML = data.errors || "Error desconocido al crear la actividad.";    
-            }
-        } catch (error) {
-            console.error("Error al crear la actividad (catch):", error);
-            errorDiv.innerHTML = "Ocurrió un error inesperado.";
-        } finally {
-            hideSpinner(btnCrearActividad, originalBtnContent);
-            formCrearActividad.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
-        }
-    });
+    //         if (response.ok) {
+    //             toastSuccess("Actividad creada con éxito.");
+    //             bootstrap.Modal.getInstance(document.getElementById("crearActividadModal")).hide();
+    //             formCrearActividad.reset();
+    //             tomSelectMultiple.clear();
+    //             tomSelectRaps.clear();
+    //             cargarDatosTablaCronograma();
+    //         } else {
+    //             const data = await response.json();
+    //             console.warn("Respuesta del servidor:", data);
+    //             toastError(data.message)
+    //             errorDiv.innerHTML = data.errors || "Error desconocido al crear la actividad.";    
+    //         }
+    //     } catch (error) {
+    //         console.error("Error al crear la actividad (catch):", error);
+    //         errorDiv.innerHTML = "Ocurrió un error inesperado.";
+    //     } finally {
+    //         hideSpinner(btnCrearActividad, originalBtnContent);
+    //         formCrearActividad.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
+    //     }
+    // });
 
-    //== Boton ver calendario
-    const calendarModal = document.getElementById('calendarioActividadModal');
-    let calendar = null;
+    // //== Boton ver calendario
+    // const calendarModal = document.getElementById('calendarioActividadModal');
+    // let calendar = null;
 
-    calendarModal.addEventListener('shown.bs.modal', async()=> {
-        const calendarElement = document.getElementById('calendario');
-        calendarElement.innerHTML = `
-            <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            </div>
-        `;
-        if (calendar !== null) {
-            calendar.destroy();
-            calendar = null;
-        }
+    // calendarModal.addEventListener('shown.bs.modal', async()=> {
+    //     const calendarElement = document.getElementById('calendario');
+    //     calendarElement.innerHTML = `
+    //         <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+    //         <div class="spinner-border text-primary" role="status">
+    //             <span class="visually-hidden">Cargando...</span>
+    //         </div>
+    //         </div>
+    //     `;
+    //     if (calendar !== null) {
+    //         calendar.destroy();
+    //         calendar = null;
+    //     }
 
-        try {
-            const response = await fetch(`/api/ficha/ver_cronograma/${fichaId}`);
-            const data = await response.json();
+    //     try {
+    //         const response = await fetch(`/api/ficha/ver_cronograma/${fichaId}`);
+    //         const data = await response.json();
 
-            const faseColors = {
-                analisis: '#0d6efd',      // azul
-                planeacion: '#ffc107',    // amarillo
-                ejecucion: '#dc3545',     // rojo
-                evaluacion: '#20c997',    // verde azulado
-            };
+    //         const faseColors = {
+    //             analisis: '#0d6efd',      // azul
+    //             planeacion: '#ffc107',    // amarillo
+    //             ejecucion: '#dc3545',     // rojo
+    //             evaluacion: '#20c997',    // verde azulado
+    //         };
             
-            const eventos = data.flatMap(item => {
-                const colorFase = faseColors[item.fase] || '#6c757d'; // gris por defecto si no se reconoce
+    //         const eventos = data.flatMap(item => {
+    //             const colorFase = faseColors[item.fase] || '#6c757d'; // gris por defecto si no se reconoce
             
-                return [
-                    {
-                        title: item.title,
-                        start: item.start,
-                        end: item.end,
-                        color: colorFase,
-                    },
-                    {
-                        title: `${item.title} (Revisión)`,
-                        start: item.start_check,
-                        end: item.end_check,
-                        color: '#198754', // verde para el rango de revisión
-                    }
-                ];
-            });
+    //             return [
+    //                 {
+    //                     title: item.title,
+    //                     start: item.start,
+    //                     end: item.end,
+    //                     color: colorFase,
+    //                 },
+    //                 {
+    //                     title: `${item.title} (Revisión)`,
+    //                     start: item.start_check,
+    //                     end: item.end_check,
+    //                     color: '#198754', // verde para el rango de revisión
+    //                 }
+    //             ];
+    //         });
 
-            calendarElement.innerHTML ="";
-            calendar = new FullCalendar.Calendar(calendarElement, {
-                initialView: 'dayGridMonth',
-                locale: 'es',
-                height: 600,
-                events: eventos,
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
-                eventColor: '#0d6efd',
-                eventDisplay: 'block',
-            });
+    //         calendarElement.innerHTML ="";
+    //         calendar = new FullCalendar.Calendar(calendarElement, {
+    //             initialView: 'dayGridMonth',
+    //             locale: 'es',
+    //             height: 600,
+    //             events: eventos,
+    //             headerToolbar: {
+    //                 left: 'prev,next today',
+    //                 center: 'title',
+    //                 right: 'dayGridMonth,timeGridWeek'
+    //             },
+    //             eventColor: '#0d6efd',
+    //             eventDisplay: 'block',
+    //         });
 
-            calendar.render();
-        } catch (error) {
-            console.error('Error al cargar el calendario:', error);
-            calendarElement.innerHTML = `<div class="alert alert-danger">No se pudo cargar el calendario.</div>`;
-        }
-    });
+    //         calendar.render();
+    //     } catch (error) {
+    //         console.error('Error al cargar el calendario:', error);
+    //         calendarElement.innerHTML = `<div class="alert alert-danger">No se pudo cargar el calendario.</div>`;
+    //     }
+    // });
 
-    tableCaliElement.addEventListener('click', async (e) => {
-        const btn = e.target.closest('button');
+    // tableCaliElement.addEventListener('click', async (e) => {
+    //     const btn = e.target.closest('button');
 
-        if (!btn) return;
+    //     if (!btn) return;
 
-        if (btn.classList.contains('btn-editar-actividad')){
-            const originalBtnContent = btn.innerHTML;
-            showSpinner(btn);
-            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
-            const actividadId = btn.dataset.id;
+    //     if (btn.classList.contains('btn-editar-actividad')){
+    //         const originalBtnContent = btn.innerHTML;
+    //         showSpinner(btn);
+    //         tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
+    //         const actividadId = btn.dataset.id;
 
-            try {
-                const response = await fetch(`/api/ficha/actividad/${actividadId}`);
-                if (!response.ok) throw new Error("Error al obtener la actividad.");
-                const result = await response.json();
-                const data = result.data;
-                const modal = new bootstrap.Modal(document.getElementById("editarActividadModal"));
-                modal.show();
+    //         try {
+    //             const response = await fetch(`/api/ficha/actividad/${actividadId}`);
+    //             if (!response.ok) throw new Error("Error al obtener la actividad.");
+    //             const result = await response.json();
+    //             const data = result.data;
+    //             const modal = new bootstrap.Modal(document.getElementById("editarActividadModal"));
+    //             modal.show();
         
-                // Cargar los datos en el modal
-                formEditarActividad.querySelector('#id_nom').value = data.nom;
-                formEditarActividad.querySelector('#id_tipo').value = data.tipo;
-                formEditarActividad.querySelector('#id_descri').value = data.descri;
-                formEditarActividad.querySelector('#id_horas_auto').value = data.horas_auto;
-                formEditarActividad.querySelector('#id_horas_dire').value = data.horas_dire;
-                formEditarActividad.querySelector('#id_fecha_ini_acti').value = data.fecha_ini_acti;
-                formEditarActividad.querySelector('#id_fecha_fin_acti').value = data.fecha_fin_acti;
-                formEditarActividad.querySelector('#id_fecha_ini_cali').value = data.fecha_ini_cali;
-                formEditarActividad.querySelector('#id_fecha_fin_cali').value = data.fecha_fin_cali;
-                formEditarActividad.querySelector('#id_nove').value = data.nove;
+    //             // Cargar los datos en el modal
+    //             formEditarActividad.querySelector('#id_nom').value = data.nom;
+    //             formEditarActividad.querySelector('#id_tipo').value = data.tipo;
+    //             formEditarActividad.querySelector('#id_descri').value = data.descri;
+    //             formEditarActividad.querySelector('#id_horas_auto').value = data.horas_auto;
+    //             formEditarActividad.querySelector('#id_horas_dire').value = data.horas_dire;
+    //             formEditarActividad.querySelector('#id_fecha_ini_acti').value = data.fecha_ini_acti;
+    //             formEditarActividad.querySelector('#id_fecha_fin_acti').value = data.fecha_fin_acti;
+    //             formEditarActividad.querySelector('#id_fecha_ini_cali').value = data.fecha_ini_cali;
+    //             formEditarActividad.querySelector('#id_fecha_fin_cali').value = data.fecha_fin_cali;
+    //             formEditarActividad.querySelector('#id_nove').value = data.nove;
         
-                // Inicializar TomSelect y guardar las instancias
-                const rapsSelectEl = formEditarActividad.querySelector('.tomselect-raps');
-                const tipoSelectEl = formEditarActividad.querySelector('.tomselect-multiple');
+    //             // Inicializar TomSelect y guardar las instancias
+    //             const rapsSelectEl = formEditarActividad.querySelector('.tomselect-raps');
+    //             const tipoSelectEl = formEditarActividad.querySelector('.tomselect-multiple');
 
-                if (rapsSelectEl.tomselect){
-                    rapsSelectEl.tomselect.destroy();
-                }
-                const rapsTomSelect = new TomSelect(rapsSelectEl, {
-                    plugins: ['remove_button'],
-                    maxItems: null,
-                    placeholder: 'Seleccione los RAPs asociados'
-                });
-                if (tipoSelectEl.tomselect){
-                    tipoSelectEl.tomselect.destroy();
-                }
-                const tipoTomSelect = new TomSelect(tipoSelectEl, {
-                    plugins: ['remove_button'],
-                    maxItems: null,
-                    persist: false,
-                    create: false,
-                    placeholder: 'Seleccione tipos de actividad'
-                });
+    //             if (rapsSelectEl.tomselect){
+    //                 rapsSelectEl.tomselect.destroy();
+    //             }
+    //             const rapsTomSelect = new TomSelect(rapsSelectEl, {
+    //                 plugins: ['remove_button'],
+    //                 maxItems: null,
+    //                 placeholder: 'Seleccione los RAPs asociados'
+    //             });
+    //             if (tipoSelectEl.tomselect){
+    //                 tipoSelectEl.tomselect.destroy();
+    //             }
+    //             const tipoTomSelect = new TomSelect(tipoSelectEl, {
+    //                 plugins: ['remove_button'],
+    //                 maxItems: null,
+    //                 persist: false,
+    //                 create: false,
+    //                 placeholder: 'Seleccione tipos de actividad'
+    //             });
 
-                // Luego, cargar los valores directamente en las instancias TomSelect
-                rapsTomSelect.setValue(data.raps); // <- Aquí colocas los valores correctamente
-                tipoTomSelect.setValue(data.tipo); // <- Si tipo es múltiple, asegúrate de que sea un array
+    //             // Luego, cargar los valores directamente en las instancias TomSelect
+    //             rapsTomSelect.setValue(data.raps); // <- Aquí colocas los valores correctamente
+    //             tipoTomSelect.setValue(data.tipo); // <- Si tipo es múltiple, asegúrate de que sea un array
 
-                // Guardar el ID para enviarlo al backend después
-                formEditarActividad.dataset.id = actividadId;
-                formEditarActividad.setAttribute('action', `/api/ficha/actividad/editar/${actividadId}/`);
+    //             // Guardar el ID para enviarlo al backend después
+    //             formEditarActividad.dataset.id = actividadId;
+    //             formEditarActividad.setAttribute('action', `/api/ficha/actividad/editar/${actividadId}/`);
 
         
-            } catch (error) {
-                toastError("No se pudo cargar la actividad.");
-                console.error(error);
-            } finally {
-                hideSpinner(btn, originalBtnContent);
-                tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
-            }
-        } else if (btn.classList.contains('btn-detalle-actividad')){
-            const actividadId = btn.dataset.id;
-            const modalElement = document.getElementById('detalleActividadModal');
-            const contenido = document.getElementById('contenidoDetalleActividad');
-            const modal = new bootstrap.Modal(modalElement);
-            const originalBtnContent = btn.innerHTML; 
-            showSpinner(btn);
-            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
+    //         } catch (error) {
+    //             toastError("No se pudo cargar la actividad.");
+    //             console.error(error);
+    //         } finally {
+    //             hideSpinner(btn, originalBtnContent);
+    //             tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
+    //         }
+    //     } else if (btn.classList.contains('btn-detalle-actividad')){
+    //         const actividadId = btn.dataset.id;
+    //         const modalElement = document.getElementById('detalleActividadModal');
+    //         const contenido = document.getElementById('contenidoDetalleActividad');
+    //         const modal = new bootstrap.Modal(modalElement);
+    //         const originalBtnContent = btn.innerHTML; 
+    //         showSpinner(btn);
+    //         tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
 
-            try {
-                const response  = await fetch (`/api/ficha/detalle_actividad/${actividadId}`);
-                if (response.ok) {
-                    const data = await response.json();
+    //         try {
+    //             const response  = await fetch (`/api/ficha/detalle_actividad/${actividadId}`);
+    //             if (response.ok) {
+    //                 const data = await response.json();
 
-                    document.getElementById('act-nombre').textContent = data.nombre;
-                    document.getElementById('act-descripcion').textContent = data.descripcion;
-                    document.getElementById('act-tipo').textContent = data.tipo_actividad.join(', ');
-                    document.getElementById('act-fase').textContent = data.fase;
+    //                 document.getElementById('act-nombre').textContent = data.nombre;
+    //                 document.getElementById('act-descripcion').textContent = data.descripcion;
+    //                 document.getElementById('act-tipo').textContent = data.tipo_actividad.join(', ');
+    //                 document.getElementById('act-fase').textContent = data.fase;
 
-                    document.getElementById('act-horas-directas').textContent = data.horas_directas;
-                    document.getElementById('act-horas-autonomas').textContent = data.horas_autonomas;
+    //                 document.getElementById('act-horas-directas').textContent = data.horas_directas;
+    //                 document.getElementById('act-horas-autonomas').textContent = data.horas_autonomas;
 
-                    document.getElementById('cron-inicio').textContent = formatFecha(data.cronograma.fecha_inicio_actividad);
-                    document.getElementById('cron-fin').textContent = formatFecha(data.cronograma.fecha_fin_actividad);
-                    document.getElementById('cron-inicio-cali').textContent = formatFecha(data.cronograma.fecha_inicio_calificacion);
-                    document.getElementById('cron-fin-cali').textContent = formatFecha(data.cronograma.fecha_fin_calificacion);
-                    document.getElementById('cron-novedades').textContent = data.cronograma.novedades;
+    //                 document.getElementById('cron-inicio').textContent = formatFecha(data.cronograma.fecha_inicio_actividad);
+    //                 document.getElementById('cron-fin').textContent = formatFecha(data.cronograma.fecha_fin_actividad);
+    //                 document.getElementById('cron-inicio-cali').textContent = formatFecha(data.cronograma.fecha_inicio_calificacion);
+    //                 document.getElementById('cron-fin-cali').textContent = formatFecha(data.cronograma.fecha_fin_calificacion);
+    //                 document.getElementById('cron-novedades').textContent = data.cronograma.novedades;
 
-                    const listaRaps = document.getElementById('act-raps');
-                    listaRaps.innerHTML = "";
-                    data.raps.forEach(rap => {
-                        const li = document.createElement('li');
-                        li.classList.add('list-group-item');
-                        li.innerHTML = `<strong>${rap.rap__rap__nom}</strong> (${rap.rap__rap__compe__fase__nom})<br><em>${rap.rap__rap__compe__nom}</em>`;
-                        listaRaps.appendChild(li);
-                    });
+    //                 const listaRaps = document.getElementById('act-raps');
+    //                 listaRaps.innerHTML = "";
+    //                 data.raps.forEach(rap => {
+    //                     const li = document.createElement('li');
+    //                     li.classList.add('list-group-item');
+    //                     li.innerHTML = `<strong>${rap.rap__rap__nom}</strong> (${rap.rap__rap__compe__fase__nom})<br><em>${rap.rap__rap__compe__nom}</em>`;
+    //                     listaRaps.appendChild(li);
+    //                 });
 
-                    modal.show();
-                    reiniciarTooltips();
-                } else {
-                    throw new Error ("Error al cargar los datos.")
-                }
-            } catch (error) {
-                contenido.innerHTML = `<div class="alert alert-danger">No se pudo cargar el detalle de la actividad.</div>`;
-                console.error(error);
-            } finally {
-                hideSpinner(btn, originalBtnContent);
-                tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
-            }
-        } else if (btn.classList.contains('btn-calificar')){
-            const originalBtnContent = btn.innerHTML;
-            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
-            showSpinner(btn);
+    //                 modal.show();
+    //                 reiniciarTooltips();
+    //             } else {
+    //                 throw new Error ("Error al cargar los datos.")
+    //             }
+    //         } catch (error) {
+    //             contenido.innerHTML = `<div class="alert alert-danger">No se pudo cargar el detalle de la actividad.</div>`;
+    //             console.error(error);
+    //         } finally {
+    //             hideSpinner(btn, originalBtnContent);
+    //             tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
+    //         }
+    //     } else if (btn.classList.contains('btn-calificar')){
+    //         const originalBtnContent = btn.innerHTML;
+    //         tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = true);
+    //         showSpinner(btn);
     
-            const actividadId = btn.dataset.actividadId;
-            const nombre = btn.dataset.nombre;
-            const fase = btn.dataset.fase;
-            const fechaInicio = btn.dataset.fechaInicio;
-            const fechaFin = btn.dataset.fechaFin;
-            const fechaInicioCali = btn.dataset.fechaInicioCali;
-            const fechaFinCali = btn.dataset.fechaFinCali;
+    //         const actividadId = btn.dataset.actividadId;
+    //         const nombre = btn.dataset.nombre;
+    //         const fase = btn.dataset.fase;
+    //         const fechaInicio = btn.dataset.fechaInicio;
+    //         const fechaFin = btn.dataset.fechaFin;
+    //         const fechaInicioCali = btn.dataset.fechaInicioCali;
+    //         const fechaFinCali = btn.dataset.fechaFinCali;
 
-            document.getElementById('modalNombre').innerText = nombre;
-            document.getElementById('modalFase').innerText = fase;
-            document.getElementById('modalFechaInicio').innerText = fechaInicio;
-            document.getElementById('modalFechaFin').innerText = fechaFin;
-            document.getElementById('modalFechaInicioCali').innerText = fechaInicioCali;
-            document.getElementById('modalFechaFinCali').innerText = fechaFinCali;
+    //         document.getElementById('modalNombre').innerText = nombre;
+    //         document.getElementById('modalFase').innerText = fase;
+    //         document.getElementById('modalFechaInicio').innerText = fechaInicio;
+    //         document.getElementById('modalFechaFin').innerText = fechaFin;
+    //         document.getElementById('modalFechaInicioCali').innerText = fechaInicioCali;
+    //         document.getElementById('modalFechaFinCali').innerText = fechaFinCali;
     
-            document.getElementById('inputActividadId').value = actividadId;
+    //         document.getElementById('inputActividadId').value = actividadId;
 
-            await renderTablaCalificaciones(fichaId, actividadId);
+    //         await renderTablaCalificaciones(fichaId, actividadId);
 
-            const modalCali = new bootstrap.Modal(document.getElementById('modalCalificacion'));
-            modalCali.show();
+    //         const modalCali = new bootstrap.Modal(document.getElementById('modalCalificacion'));
+    //         modalCali.show();
     
-            hideSpinner(btn, originalBtnContent);
-            tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
-        }
-    });
+    //         hideSpinner(btn, originalBtnContent);
+    //         tableCaliElement.querySelectorAll('button').forEach(el => el.disabled = false);
+    //     }
+    // });
 
-    //== Enviar formulario editar actividad
-    document.getElementById("formEditarActividad").addEventListener("submit", async function (e) {
-        e.preventDefault();
+    // //== Enviar formulario editar actividad
+    // document.getElementById("formEditarActividad").addEventListener("submit", async function (e) {
+    //     e.preventDefault();
         
-        const form = this;
-        const actividadId = form.dataset.id;
-        const formData = new FormData(form);
-        const originalBtnContent = btnEditarActividad.innerHTML;
+    //     const form = this;
+    //     const actividadId = form.dataset.id;
+    //     const formData = new FormData(form);
+    //     const originalBtnContent = btnEditarActividad.innerHTML;
 
-        showSpinner(btnEditarActividad)
-        form.querySelectorAll('button, input, textarea, select').forEach(el => el.disabled = true);
+    //     showSpinner(btnEditarActividad)
+    //     form.querySelectorAll('button, input, textarea, select').forEach(el => el.disabled = true);
         
-        try {
-            const response = await fetch(`/api/ficha/actividad/editar/${actividadId}/`, {
-                method: "POST",
-                headers: { "X-CSRFToken": csrfToken },
-                body: formData,
-            });
+    //     try {
+    //         const response = await fetch(`/api/ficha/actividad/editar/${actividadId}/`, {
+    //             method: "POST",
+    //             headers: { "X-CSRFToken": csrfToken },
+    //             body: formData,
+    //         });
     
-            if (!response.ok) throw new Error("Error al editar la actividad.");
+    //         if (!response.ok) throw new Error("Error al editar la actividad.");
             
-            toastSuccess("Actividad actualizada correctamente.");
-            bootstrap.Modal.getInstance(document.getElementById("editarActividadModal")).hide();
-            form.reset();
-            cargarDatosTablaCronograma();
-            // Actualizar tabla o vista si es necesario
-        } catch (error) {
-            toastError("Error al guardar los cambios.");
-            console.error(error);
-        } finally {
-            hideSpinner(btnEditarActividad, originalBtnContent);
-            form.querySelectorAll('button, input, textarea, select').forEach(el => el.disabled = false);
-        }
-    });
+    //         toastSuccess("Actividad actualizada correctamente.");
+    //         bootstrap.Modal.getInstance(document.getElementById("editarActividadModal")).hide();
+    //         form.reset();
+    //         cargarDatosTablaCronograma();
+    //         // Actualizar tabla o vista si es necesario
+    //     } catch (error) {
+    //         toastError("Error al guardar los cambios.");
+    //         console.error(error);
+    //     } finally {
+    //         hideSpinner(btnEditarActividad, originalBtnContent);
+    //         form.querySelectorAll('button, input, textarea, select').forEach(el => el.disabled = false);
+    //     }
+    // });
     
-    //== renderizar tabla con estudiantes a calificar
-    async function renderTablaCalificaciones(fichaId, actividad_id) {
-        try {
-            const response = await fetch(`/api/ficha/obtener_aprendices_calificacion/${fichaId}/${actividad_id}/`);
+    // //== renderizar tabla con estudiantes a calificar
+    // async function renderTablaCalificaciones(fichaId, actividad_id) {
+    //     try {
+    //         const response = await fetch(`/api/ficha/obtener_aprendices_calificacion/${fichaId}/${actividad_id}/`);
 
-            if (response.ok) {
-                const data = await response.json();
-                const tbody = document.getElementById('tablaAprendicesCali');
-                tbody.innerHTML = '';
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             const tbody = document.getElementById('tablaAprendicesCali');
+    //             tbody.innerHTML = '';
 
-                data.forEach((estudiante) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>
-                            ${estudiante.nombre} ${estudiante.apellido}
-                            <input type="hidden" name="aprendiz_id[]" value="${estudiante.id}">
-                        </td>
-                        <td class="text-center">
-                            <div class="form-check form-switch">
-                                <input 
-                                    class="form-check-input" 
-                                    type="checkbox" 
-                                    name="nota_${estudiante.id}" 
-                                    value="1" 
-                                    ${estudiante.nota == 1 ? 'checked' : ''}
-                                >
-                                <label class="form-check-label">
-                                    ${estudiante.nota == 1 ? 'Aprobó' : 'No aprobó'}
-                                </label>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+    //             data.forEach((estudiante) => {
+    //                 const row = document.createElement('tr');
+    //                 row.innerHTML = `
+    //                     <td>
+    //                         ${estudiante.nombre} ${estudiante.apellido}
+    //                         <input type="hidden" name="aprendiz_id[]" value="${estudiante.id}">
+    //                     </td>
+    //                     <td class="text-center">
+    //                         <div class="form-check form-switch">
+    //                             <input 
+    //                                 class="form-check-input" 
+    //                                 type="checkbox" 
+    //                                 name="nota_${estudiante.id}" 
+    //                                 value="1" 
+    //                                 ${estudiante.nota == 1 ? 'checked' : ''}
+    //                             >
+    //                             <label class="form-check-label">
+    //                                 ${estudiante.nota == 1 ? 'Aprobó' : 'No aprobó'}
+    //                             </label>
+    //                         </div>
+    //                     </td>
+    //                 `;
+    //                 tbody.appendChild(row);
+    //             });
 
-            } else {
-                toastError("Error al cargar los aprendices.");
-            }
-        } catch (error) {
-            console.error("Error al cargar los aprendices:", error);
-        }
-    }
+    //         } else {
+    //             toastError("Error al cargar los aprendices.");
+    //         }
+    //     } catch (error) {
+    //         console.error("Error al cargar los aprendices:", error);
+    //     }
+    // }
     
-    //== Boton guardar calificaciones
-    const formularioCalificacion = document.getElementById('formularioCalificacion');
-    const tabla_cali = document.getElementById('tabla_cali');
+    // //== Boton guardar calificaciones
+    // const formularioCalificacion = document.getElementById('formularioCalificacion');
+    // const tabla_cali = document.getElementById('tabla_cali');
 
-    formularioCalificacion.addEventListener('submit', async (e) =>{
-        e.preventDefault();
-        const form = e.target;
-        const submitBtn = document.getElementById('guardarCaliBtn');
-        const originalBtnContent = submitBtn.innerHTML;
-        showSpinner(submitBtn);
+    // formularioCalificacion.addEventListener('submit', async (e) =>{
+    //     e.preventDefault();
+    //     const form = e.target;
+    //     const submitBtn = document.getElementById('guardarCaliBtn');
+    //     const originalBtnContent = submitBtn.innerHTML;
+    //     showSpinner(submitBtn);
         
-        const formData = new FormData(form);
-        tabla_cali.querySelectorAll('input').forEach(el => el.disabled = true);
+    //     const formData = new FormData(form);
+    //     tabla_cali.querySelectorAll('input').forEach(el => el.disabled = true);
 
-        try {
-            const response = await fetch(`/api/ficha/calificar_actividad/`,{
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken },
-                body: formData
-            });
+    //     try {
+    //         const response = await fetch(`/api/ficha/calificar_actividad/`,{
+    //             method: 'POST',
+    //             headers: { 'X-CSRFToken': csrfToken },
+    //             body: formData
+    //         });
         
-            if (response.ok){
-                const data = await response.json();
-                toastSuccess(data.message)
-                await renderTablaCalificaciones(fichaId, data.actividad_id);
-            } else {
-                const error =  await response.json();
-                toastError("Error al guardar: "+ error.message);
-            }
+    //         if (response.ok){
+    //             const data = await response.json();
+    //             toastSuccess(data.message)
+    //             await renderTablaCalificaciones(fichaId, data.actividad_id);
+    //         } else {
+    //             const error =  await response.json();
+    //             toastError("Error al guardar: "+ error.message);
+    //         }
 
-        } catch (error) {
-            console.error("Error al enviar formulario:", error);
-            toastError("Ocurrió un error al guardar.");
-        } finally {
-            hideSpinner(submitBtn, originalBtnContent);
-            tabla_cali.querySelectorAll('input').forEach(el => el.disabled = false);
-        }
-    });
+    //     } catch (error) {
+    //         console.error("Error al enviar formulario:", error);
+    //         toastError("Ocurrió un error al guardar.");
+    //     } finally {
+    //         hideSpinner(submitBtn, originalBtnContent);
+    //         tabla_cali.querySelectorAll('input').forEach(el => el.disabled = false);
+    //     }
+    // });
 
-    // Formato de fecha
-    function formatFecha(fechaISO) {
-        const fecha = new Date(fechaISO);
-        return fecha.toLocaleDateString();
-    }
+    // // Formato de fecha
+    // function formatFecha(fechaISO) {
+    //     const fecha = new Date(fechaISO);
+    //     return fecha.toLocaleDateString();
+    // }
 
-    //== Boton cerrar ficha
-    document.addEventListener('click', async function(e) {
-        if (e.target && e.target.classList.contains('btn-cerrar-fase')) {
-            const confirmed = await confirmAction("¿Cerrar la fase?");
-            const btnFase = e.target;
-            if (confirmed) {
-                const originalBtnContent = btnFase.innerHTML;
-                showSpinner(btnFase);
-                try {
-                    const response = await fetch(`/api/ficha/cerrar_fase/${fichaId}/`);
-                    const data = await response.json();
+    // //== Boton cerrar ficha
+    // document.addEventListener('click', async function(e) {
+    //     if (e.target && e.target.classList.contains('btn-cerrar-fase')) {
+    //         const confirmed = await confirmAction("¿Cerrar la fase?");
+    //         const btnFase = e.target;
+    //         if (confirmed) {
+    //             const originalBtnContent = btnFase.innerHTML;
+    //             showSpinner(btnFase);
+    //             try {
+    //                 const response = await fetch(`/api/ficha/cerrar_fase/${fichaId}/`);
+    //                 const data = await response.json();
     
-                    if (response.ok) {
-                        toastSuccess(data.message || "Fase actualizada");
-                        location.reload();
-                    } else {
-                        toastError(data.message || "Error al cerrar la fase.");
-                    }
-                } catch (error) {
-                    console.error("Error de red:", error);
-                    toastError("Ocurrió un error al cerrar la fase.");
-                } finally {
-                    hideSpinner(btnFase, originalBtnContent);
-                }
-            }
-        } else if (e.target && e.target.classList.contains('btn-devolver-fase')){
-            const confirmed = await confirmAction("¿devolver la fase?");
-            const btnDevolverFase = e.target;
-            if(confirmed){
-                const originalBtnContent = btnDevolverFase.innerHTML;
-                showSpinner(btnDevolverFase);
-                try {
-                    const response = await fetch(`/api/ficha/devolver_fase/${fichaId}/`, {
-                        method: "POST",
-                        headers: {
-                            "X-CSRFToken": csrfToken,
-                        }
-                    });
+    //                 if (response.ok) {
+    //                     toastSuccess(data.message || "Fase actualizada");
+    //                     location.reload();
+    //                 } else {
+    //                     toastError(data.message || "Error al cerrar la fase.");
+    //                 }
+    //             } catch (error) {
+    //                 console.error("Error de red:", error);
+    //                 toastError("Ocurrió un error al cerrar la fase.");
+    //             } finally {
+    //                 hideSpinner(btnFase, originalBtnContent);
+    //             }
+    //         }
+    //     } else if (e.target && e.target.classList.contains('btn-devolver-fase')){
+    //         const confirmed = await confirmAction("¿devolver la fase?");
+    //         const btnDevolverFase = e.target;
+    //         if(confirmed){
+    //             const originalBtnContent = btnDevolverFase.innerHTML;
+    //             showSpinner(btnDevolverFase);
+    //             try {
+    //                 const response = await fetch(`/api/ficha/devolver_fase/${fichaId}/`, {
+    //                     method: "POST",
+    //                     headers: {
+    //                         "X-CSRFToken": csrfToken,
+    //                     }
+    //                 });
         
-                    const data = await response.json();
+    //                 const data = await response.json();
         
-                    if (data.success) {
-                        toastSuccess(data.message);
-                        this.location.reload();
-                    } else {
-                        toastError(data.message || "Error al devolver la fase.");
-                    }
-                } catch (error) {
-                    toastError("Error al conectar con el servidor.");
-                    console.error(error);
-                } finally {
-                    hideSpinner(btnDevolverFase, originalBtnContent);
-                }
-            }
-        }
-    });    
+    //                 if (data.success) {
+    //                     toastSuccess(data.message);
+    //                     this.location.reload();
+    //                 } else {
+    //                     toastError(data.message || "Error al devolver la fase.");
+    //                 }
+    //             } catch (error) {
+    //                 toastError("Error al conectar con el servidor.");
+    //                 console.error(error);
+    //             } finally {
+    //                 hideSpinner(btnDevolverFase, originalBtnContent);
+    //             }
+    //         }
+    //     }
+    // });    
 
     // *******************************************************************
     // *                                                                 *

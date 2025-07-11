@@ -19,7 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-
+    document.querySelectorAll('.tomselectm').forEach(function(select) {
+        new TomSelect(select, {
+            create: false,
+            persist: false,
+            plugins: ['remove_button']
+        });
+    });
+    
     cargarDatosTabla();
 
     async function cargarDatosTabla(){
@@ -67,9 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach(el => {
             table.row.add([
                 el.nom,
-                el.fase,
                 el.competencia,
                 el.programa,
+                el.fase,
                 `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${el.id}"
                     title="Editar"
@@ -176,22 +183,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             if (!response.ok){
-                toastError(data.message);
+                let errorMsg = data.message;
+
+                if (data.errors && data.errors.nom) {
+                    errorMsg = data.errors.nom.join(', ');
+                }
+
+                toastError(errorMsg);
                 return;
             }
             toastSuccess(data.message);
             formCrearRAP.reset();
+
+            const faseSelect = document.getElementById('id_fase');
+            if (faseSelect && faseSelect.tomselect) {
+                faseSelect.tomselect.clear();
+            }
+
             modal.hide();
             aplicarFiltros();
         } catch (error) {
             toastError(error);
         } finally {
-            formCrearRAP.querySelectorAll('select, input, button').forEach(el => el.disabled = false);
             hideSpinner(btn, originalBtnContent);
-            setFormDisabled(formCrearRAP, false)
+            setFormDisabled(formCrearRAP, false);
+
+            const compeSelect = document.getElementById('compeSelect');
+            compeSelect.disabled = true;
+            compeSelect.innerHTML = '<option value="">Seleccione una competencia</option>';
+
         }
 
-    });
+    }); 
 
     //== Boton editar RAP
     tableEl.addEventListener('click', async e => {
@@ -222,11 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             'X-CSRFToken': csrfToken
                         }
                     });
+                    const data = await response.json();
                     if (!response.ok){
-                        const data = await response.json();
                         toastError(data.message || 'Error eliminando el RAP');
                     } else {
-                        toastSuccess('RAP eliminado correctamente');
+                        toastSuccess(data.message || 'RAP eliminado correctamente');
                         aplicarFiltros();
                     }
                 } catch (error) {
@@ -252,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const programaSelect = document.getElementById('programaSelectEdit');
             const compeSelect = document.getElementById('compeSelectEdit');
+            const faseSelect = formEditarRAP.querySelector('select[name="fase"]');
 
             const programaSeleccionado = data.programas.length > 0 ? data.programas[0].id : '';
             programaSelect.value = programaSeleccionado;
@@ -259,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await cargarCompetenciasPorPrograma(programaSeleccionado);
     
             compeSelect.tomselect.setValue(data.compe);
+            faseSelect.tomselect.setValue(data.fase);
 
             formEditarRAP.setAttribute('action', `/api/formacion/raps/${rapId}/`);
         } catch (error) {
@@ -304,7 +329,13 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const formData = new FormData(formEditarRAP);
-        const jsonData = Object.fromEntries(formData.entries());
+        const jsonData = {
+            nom: formData.get('nom'),
+            compe: formData.get('compe'),
+            fase: formData.getAll('fase')
+        };
+        console.log("Datos enviados al servidor:", jsonData);
+
         const btn = document.getElementById('btnEditarRAP');
         const originalBtnContent = btn.innerHTML;
 
