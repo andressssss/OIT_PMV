@@ -320,17 +320,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })
 
-    //Funcion temporal por mantenimiento y migracion de fichas
-    const btnFichasMasivo = document.getElementById('btnFichasMasivo');
-
-    btnFichasMasivo.addEventListener('click', e => {
-        e.preventDefault();
-        Swal.fire({
-            icon: 'info',
-            title: 'Función inhabilitada temporalmente',
-            text: 'Esta acción está inhabilitada temporalmente debido a migraciones internas. Lo invitamos a consultar su listado de fichas una vez termine la ventana de migración.',
-            confirmButtonText: 'Ok',
-        });
-    })
-
 })
