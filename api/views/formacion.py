@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
+from django.core.files.storage import default_storage
 from datetime import datetime
 from io import TextIOWrapper
 from django.db import transaction
@@ -11,9 +12,9 @@ from django.forms import ValidationError
 from django.utils import timezone 
 from django.db.models import Subquery, OuterRef, Exists
 import csv
-
+from django.shortcuts import get_object_or_404
 from api.serializers.formacion import RAPSerializer, CompetenciaSerializer, FichaSerializer, BaseRapsSerializer
-from commons.models import T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder,T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
+from commons.models import T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
 from django.contrib.auth.models import User
 
 from matricula.scripts.cargar_tree import crear_datos_prueba 
@@ -353,3 +354,83 @@ class FichasViewSet(ModelViewSet):
 
         except Exception as e:
             return Response({'message': 'Error crítico', 'errores': [str(e)]}, status=500)
+
+    @action(detail=False, methods=['post'], url_path='cargar_documentos_ficha', parser_classes=[MultiPartParser])
+    def cargar_documentos_ficha(self, request):
+        folder_id = request.data.get("folder_id")
+        archivos = request.FILES.getlist("documentos")
+
+        if not folder_id or not archivos:
+            return Response({"message": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            folder = get_object_or_404(T_DocumentFolder, id=folder_id)
+
+            errores = []
+            documentos_creados = []
+            max_size = 7 * 1024 * 1024 # 7 MB
+            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4']
+
+            for archivo in archivos:
+                extension = archivo.name.split('.')[-1].lower()
+
+                if extension not in extensiones_permitidas:
+                    errores.append(f"{archivo.name}: tipo no permitido")
+                    continue
+
+                if archivo.size > max_size:
+                    errores.append(f"{archivo.name}: excede tamaño")
+                    continue
+
+                ruta = f'documentos/fichas/portafolio/{folder.ficha.id}/{archivo.name}'
+                ruta_guardada = default_storage.save(ruta, archivo)
+
+                new_docu = T_docu.objects.create(
+                    nom = archivo.name,
+                    tipo  = extension,
+                    tama = f"{archivo.size // 1020} KB",
+                    archi = ruta_guardada,
+                    priva = "No",
+                    esta = "Activo"
+                )
+
+                document_node = T_DocumentFolder.objects.create(
+                    name = archivo.name,
+                    parent = folder,
+                    tipo = "documento",
+                    ficha = folder.ficha,
+                    documento = new_docu
+                )
+
+                documentos_creados.append({
+                    "id": document_node.id,
+                    "name": document_node.name,
+                    "url": new_docu.archi.url,
+                    "folder_id": folder.id,
+                    "tipo": "documento"
+                })
+
+            if errores and documentos_creados:
+                return Response({
+                    "message": "Carga parcial de los documentos",
+                    "documentos": documentos_creados,
+                    "errores": errores
+                }, status = status.HTTP_206_PARTIAL_CONTENT)
+            
+            if errores and not documentos_creados:
+                return Response({
+                    "message": "No se cargo ningún documento",
+                    "errores": errores
+                }, status = status.HTTP_400_BAD_REQUEST)
+            
+            return Response({
+                "message": "Documentos cargados con éxito",
+                "documentos": documentos_creados
+            }, status= status.HTTP_201_CREATED)
+    
+        except Exception as e:
+            return Response({
+                "message": "Error inesperado al cargar los documentos",
+                "error": str(e)
+            }, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
