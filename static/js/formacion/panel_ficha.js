@@ -140,16 +140,21 @@ document.addEventListener("DOMContentLoaded", function () {
             } else if (node.tipo === "documento") {
                 // Configuración para documentos
                 const extension = node.documento_nombre.split('.').pop().toLowerCase();
-                
                 // Determinar icono según extensión
                 const extensionIcons = {
-                    jpg: "bi-image",
-                    png: "bi-image",
-                    jpeg: "bi-image",
                     pdf: "bi-file-earmark-pdf",
                     xlsx: "bi-file-earmark-spreadsheet",
                     csv: "bi-file-earmark-spreadsheet",
-                    docx: "bi-file-earmark-richtext"
+                    jpg: "bi-image",
+                    jpeg: "bi-image",
+                    png: "bi-image",
+                    ppt: "bi-file-earmark-easel",
+                    docx: "bi-file-earmark-richtext",
+                    mp3: "bi-file-earmark-music",
+                    mp4: "bi-file-earmark-play",
+                    xls: "file-earmark-spreadsheet",
+                    psc: "bi-file-earmark-code",
+                    sql: "bi-database"
                 };
                 icon.classList.add("bi", extensionIcons[extension] || "bi-file-earmark");
 
@@ -249,7 +254,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (files.length === 0) return;
 
-        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls'];
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls','docx', 'psc', 'sql'];
         const maxSize = 15 * 1024 * 1024; // 15 MB
 
         const formData = new FormData();
@@ -367,7 +372,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     
         // Validación de tipo de archivo
-        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls'];
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls', 'psc', 'sql'];
         const extension = file.name.split('.').pop().toLowerCase();
         if (!allowedExtensions.includes(extension)) {
             toastError("Tipo de archivo no permitido. Solo se permiten PDF, Excel o imágenes.");
@@ -1568,7 +1573,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const response = await fetch(`/api/ficha/crear_encuentro/${fichaId}/`, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken },
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
                 body: formData
             });
 
@@ -1678,7 +1683,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const response = await fetch(formEditarEncuentro.action, {
                 method: 'POST',
-                headers: {'X_CSRFToken': csrfToken},
+                headers: {'X_CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
                 body: formData
             });
             const data = await response.json();

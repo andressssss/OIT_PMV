@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
         fetch('/api/lider/crear/', {
             method : 'POST',
-            headers : { 'X-CSRFToken': csrfToken },
+            headers : { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body : formData 
         })
         .then(response => {
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
         fetch(url, {
             method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
+            headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
         })
             .then(async response => {
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
             if(confirmed){
                 fetch(`/api/lider/eliminar/${liderId}/`, {
                     method: 'POST',
-                    headers: {'X-CSRFToken': csrfToken}
+                    headers: {'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'}
                 })
                 .then(response => response.json())
                 .then(data => {

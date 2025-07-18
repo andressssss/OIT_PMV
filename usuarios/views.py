@@ -100,7 +100,7 @@ def signin(request):
                     return redirect('panel_aprendiz')
                 elif perfil.rol in ['gestor', 'lider']:
                     return redirect('instituciones_gestor')
-                elif perfil.rol == 'admin':
+                elif perfil.rol == 'admin' or perfil.rol == 'consulta':
                     return redirect('admin_dashboard')
                 elif perfil.rol == 'instructor':
                     return redirect('fichas')
@@ -802,6 +802,7 @@ def cuentas(request):
     })
 
 @login_required
+@bloquear_si_consulta
 def crear_pcuentas(request):
     if request.method == 'GET':
         user_form = UserFormCreate()
@@ -861,6 +862,7 @@ def crear_pcuentas(request):
             })
 
 @login_required
+@bloquear_si_consulta
 def cuentas_detalle(request, cuentas_id):
     cuentas = get_object_or_404(T_cuentas, pk=cuentas_id)
     perfil = cuentas.perfil
@@ -1035,6 +1037,7 @@ def ver_perfil_aprendiz(request, aprendiz_id):
     })
 
 @login_required
+@bloquear_si_consulta
 def crear_aprendices(request):
     if request.method == 'POST':
         perfil_form = PerfilForm(request.POST, prefix='perfil')
@@ -1115,6 +1118,7 @@ def crear_aprendices(request):
     return redirect('aprendices')
 
 @login_required
+@bloquear_si_consulta
 def editar_aprendiz(request, id):
     aprendiz = get_object_or_404(T_apre, pk=id)
     perfil = get_object_or_404(T_perfil, pk=aprendiz.perfil_id)
@@ -1138,6 +1142,7 @@ def editar_aprendiz(request, id):
     return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
 
 @login_required
+@bloquear_si_consulta
 def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
 
     aprendiz = get_object_or_404(T_apre, pk=aprendiz_id)
@@ -1159,6 +1164,7 @@ def lideres(request):
     })
 
 @login_required  # Funcion para crear lider
+@bloquear_si_consulta
 def crear_lider(request):
     if request.method == 'POST':
         perfil_form = PerfilForm(request.POST)
@@ -1237,6 +1243,7 @@ def obtener_lider(request, lider_id):
     return JsonResponse({'status': 'error', 'message': 'Lider no encontrado'}, status=404)
 
 @login_required
+@bloquear_si_consulta
 def editar_lider(request, lider_id):
     lider = get_object_or_404(T_lider, pk=lider_id)
     perfil = get_object_or_404(T_perfil, pk = lider.perfil.id)
@@ -1255,6 +1262,7 @@ def editar_lider(request, lider_id):
     return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status = 405)
 
 @login_required
+@bloquear_si_consulta
 def eliminar_lider(request, lider_id):
     lider = get_object_or_404(T_lider, id=lider_id)
     if request.method == 'POST':
@@ -1285,6 +1293,7 @@ def administradores(request):
     })
 
 @login_required
+@bloquear_si_consulta
 def crear_administrador(request):
     if request.method == 'POST':
         perfil_form = PerfilForm(request.POST)
@@ -1370,6 +1379,7 @@ def obtener_administrador(request, admin_id):
     return JsonResponse({'status': 'error', 'message': 'Admin no encontrado'}, status=404)
 
 @login_required
+@bloquear_si_consulta
 def eliminar_administrador(request, admin_id):
     admin = get_object_or_404(T_admin, pk=admin_id)
 
@@ -1386,6 +1396,7 @@ def eliminar_administrador(request, admin_id):
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
 @login_required
+@bloquear_si_consulta
 def editar_administrador(request, admin_id):
     administrador = get_object_or_404(T_admin, pk=admin_id)
     perfil = get_object_or_404(T_perfil, pk = administrador.perfil.id)
@@ -1620,6 +1631,7 @@ def api_municipios(request):
     return JsonResponse(data, safe=False)
 
 @login_required
+@bloquear_si_consulta
 def crear_instituciones(request):
     if request.method == 'POST':
         try:
@@ -1655,6 +1667,7 @@ def crear_instituciones(request):
         return JsonResponse({"errors": "<ul><li>Método no permitido.</li></ul>"}, status=405)
 
 @login_required
+@bloquear_si_consulta
 def editar_institucion(request, institucion_id):
     institucion = get_object_or_404(T_insti_edu, id = institucion_id)
 
@@ -1687,6 +1700,7 @@ def editar_institucion(request, institucion_id):
         return JsonResponse({'status': 'false', 'message':'Error en la operacion', 'errors': str(e)}, status = 400)
 
 @login_required  # funcion para eliminar institucion
+@bloquear_si_consulta
 def eliminar_instituciones(request, institucion_id):
     institucion = get_object_or_404(T_insti_edu, id=institucion_id)
 
@@ -1837,6 +1851,7 @@ def generar_contraseña(length=8):
     return ''.join(random.choice(caracteres) for _ in range(length))
 
 @login_required
+@bloquear_si_consulta
 def cargar_aprendices_masivo(request):
     if request.method == 'POST':
 
@@ -2185,6 +2200,7 @@ def gestores(request):
     })
 
 @login_required
+@bloquear_si_consulta
 def crear_gestor(request):
     if request.method == 'POST':
         perfil_form = PerfilForm(request.POST)
@@ -2296,6 +2312,7 @@ def obtener_gestor(request, gestor_id):
     return JsonResponse({'status': 'error', 'message': 'Gestor no encontrado'}, status=404)
 
 @login_required
+@bloquear_si_consulta
 def editar_gestor(request, gestor_id):
     gestor = get_object_or_404(T_gestor, pk=gestor_id)
     perfil = get_object_or_404(T_perfil, pk = gestor.perfil.id)

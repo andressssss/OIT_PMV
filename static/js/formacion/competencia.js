@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/competencia/crear/`, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken },
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
                 body: formData
             });
             const data = await response.json();
@@ -201,7 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
                         }
                     });
                     if (!response.ok){
@@ -282,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(formEditarCompetencia.action, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
                 body: dataf
             });
             const data = await response.json();

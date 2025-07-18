@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch('/api/gestor/crear/', {
             method : 'POST',
-            headers : { 'X-CSRFToken': csrfToken },
+            headers : { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body : formData 
         })
         .then(response => {
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch (url, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken},
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
                 body: formData
             });
 
