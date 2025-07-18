@@ -45,8 +45,7 @@ logger = logging.getLogger('django')
 ###############################################################################################################
 @login_required
 def fichas(request):
-    fichas = T_ficha.objects.all()
-    return render(request, 'listar_fichas.html', {'fichas': fichas})
+    return render(request, 'listar_fichas.html')
 
 @require_GET
 @login_required

@@ -13,6 +13,7 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.utils import timezone
+from commons.permisos import bloquear_si_consulta
 from commons.models import (
     T_instru, 
     T_ficha, 
@@ -409,6 +410,7 @@ def instructores(request):
     })
         
 @login_required
+@bloquear_si_consulta
 def crear_instructor(request):
     if request.method == 'POST':
         perfil_form = PerfilForm(request.POST)
@@ -526,6 +528,7 @@ def obtener_instructor(request, instructor_id):
     return JsonResponse({'status': 'error', 'message': 'Instructor no encontrado'}, status=404)
 
 @login_required
+@bloquear_si_consulta
 def editar_instructor(request, instructor_id):
     instructor = get_object_or_404(T_instru, pk=instructor_id)
     perfil = get_object_or_404(T_perfil, pk=instructor.perfil.id)
@@ -595,7 +598,9 @@ def validar_formato_csv_basico(contenido_csv, campos_esperados):
                 f"Línea {i}: se esperaban {len(campos_esperados)} columnas, pero se encontraron {len(row)}. Contenido: {row}"
             )
     return errores
+
 @login_required
+@bloquear_si_consulta
 def cargar_instructores_masivo(request):
     if request.method == 'POST':
         errores = []
@@ -1446,6 +1451,7 @@ def departamentos(request):
     })
 
 @login_required
+@bloquear_si_consulta
 def creardepartamentos(request):  # funcion para crear departamento
     if request.method == 'GET':
         departamentosForm = DepartamentoForm()
@@ -1465,8 +1471,9 @@ def creardepartamentos(request):  # funcion para crear departamento
                 'error': '"Error al crear departamento. Verifique los datos.'
             })
 
-@login_required
 # funcion para actualizar info departamento
+@login_required
+@bloquear_si_consulta
 def detalle_departamentos(request, departamento_id):
     departamentos = get_object_or_404(T_departa, id=departamento_id)
     if request.method == 'GET':
@@ -1489,6 +1496,7 @@ def detalle_departamentos(request, departamento_id):
             })
 
 @login_required
+@bloquear_si_consulta
 def eliminar_departamentos(request, departamento_id):
     departamento = get_object_or_404(T_departa, id=departamento_id)
     if request.method == 'POST':
@@ -1508,6 +1516,7 @@ def municipios(request):
     })
 
 @login_required
+@bloquear_si_consulta
 def crearmunicipios(request):  # funcion para crear municipio
     if request.method == 'GET':
         municipiosForm = MunicipioForm()
@@ -1529,6 +1538,7 @@ def crearmunicipios(request):  # funcion para crear municipio
 
 
 @login_required
+@bloquear_si_consulta
 def detalle_municipios(request, municipio_id):  # funcion para editar municipio
     municipios = get_object_or_404(T_munici, id=municipio_id)
 
@@ -1551,6 +1561,7 @@ def detalle_municipios(request, municipio_id):  # funcion para editar municipio
             })
 
 @login_required
+@bloquear_si_consulta
 def eliminar_municipios(request, municipio_id):  # funcion para eliminar municipio
     municipio = get_object_or_404(T_munici, id=municipio_id)
 
@@ -1709,6 +1720,7 @@ def centrosformacion(request):
 
 # Funcion para crear centros de formacion
 @login_required
+@bloquear_si_consulta
 def crear_centro(request):
     if request.method == 'POST':
         centroForm = CentroFormacionForm(request.POST)
@@ -1768,6 +1780,7 @@ def obtener_centro(request, centro_id):
     return JsonResponse({'error': 'Centro no encontrado'}, status=404)
 
 @login_required
+@bloquear_si_consulta
 def editar_centro(request, centro_id):
     centro = get_object_or_404(T_centro_forma, pk=centro_id)
     
@@ -1793,7 +1806,8 @@ def editar_centro(request, centro_id):
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
 # Endpoiont para eliminar centro de formacion
-@login_required  
+@login_required
+@bloquear_si_consulta
 def eliminar_centro(request, centro_id):
     if request.method == 'POST':
         try:
@@ -2332,7 +2346,9 @@ def editar_gestor(request, gestor_id):
 def reset_password_view(request):
     return render(request, 'res_con.html')
 
-## GESTION DE USUARIOS ###
+###############################################################################################################
+#        VISTAS USUARIO
+###############################################################################################################
 @login_required
 def usuarios(request):
     usuarios = T_perfil.objects.all()
@@ -2341,6 +2357,7 @@ def usuarios(request):
     })
 
 @login_required
+@bloquear_si_consulta
 def restablecer_contrasena(request):
     if request.method == 'POST':
         try:

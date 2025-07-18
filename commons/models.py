@@ -17,7 +17,8 @@ class T_perfil(models.Model):
         ('instructor', 'Instructor'),
         ('aprendiz', 'Aprendiz'),
         ('lider', 'Lider'),
-        ('gestor', 'Gestor')
+        ('gestor', 'Gestor'),
+        ('consulta', 'Consulta')
     ]
     DNI_CHOICES = [
         ('ti', 'Tarjeta de identidad'),

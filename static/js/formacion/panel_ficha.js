@@ -114,6 +114,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     uploadLi.style.listStyle = "none";
                     uploadLi.dataset.folderId = node.id;
 
+                    li.dataset.folderId = node.id;
+                    li.dataset.droppable = "true";
+
                     const uploadIcon = document.createElement("i");
                     uploadIcon.classList.add("bi", "bi-plus-circle");
 
@@ -218,8 +221,98 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
+        document.querySelectorAll("[data-folder-id][data-droppable='true']").forEach(folder => {
+            folder.addEventListener("dragover", handleDragOver);
+            folder.addEventListener("dragleave", handleDragLeave);
+            folder.addEventListener("drop", handleDrop);
+        });
+
         document.getElementById("uploadButton").addEventListener("click", uploadFile);
     }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        event.currentTarget.classList.add("dragover-highlight");
+    }
+
+    function handleDragLeave(event) {
+        event.currentTarget.classList.remove("dragover-highlight");
+    }
+    
+    async function handleDrop(event) {
+        event.preventDefault();
+        const folderElement = event.currentTarget;
+        folderElement.classList.remove("dragover-highlight");
+
+        const folderId = folderElement.dataset.folderId;
+        const files = event.dataTransfer.files;
+
+        if (files.length === 0) return;
+
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls'];
+        const maxSize = 15 * 1024 * 1024; // 15 MB
+
+        const formData = new FormData();
+        let invalidFiles = [];
+
+        for (let file of files) {
+            const extension = file.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(extension)) {
+                invalidFiles.push(`${file.name}: tipo no permitido`);
+                continue;
+            }
+            if (file.size > maxSize) {
+                invalidFiles.push(`${file.name}: excede tamaño`);
+                continue;
+            }
+            formData.append("documentos", file);
+        }
+
+        if (invalidFiles.length > 0) {
+            toastError("Errores al subir:\n" + invalidFiles.join("\n"));
+            return;
+        }
+
+        formData.append("folder_id", folderId);
+
+        // Inhabilitar y aplicar efecto visual
+        folderElement.classList.add("folder-disabled", "folder-glow");
+
+        try {
+            const response = await fetch(`/api/formacion/fichas/cargar_documentos_ficha/`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok){
+                toastError(responseData.message || "Error desconocido");
+                console.log(responseData.message);
+                return;
+            }
+
+            if (response.status === 201) {
+                toastSuccess(responseData.message || "Documentos subidos con éxito.");
+            } else if (response.status === 206) {
+                toastSuccess(responseData.message || "Algunos documentos se subieron.");
+                toastError(responseData.errores.join('\n'));
+            } else {
+                throw new Error(responseData.message || "Error desconocido");
+            }
+
+            await actualizarCarpeta(folderId);  // Solo recarga esa carpeta
+        } catch (err) {
+            console.error("Error en la subida por drag & drop:", err);
+            toastError("Error al subir los documentos: " + err.message);
+        } finally {
+            // Quitar efecto y habilitar nuevamente
+            folderElement.classList.remove("folder-disabled", "folder-glow");
+        }
+    }
+
+
 
     function toggleFolder(folderId, icon) {
         const subfolder = document.getElementById(`folder-${folderId}`);
@@ -274,7 +367,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     
         // Validación de tipo de archivo
-        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png'];
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls'];
         const extension = file.name.split('.').pop().toLowerCase();
         if (!allowedExtensions.includes(extension)) {
             toastError("Tipo de archivo no permitido. Solo se permiten PDF, Excel o imágenes.");
@@ -282,9 +375,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     
         // Validación de tamaño
-        const maxSize = 7 * 1024 * 1024; // 7MB
+        const maxSize = 15 * 1024 * 1024; // 15MB
         if (file.size > maxSize) {
-            toastError("El archivo supera el tamaño máximo permitido (7 MB).");
+            toastError("El archivo supera el tamaño máximo permitido (15 MB).");
             return;
         }
     

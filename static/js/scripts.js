@@ -7,12 +7,6 @@ $(document).ready(function () {
             deferRender: true
         }
     });
-    new DataTable('#usuarios_table', {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-            deferRender: true
-        }
-    });
     new DataTable('#cuentas_table', {
         language: {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',

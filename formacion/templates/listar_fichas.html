@@ -11,7 +11,7 @@
                 <h1 class="display-5">Gestión de fichas</h1>
                 <div>
                     {% if perfil.rol == 'instructor' %}
-                    <a id="btnFichasMasivo" href="#" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear ficha masivo">
+                    <a id="btnFichasMasivo" href="/fichas/crear_masivo" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear ficha masivo">
                         {% icon 'plus' %}
                     </a>
                     {% elif perfil.rol == 'admin' %}
@@ -27,7 +27,6 @@
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarAprendices" data-bs-toggle="tooltip" title="Asignar aprendices a fichas">
                                 <i class="bi bi-file-earmark-person"></i>
                             </button>
-
                         </div>
                     </div>
                     {% endif %}
