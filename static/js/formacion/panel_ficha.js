@@ -14,19 +14,19 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    const tomSelectMultiple = new TomSelect(".tomselect-multiple", {
-        plugins: ['remove_button'],
-        maxItems: null,
-        persist: false,
-        create: false,
-        placeholder: 'Seleccione tipos de actividad'
-    });
+    // const tomSelectMultiple = new TomSelect(".tomselect-multiple", {
+    //     plugins: ['remove_button'],
+    //     maxItems: null,
+    //     persist: false,
+    //     create: false,
+    //     placeholder: 'Seleccione tipos de actividad'
+    // });
     
-    const tomSelectRaps = new TomSelect(".tomselect-raps", {
-        plugins: ['remove_button'],
-        maxItems: null,
-        placeholder: 'Seleccione los RAPs asociados'
-    });
+    // const tomSelectRaps = new TomSelect(".tomselect-raps", {
+    //     plugins: ['remove_button'],
+    //     maxItems: null,
+    //     placeholder: 'Seleccione los RAPs asociados'
+    // });
 
     // *******************************************************************
     // *                                                                 *
@@ -532,7 +532,7 @@ document.addEventListener("DOMContentLoaded", function () {
         Swal.fire({
             icon: 'info',
             title: 'Función inhabilitada temporalmente',
-            text: 'Esta acción estará inhabilitada hasta el 14/07/2025 debido a migraciones internas.',
+            text: 'Esta acción estará inhabilitada temporalmente debido a procesos de mejora.',
             confirmButtonText: 'Ok',
         });
         }
