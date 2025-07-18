@@ -290,11 +290,16 @@ select.form-select.choices__input {
 }
 
 /* Tipos de documentos */
-.bi-file-earmark-pdf { color: #dc3545; } /* Rojo para PDF */
-.bi-image { color: #0d6efd; } /* Azul para imágenes */
+.bi-file-earmark-pdf { color: #dc3545; }       /* Rojo para PDF */
+.bi-image { color: #0d6efd; }                  /* Azul para imágenes */
 .bi-file-earmark-spreadsheet { color: #198754; } /* Verde para hojas de cálculo */
-.bi-file-earmark-richtext { color: #6f42c1; } /* Morado para documentos de texto */
-.bi-file-earmark { color: #6c757d; } /* Gris para otros tipos */
+.bi-file-earmark-richtext { color: #6f42c1; }  /* Morado para documentos de texto */
+.bi-file-earmark { color: #6c757d; }           /* Gris para otros tipos */
+.bi-file-earmark-easel { color: #fd7e14; }     /* Naranja para presentaciones (PPT) */
+.bi-file-earmark-music { color: #6610f2; }     /* Púrpura intenso para archivos de audio (MP3) */
+.bi-file-earmark-play { color: #20c997; }      /* Verde azulado para videos (MP4) */
+.bi-file-earmark-code { color: #0dcaf0; }      /* Celeste para código fuente (PSC) */
+.bi-database { color: #adb5bd; }               /* Gris claro para bases de datos (SQL) */
 
 /* ESTILOS PARA ENCABEZADO DE NAV PILLS - Portafolio ficha*/
 

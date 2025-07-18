@@ -19,6 +19,7 @@ from django.contrib.auth.models import User
 
 from matricula.scripts.cargar_tree import crear_datos_prueba 
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
+from commons.permisos import DenegarConsulta
 
 import logging
 
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class RapsViewSet(ModelViewSet):
     queryset = T_raps.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DenegarConsulta]
 
     def get_serializer_class(self):
         return RAPSerializer if self.action in ['list', 'retrieve'] else BaseRapsSerializer
@@ -369,7 +370,7 @@ class FichasViewSet(ModelViewSet):
             errores = []
             documentos_creados = []
             max_size = 15 * 1024 * 1024 # 15 MB
-            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls']
+            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls', 'docx', 'psc', 'sql']
             
 
             for archivo in archivos:

@@ -478,7 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => {

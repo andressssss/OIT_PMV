@@ -177,13 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/formacion/raps/`, {
                 method: 'POST',
-                headers: {'X-CSRFToken': csrfToken},
+                headers: {'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
                 body: formData
             });
 
             const data = await response.json();
+
             if (!response.ok){
-                let errorMsg = data.message;
+                let errorMsg = data.message || data.detail || "Ocurrió un error";
 
                 if (data.errors && data.errors.nom) {
                     errorMsg = data.errors.nom.join(', ');
@@ -192,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toastError(errorMsg);
                 return;
             }
+
             toastSuccess(data.message);
             formCrearRAP.reset();
 
@@ -203,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.hide();
             aplicarFiltros();
         } catch (error) {
-            toastError(error);
+            toastError(error || "Ocurrió un error inesperado");
         } finally {
             hideSpinner(btn, originalBtnContent);
             setFormDisabled(formCrearRAP, false);
@@ -242,12 +244,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
                         }
                     });
                     const data = await response.json();
                     if (!response.ok){
-                        toastError(data.message || 'Error eliminando el RAP');
+                        let errorMsg = data.message || data.detail || "Ocurrió un error";
+
+                        if (data.errors && data.errors.nom) {
+                            errorMsg = data.errors.nom.join(', ');
+                        }
+                        toastError(errorMsg);
                     } else {
                         toastSuccess(data.message || 'RAP eliminado correctamente');
                         aplicarFiltros();
@@ -270,22 +278,32 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/formacion/raps/${rapId}/`);
             const data = await response.json();
-    
-            formEditarRAP.querySelector('input[name="nom"]').value = data.nom;
 
-            const programaSelect = document.getElementById('programaSelectEdit');
-            const compeSelect = document.getElementById('compeSelectEdit');
-            const faseSelect = formEditarRAP.querySelector('select[name="fase"]');
+            if (!response.ok){
+                let errorMsg = data.message || data.detail || "Ocurrió un error";
 
-            const programaSeleccionado = data.programas.length > 0 ? data.programas[0].id : '';
-            programaSelect.value = programaSeleccionado;
+                if (data.errors && data.errors.nom) {
+                    errorMsg = data.errors.nom.join(', ');
+                }
+                toastError(errorMsg);
+            } else {
+        
+                formEditarRAP.querySelector('input[name="nom"]').value = data.nom;
 
-            await cargarCompetenciasPorPrograma(programaSeleccionado);
-    
-            compeSelect.tomselect.setValue(data.compe);
-            faseSelect.tomselect.setValue(data.fase);
+                const programaSelect = document.getElementById('programaSelectEdit');
+                const compeSelect = document.getElementById('compeSelectEdit');
+                const faseSelect = formEditarRAP.querySelector('select[name="fase"]');
 
-            formEditarRAP.setAttribute('action', `/api/formacion/raps/${rapId}/`);
+                const programaSeleccionado = data.programas.length > 0 ? data.programas[0].id : '';
+                programaSelect.value = programaSeleccionado;
+
+                await cargarCompetenciasPorPrograma(programaSeleccionado);
+        
+                compeSelect.tomselect.setValue(data.compe);
+                faseSelect.tomselect.setValue(data.fase);
+
+                formEditarRAP.setAttribute('action', `/api/formacion/raps/${rapId}/`);
+            }
         } catch (error) {
             toastError(error);
         } finally {
@@ -348,7 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify(jsonData)
             });

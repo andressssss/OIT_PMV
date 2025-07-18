@@ -12,6 +12,7 @@ import openpyxl
 import csv
 import random
 import string
+from commons.permisos import bloquear_si_consulta
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from django.db.models import Q
@@ -156,6 +157,7 @@ def filtrar_fichas(request):
 
 @require_POST
 @login_required
+@bloquear_si_consulta
 def cambiar_numero_ficha(request, ficha_id):
     nuevo_num = request.POST.get('nuevo_num', '').strip()
 
@@ -845,6 +847,7 @@ def obtener_hijos_carpeta_aprendiz(request, carpeta_id):
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 @login_required
+@bloquear_si_consulta
 def crear_encuentro(request, ficha_id):
     ficha = get_object_or_404(T_ficha, id=ficha_id)
     if request.method == 'POST':
@@ -934,6 +937,7 @@ def obtener_encuentro(request, encuentro_id):
 
 @require_POST
 @login_required
+@bloquear_si_consulta
 def editar_encuentro(request, encuentro_id):
     try:
         encuentro = T_encu.objects.get(pk=encuentro_id)
@@ -1698,6 +1702,7 @@ def listar_programas(request):
     return render(request, 'programas.html', {'programas': programas})
 
 @login_required
+@bloquear_si_consulta
 def crear_programa(request):
     if request.method == 'POST':
         programa_form = ProgramaForm(request.POST)
@@ -1720,6 +1725,7 @@ def competencias(request):
         })
 
 @login_required
+@bloquear_si_consulta
 def crear_competencia(request):
     if request.method == 'POST':
         competencia_form = CompetenciaForm(request.POST)
@@ -1732,6 +1738,8 @@ def crear_competencia(request):
             return JsonResponse({'status': 'error', 'message': 'Competencia creada'}, status = 200)
     return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status =  405)
 
+@login_required
+@bloquear_si_consulta
 def eliminar_competencia(request, competencia_id):
     if request.method == 'DELETE':
         try:
@@ -1803,6 +1811,7 @@ def obtener_competencia(request, competencia_id):
     return JsonResponse({'status': 'error', 'message': 'Competencia no encontrada'}, status=404)
 
 @login_required
+@bloquear_si_consulta
 def editar_competencia(request, competencia_id):
     competencia = T_compe.objects.filter(pk = competencia_id).first()
 
@@ -1922,6 +1931,7 @@ def obtener_opciones_competencias(request):
     return JsonResponse(list(competencias), safe=False)
 
 @login_required
+@bloquear_si_consulta
 def editar_rap(request, rap_id):
     rap = T_raps.objects.filter(pk=rap_id).first()
 

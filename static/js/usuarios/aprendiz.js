@@ -243,7 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: data
         })

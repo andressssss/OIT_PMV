@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/ficha/cambiar_num/${id}/`,{
                 method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken },
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
                 body: formData
             });
             const data = await response.json();

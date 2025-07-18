@@ -39,7 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/instructor/crear/', {
                 method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken },
+                headers: { 
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 body: formData
             });
     
@@ -164,7 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: data
             });
@@ -181,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         } catch (error) {
             // Aquí sí funcionará error.message
-            showErrorToast(error.message);
+            toastError(error.message);
         } finally {
             inputs.forEach(el => el.disabled = false);
         }
