@@ -368,8 +368,9 @@ class FichasViewSet(ModelViewSet):
 
             errores = []
             documentos_creados = []
-            max_size = 7 * 1024 * 1024 # 7 MB
-            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4']
+            max_size = 15 * 1024 * 1024 # 15 MB
+            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls']
+            
 
             for archivo in archivos:
                 extension = archivo.name.split('.')[-1].lower()
@@ -379,7 +380,7 @@ class FichasViewSet(ModelViewSet):
                     continue
 
                 if archivo.size > max_size:
-                    errores.append(f"{archivo.name}: excede tamaño")
+                    errores.append(f"{archivo.name}: excede tamaño 15mb")
                     continue
 
                 ruta = f'documentos/fichas/portafolio/{folder.ficha.id}/{archivo.name}'

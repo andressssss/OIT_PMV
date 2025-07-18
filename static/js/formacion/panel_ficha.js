@@ -249,8 +249,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (files.length === 0) return;
 
-        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4'];
-        const maxSize = 7 * 1024 * 1024; // 7 MB
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls'];
+        const maxSize = 15 * 1024 * 1024; // 15 MB
 
         const formData = new FormData();
         let invalidFiles = [];
@@ -279,21 +279,18 @@ document.addEventListener("DOMContentLoaded", function () {
         folderElement.classList.add("folder-disabled", "folder-glow");
 
         try {
-            const response = await fetch("/api/formacion/fichas/cargar_documentos_ficha/", {
-                method: "POST",
-                headers: {
-                    'X-CSRFToken': csrfToken
-                },
-                body: formData
+            const response = await fetch(`/api/formacion/fichas/cargar_documentos_ficha/`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken }
             });
 
-            const text = await response.text();  // primero obtenemos el texto
-            let responseData;
+            const responseData = await response.json();
 
-            try {
-                responseData = JSON.parse(text);  // intentamos convertirlo a JSON
-            } catch (e) {
-                throw new Error("Respuesta inválida del servidor.");
+            if (!response.ok){
+                toastError(responseData.message || "Error desconocido");
+                console.log(responseData.message);
+                return;
             }
 
             if (response.status === 201) {
@@ -370,7 +367,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     
         // Validación de tipo de archivo
-        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png'];
+        const allowedExtensions = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls'];
         const extension = file.name.split('.').pop().toLowerCase();
         if (!allowedExtensions.includes(extension)) {
             toastError("Tipo de archivo no permitido. Solo se permiten PDF, Excel o imágenes.");
@@ -378,9 +375,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     
         // Validación de tamaño
-        const maxSize = 7 * 1024 * 1024; // 7MB
+        const maxSize = 15 * 1024 * 1024; // 15MB
         if (file.size > maxSize) {
-            toastError("El archivo supera el tamaño máximo permitido (7 MB).");
+            toastError("El archivo supera el tamaño máximo permitido (15 MB).");
             return;
         }
     
