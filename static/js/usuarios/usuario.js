@@ -2,16 +2,98 @@ import { toastSuccess, toastError, confirmToast, confirmDeletion, fadeIn, fadeOu
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    document.querySelectorAll('.btn-establecer-contra').forEach(btn => {
-        btn.addEventListener('click', () => {
+    const tableEl = document.getElementById('usuarios_table');
+
+    const table = new DataTable(tableEl, {
+        serverSide: true,
+        processing: false,
+        ajax: {
+            url: '/api/usuarios/perfiles/filtrar/',
+            type: 'GET',
+        },
+        columns: [
+            { data: 'nom' },
+            { data: 'apelli' },
+            { data: 'tipo_dni' },
+            { data: 'dni' },
+            { data: 'username' },
+            { data: 'last_login', defaultContent: 'No registrado' },
+            { data: 'rol' },
+            {
+                data: null,
+                orderable: false,
+                render: function (data, type, row) {
+                    return `
+                        <a class="btn btn-outline-warning btn-sm mb-1 btn-establecer-contra"
+                            data-id="${row.id}"
+                            data-usuario="${row.nom} ${row.apelli}"
+                            data-toggle="tooltip"
+                            data-placement="top"
+                            title="Establecer contraseña"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalReset">
+                            <i class="bi bi-asterisk"></i>
+                        </a>
+                    `;
+                }
+            }
+        ],
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json'
+        },
+        drawCallback: () => {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                new bootstrap.Tooltip(el);
+            });
+        }
+    });
+
+    function mostrarPlaceholdersTabla() {
+        const tbody = document.querySelector('#usuarios_table tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        const tr = document.createElement('tr');
+
+        const placeholders = [
+            'col-10', 'col-10', 'col-8', 'col-6',
+            'col-6', 'col-6', 'col-6', 'col-4'
+        ];
+
+        placeholders.forEach(colClass => {
+            const td = document.createElement('td');
+            td.innerHTML = `<span class="placeholder ${colClass} placeholder-glow placeholder-wave rounded"></span>`;
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    }
+
+    table.on('preXhr.dt', function () {
+        mostrarPlaceholdersTabla();
+    });
+
+    table.on('processing.dt', function (e, settings, processing) {
+        const tbody = document.querySelector('#usuarios_table tbody');
+        if (!tbody) return;
+
+        if (processing) {
+            mostrarPlaceholdersTabla();
+        }
+    });
+
+    tableEl.addEventListener('click', function (e) {
+        if (e.target.closest('.btn-establecer-contra')) {
+            const btn = e.target.closest('.btn-establecer-contra');
             const userId = btn.dataset.id;
             const nombre = btn.dataset.usuario;
             document.getElementById('user-id-reset').value = userId;
             document.getElementById('nombre-usr-restablecer').innerHTML = nombre;
             document.getElementById('new-password').value = '';
+        }
+    });
 
-        });
-    })
 
     const passwordInput = document.getElementById('new-password');
 

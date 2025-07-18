@@ -1,6 +1,6 @@
 .navbar {
     background-color: #1E2DBE !important;
-  }
+}
 
 .bg-primary{
     background-color: #1E2DBE !important;
@@ -330,4 +330,29 @@ select.form-select.choices__input {
     transform: translateY(-50%); /* Centra el ícono verticalmente */
     color: #000000; /* Cambia el color del ícono */
     font-size: 20px; /* Ajusta el tamaño del ícono si es necesario */
+}
+
+/* Estilo drag n drop portafolio ficha  */
+.dragover-highlight {
+    border: 2px dashed #1E2DBE;
+    background-color: #f0f4ff;
+    border-radius: 8px;
+}
+
+.folder-disabled {
+    pointer-events: none;
+    opacity: 0.6;
+    position: relative;
+}
+
+.folder-glow {
+    animation: glow-pulse 1s infinite ease-in-out;
+    box-shadow: 0 0 8px 2px #1E2DBE;
+    border-radius: 4px;
+}
+
+@keyframes glow-pulse {
+    0% { box-shadow: 0 0 8px 2px #1E2DBE; }
+    50% { box-shadow: 0 0 14px 4px #1E2DBE; }
+    100% { box-shadow: 0 0 8px 2px #1E2DBE; }
 }

@@ -7,7 +7,7 @@
         
         <p class="text-center mb-4">En esta sección, el {{rol}} puede crear nuevos usuarios y gestionar los actores del sistema.</p>
         
-            {% if rol == 'admin' %}
+            {% if rol == 'admin' or rol == 'consulta' %}
             <!-- ======== SISTEMA / ENTIDADES GENERALES ======== -->
             <h4 class="mt-5 mb-3 border-bottom pb-2">Sistema</h4>
             <div class="row row-cols-1 row-cols-md-5">
