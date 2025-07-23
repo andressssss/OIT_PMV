@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.shortcuts import get_object_or_404
-from api.serializers.formacion import RAPSerializer, CompetenciaSerializer, FichaSerializer, BaseRapsSerializer
+from api.serializers.formacion import RAPSerializer, CompetenciaSerializer, FichaSerializer,FichaEditarSerializer, BaseRapsSerializer, ProgramaSerializer
 from commons.models import T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
 from django.contrib.auth.models import User
 
@@ -83,6 +83,12 @@ class FichasViewSet(ModelViewSet):
     serializer_class = FichaSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'fichas_por_programa']:
+            return FichaSerializer
+        return FichaEditarSerializer
+
 
     @action(detail=False, methods=['get'], url_path='por_programa/(?P<programa_id>[^/.]+)')
     def fichas_por_programa(self, request, programa_id=None):
@@ -435,4 +441,9 @@ class FichasViewSet(ModelViewSet):
                 "message": "Error inesperado al cargar los documentos",
                 "error": str(e)
             }, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
+class ProgramasViewSet(ModelViewSet):
+    queryset = T_progra.objects.all()
+    serializer_class = ProgramaSerializer
+    permission_classes = [IsAuthenticated]

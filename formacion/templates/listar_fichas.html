@@ -88,25 +88,72 @@
     </div>
     </section>
 </main>
-<!-- Modal para editar numero de ficha -->
-<div class="modal fade" id="cambiarNumModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="cambiarNumModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<!-- Modal para editar ficha -->
+<div class="modal fade" id="editarFichaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarFichaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="cambiarNumModalLabel">Cambiar numero de ficha</h5>
+                <h5 class="modal-title" id="editarFichaModalLabel">Cambiar numero de ficha</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="formCambiarNum">
-                <div class="modal-body">
-                    <input type="hidden" id="inputFichaId">
-                    <div class="mb-3">
-                        <label for="inputNuevoNum" class="form-label">Nuevo número de ficha</label>
-                        <input type="text" class="form-control" id="inputNuevoNum" required>
+            <div class="modal-body">
+            <form id="formEditarFicha">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="num_ficha" class="form-label">Número de ficha:</label>
+                        <input type="text" class="form-control" id="num_ficha" name="num">
                     </div>
-                    <div id="errorCambiarNum" class="text-danger mt-2"></div>
+                    <div class="col-md-6 mb-3">
+                        <label for="fase" class="form-label">Fase actual</label>
+                        <select name="fase_id" id="fase" class="form-select" required>
+                            <option value="1">Análisis</option>
+                            <option value="2">Planeación</option>
+                            <option value="3">Ejecución</option>
+                            <option value="4">Evaluación</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                    <label for="departamento" class="form-label">Departamento</label>
+                    <div id="contenedor-departamentos">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                    <label for="municipio" class="form-label">Municipio</label>
+                    <div id="contenedor-municipios">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                    <label for="colegio" class="form-label">Colegio</label>
+                    <div id="contenedor-instituciones">
+                        <select name="insti_id" id="institucion" class="form-select" required disabled>
+                            <option value="">Seleccione un colegio</option>
+                        </select>
+                        <small>De ser necesario seleccione nuevamente el departamento y municipio</small>
+                    </div>
+                    </div>
+
+                    <!-- Centro de formación -->
+                    <div class="col-md-6 mb-3">
+                    <label for="centro_forma" class="form-label">Centro de formación</label>
+                    <div id="contenedor-centros">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-12 rounded"></span>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                
+                <div id="errorEditarFicha" class="text-danger mt-2"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" id="btnCambiarNum" class="btn btn-primary">Guardar cambios</button>
+                    <button type="submit" id="btnEditarFicha" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
         </div>

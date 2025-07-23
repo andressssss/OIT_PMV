@@ -69,6 +69,12 @@
             <div class="tab-pane fade" id="aprendicespes" role="tabpanel" aria-labelledby="aprendices-tab">
                 <div class="card shadow-sm">
                     <div class="card-body">
+                        <!-- Botón para agregar nuevo aprendiz -->
+                        <div class="d-flex justify-content-end mb-3">
+                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz">
+                                <i class="bi bi-person-plus"></i> Agregar Aprendiz
+                            </button>
+                        </div>
                         <!-- <div class="d-flex justify-content-end mb-3">
                             <a href="{% url 'descargar_portafolios_ficha_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-download"></i> Descargar portafolios
@@ -79,9 +85,8 @@
                             <tr>
                                 <th>Nombre</th>
                                 <th>Apellido</th>
-                                <th>Representante</th>
-                                <th>Repre tel</th>
-                                <th>Repre mail</th>
+                                <th>DNI</th>
+                                <th>Estado</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -90,15 +95,23 @@
                             <tr>
                                 <td>{{ aprendiz.perfil.nom}}</td>
                                 <td>{{ aprendiz.perfil.apelli}}</td>
-                                {% if aprendiz.repre_legal %}
-                                    <td>{{ aprendiz.repre_legal.nom}}</td>
-                                    <td>{{ aprendiz.repre_legal.tele}}</td>
-                                    <td>{{ aprendiz.repre_legal.mail}}</td>
-                                {% else %}
-                                    <td>No registrado</td>
-                                    <td>No registrado</td>
-                                    <td>No registrado</td>
-                                {% endif %}
+                                <td>{{ aprendiz.perfil.dni}}</td>
+                                <td>
+                                    {% if aprendiz.esta == 'activo' %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% elif aprendiz.esta == 'desertado' %}
+                                        <span class="badge bg-danger">Desertado</span>
+                                    {% elif aprendiz.esta == 'en_formacion' %}
+                                        <span class="badge bg-primary">En formación</span>
+                                    {% elif aprendiz.esta == 'prematricula' %}
+                                        <span class="badge bg-primary">Prematricula</span>
+                                    {% elif aprendiz.esta == 'aplazado' %}
+                                        <span class="badge bg-warning text-dark">Aplazado</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ aprendiz.esta|title }}</span>
+                                    {% endif %}
+                                </td>
+
                                 <td>
                                     <button class="btn btn-outline-warning btn-sm mb-1 ver-portafolio"
                                             data-id="{{aprendiz.id}}" 
@@ -115,13 +128,23 @@
                                             data-bs-placement="top">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
-                                    <!-- <a href="{% url 'descargar_portafolio_aprendiz_zip' aprendiz.id %}" 
-                                    class="btn btn-outline-success btn-sm mb-1"
-                                    title="Descargar portafolio"
-                                    data-bs-toggle="tooltip" 
-                                    data-bs-placement="top">
-                                        <i class="bi bi-download"></i>
-                                    </a> -->
+                                    {% if aprendiz.esta != 'desertado' %}
+                                    <button class="btn btn-outline-danger btn-sm mb-1 desertar-aprendiz"
+                                            data-id="{{aprendiz.id}}"
+                                            title="Marcar como desertado"
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top">
+                                        <i class="bi bi-person-dash"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm mb-1 desasociar-aprendiz"
+                                            data-id="{{aprendiz.id}}"
+                                            title="Eliminar de la ficha"
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                    {% endif %}
+
                                 </td>
                             </tr>
                             {% endfor %}
@@ -319,6 +342,66 @@
         </div>
     </div>
 </div>
+
+<!-- Modal asociar nuevo aprendiz -->
+<div class="modal fade" id="modalAgregarAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAgregarAprendizLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalAgregarAprendizLabel">Agregar aprendiz</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <p class="text-muted small mb-3">
+            Aquí se validará si el aprendiz es actualmente asociable, si está vinculado a otra ficha o si es necesario crearlo ya que no existe en el sistema.
+            </p>
+            <label for="aprendizDni">Numero de identificación:</label>
+            <input type="text" id="aprendizDni" class="form-control" placeholder="Ingrese número de documento">
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" id="validateBtn" class="btn btn-primary">Validar</button>
+        </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: crear apre -->
+<div class="modal fade" id="modalCrearAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalCrearAprendizLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <form id="formCrearApre" enctype="multipart/form-data">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCrearAprendizLabel">Crear aprendiz desde CSV</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        Cargue acá la información del aprendiz siguiendo las reglas con las que ya está familiarizado. En este caso, <strong>solo puede existir un registro en el archivo CSV</strong>.
+                    </div>
+
+                    <!-- NUEVO AVISO -->
+                    <div class="alert alert-warning">
+                        Tenga en cuenta que algunos campos del representante (<strong>correo, teléfono, dirección y tipo de documento</strong>) son opcionales y pueden dejarse en blanco si no aplica o no tiene la información.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="archivoAprendiz" class="form-label">Archivo CSV</label>
+                        <input class="form-control" type="file" id="archivoAprendiz" name="archivo" accept=".csv" required>
+                    </div>
+
+                    <div id="errores" class="alert alert-danger d-none"></div>
+                    <div id="resumen" class="alert alert-success d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnCrear" type="submit" class="btn btn-primary">Crear</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
 
 <!-- Modal del calendario -->
 <div class="modal fade" id="calendarioActividadModal" tabindex="-1" aria-labelledby="calendarioActividadModalLabel" aria-hidden="true">

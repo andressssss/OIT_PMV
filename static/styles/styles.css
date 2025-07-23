@@ -361,3 +361,31 @@ select.form-select.choices__input {
     50% { box-shadow: 0 0 14px 4px #1E2DBE; }
     100% { box-shadow: 0 0 8px 2px #1E2DBE; }
 }
+
+
+
+/* Estilospara swal */
+.custom-swal-popup {
+    border-radius: 1rem;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 1.5rem;
+}
+
+.custom-swal-title {
+    color: #1E2DBE;
+    font-weight: 600;
+}
+
+.custom-swal-confirm {
+    background-color: #1E2DBE !important;
+    color: white !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1.2rem !important;
+}
+
+.custom-swal-cancel {
+    background-color: #e0e0e0 !important;
+    color: #333 !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem 1.2rem !important;
+}

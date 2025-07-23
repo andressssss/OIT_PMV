@@ -1,4 +1,4 @@
-import { reiniciarTooltips, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+import { setFormDisabled, validarErrorDRF, reiniciarTooltips, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
 
 document.addEventListener("DOMContentLoaded", function () {
     const fichaId = getFichaIdFromUrl();
@@ -340,7 +340,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }, 300); // Coincide con la duración de la transición CSS
             }
             
-            // Cambiar icono
             icon.classList.toggle('bi-folder2-open', isOpening);
             icon.classList.toggle('bi-folder2', !isOpening);
             
@@ -501,7 +500,158 @@ document.addEventListener("DOMContentLoaded", function () {
     // *                                                                 *
     // *******************************************************************
 
-    tableAprendicesElement.addEventListener('click',  function (e) {
+    const validarAprendizBtn = document.getElementById('validateBtn');
+
+    validarAprendizBtn.addEventListener('click', async e => {
+        const aprendizDniEl = document.getElementById('aprendizDni');
+        const aprendizDni = aprendizDniEl.value.trim();
+        const originalBtnContent = validarAprendizBtn.innerHTML;
+        showSpinner(validarAprendizBtn);
+
+        try {
+            const response = await fetch(`/api/usuarios/aprendices/validar_dni/?dni=${aprendizDni}`);
+            const data = await response.json();
+
+            if (validarErrorDRF(response, data)) return;
+
+            if (data.existe === false) {
+                if(await confirmAction({
+                    message: '¿Desea crear un nuevo aprendiz?',
+                    title: 'Aprendiz no encontrado',
+                    icon: 'question'
+                })){
+                    const modalEl = document.getElementById('modalAgregarAprendiz');
+                    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modalInstance.hide();
+
+                    const modalCrearApre = document.getElementById('modalCrearAprendiz');
+                    const modalCrearApreI = new bootstrap.Modal(modalCrearApre);
+                    modalCrearApreI.show();
+                }
+                return;
+            }
+
+            if (data.existe === true && data.asociado === false) {
+                if (await confirmAction({
+                    message: 'El aprendiz existe pero no esta asociado a ninguna ficha, ¿Desea asociarlo a esta?',
+                    title: 'Aprendiz sin ficha',
+                    icon: 'question'
+                })){
+                    asociarAprendiz(aprendizDni);
+                };
+                return;
+            }
+
+            if (data.existe === true && data.asociado === true) {
+                confirmAction({
+                    message: `El aprendiz ya esta asociado a la ficha ${data.message.split("ficha")[1]}. Primero gestione el retiro con el instructor responsable.`,
+                    title: "Aprendiz ya asociado",
+                    icon: "info",
+                    confirmButtonText: "Aceptar"
+                });
+                return;
+            }
+
+        } catch (error) {
+            toastError("Error al validar aprendiz");
+            console.error(error);
+        } finally {
+            hideSpinner(validarAprendizBtn, originalBtnContent);
+            aprendizDniEl.value = ""
+        }
+    });
+
+    async function asociarAprendiz(aprendizDni){
+        try{
+            const response = await fetch(`/api/usuarios/aprendices/${aprendizDni}/asociar_ficha/?ficha_id=${fichaId}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (validarErrorDRF(response, data)) return;
+            toastSuccess(data.message);
+            location.reload();
+        }catch(error){
+            toastError(error);
+        }
+    };
+
+    const formCrearApre = document.getElementById('formCrearApre');
+
+    formCrearApre.addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = document.getElementById('btnCrear');
+        const originalBtnContent = btn.innerHTML;
+        const alertError = document.getElementById('errores');
+        const alertSuccess = document.getElementById('resumen');
+        const archivoInput = document.getElementById('archivoAprendiz');
+        
+        alertError.classList.add('d-none');
+        alertSuccess.classList.add('d-none');
+        alertError.textContent = '';
+        alertSuccess.textContent = '';
+
+        const archivo = archivoInput.files[0];
+        if (!archivo) {
+            toastError("Debe seleccionar un archivo.");
+            return;
+        }
+
+        if (!archivo.name.endsWith('.csv')) {
+            toastError("Solo se permiten archivos .csv");
+            return;
+        }
+
+
+        const formData = new FormData();
+        formData.append('archivo', archivo);
+        formData.append('ficha_id', fichaId);
+
+        setFormDisabled(formCrearApre, true);
+        showSpinner(btn);
+
+        try {
+            const response = await fetch(`/api/usuarios/aprendices/crear_un_apre/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (data.errores) {
+                    alertError.textContent = data.errores.join('\n');
+                    alertError.classList.remove('d-none');
+                }
+                toastError(data.message || "Error desconocido");
+                return;
+            }
+
+            alertSuccess.innerHTML = `<strong>Resultado:</strong> ${data.message}`;
+            alertSuccess.classList.remove('d-none');
+            toastSuccess(data.message);
+            formCrearApre.reset();
+            archivoInput.value = '';
+            location.reload();
+        } catch (error) {
+            console.error(error);
+            toastError("Error inesperado");
+        } finally {
+            setFormDisabled(formCrearApre, false);
+            hideSpinner(btn, originalBtnContent);
+        }
+    });
+
+
+
+    tableAprendicesElement.addEventListener('click',  async e => {
     //== Boton ver portafolio aprendiz  
         const target = e.target.closest('.ver-portafolio');
         // if (target) {
@@ -574,7 +724,92 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
         }
 
+        const target2 = e.target.closest('.desertar-aprendiz');
+        if(target2){
+            const confirm = await confirmAction({
+                message: '¿Esta seguro de marcar como desertado al aprendiz?, esta acción no se puede deshacer',
+                title: 'Desertar aprendiz',
+                icon: 'warning'
+            })
+            if(!confirm) return;
+            const originalBtnContent = target2.innerHTML;
+            showSpinner(target2);
+            const aprendizId = target2.getAttribute("data-id");
+            
+            try {
+                await desertarAprendiz(aprendizId);
+            } finally {
+                hideSpinner(target2, originalBtnContent);
+            }
+
+        }
+
+        const target3 = e.target.closest('.desasociar-aprendiz');
+        if(target3){
+            const confirm = await confirmAction({
+                message: '¿Esta seguro que desea desasociar al aprendiz?, quedara habilitado para su registro en otra ficha',
+                title: 'Eliminar de la ficha',
+                icon: 'warning'
+            })
+            if(!confirm) return;
+            const originalBtnContent = target3.innerHTML;
+            showSpinner(target3);
+            const aprendizId = target3.getAttribute("data-id");
+            
+            try {
+                await desasociarAprendiz(aprendizId);
+            } finally {
+                hideSpinner(target3, originalBtnContent);
+            }
+        }
+
     });
+
+    async function desasociarAprendiz(aprendizId){
+        try {
+            const response = await fetch(`/api/usuarios/aprendices/${aprendizId}/`, {
+                method: 'PATCH',
+                headers: { 
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ficha: null })
+            });
+
+            const data = await response.json();
+
+            if (validarErrorDRF(response, data)) return;
+
+            toastSuccess(data.message);
+            location.reload();
+        } catch (error) {
+            toastError(error);
+        }
+    }
+
+
+    async function desertarAprendiz(aprendizId) {
+        try{
+            const response = await fetch(`/api/usuarios/aprendices/${aprendizId}/`,{
+                method: 'PATCH',
+                headers: { 
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({esta: 'desertado'})
+            });
+            const data = await response.json();
+            
+            if (validarErrorDRF(response, data)) return;
+
+            toastSuccess(data.message);
+            location.reload();
+        } catch (error){
+            toastError(error)
+        }
+    };
 
     async function cargarPortafolio(aprendizId){
         fadeIn(loadingDiv);

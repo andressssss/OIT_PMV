@@ -109,17 +109,33 @@ export function confirmAprove(message = '¿Está seguro de que desea aprobar est
     }).then((result) => result.isConfirmed);
 }
 
-export function confirmAction(message = '¿Está seguro que desea hacer esta acción?') {
-  return Swal.fire({
-      title: 'Confirmar acción',
-      text: message,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, confirmar',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
-      focusCancel: true
-  }).then((result) => result.isConfirmed);
+export function confirmAction({
+    message = '¿Está seguro que desea hacer esta acción?',
+    title = 'Confirmar acción',
+    icon = 'warning',
+    confirmButtonText = 'Sí, confirmar',
+    cancelButtonText = 'Cancelar',
+    confirmButtonColor = '#1E2DBE', // Azul corporativo
+    cancelButtonColor = '#6c757d',  // Gris
+} = {}) {
+    return Swal.fire({
+        title: title,
+        text: message,
+        icon: icon,
+        showCancelButton: true,
+        confirmButtonText: confirmButtonText,
+        cancelButtonText: cancelButtonText,
+        confirmButtonColor: confirmButtonColor,
+        cancelButtonColor: cancelButtonColor,
+        reverseButtons: true,
+        focusCancel: true,
+        customClass: {
+            popup: 'custom-swal-popup',
+            title: 'custom-swal-title',
+            confirmButton: 'custom-swal-confirm',
+            cancelButton: 'custom-swal-cancel'
+        }
+    }).then((result) => result.isConfirmed);
 }
 
 // Notificación base
@@ -530,4 +546,50 @@ export function setFormDisabled(form, disabled) {
             }
         }
     });
+}
+
+export function setSelectValue(selectId, value) {
+    const select = document.querySelector(`#${selectId}`);
+
+    if (!select) {
+        console.warn(`Select con ID #${selectId} no encontrado.`);
+        return;
+    }
+
+    // Si el select tiene una instancia de TomSelect
+    if (select.tomselect) {
+        const tomSelect = select.tomselect;
+        const optionExists = tomSelect.options[value] !== undefined;
+
+        if (optionExists) {
+            tomSelect.setValue(value, true); // true para trigger del evento 'change'
+        } else {
+            console.warn(`Valor ${value} no encontrado en el select #${selectId} (TomSelect).`);
+        }
+    } else {
+        // Fallback para selects normales
+        const option = select.querySelector(`option[value="${value}"]`);
+        if (option) {
+            select.value = value;
+            select.dispatchEvent(new Event('change')); // Para que otros scripts reaccionen
+        } else {
+            console.warn(`Valor ${value} no encontrado en el select #${selectId}.`);
+        }
+    }
+}
+
+export function validarErrorDRF(response, data) {
+    if (response.ok) return false;
+
+    let mensaje = "Ocurrió un error.";
+    if (data?.message) {
+        mensaje = data.message;
+    } else if (data?.detail) {
+        mensaje = data.detail;
+    } else if (typeof data === 'object') {
+        mensaje = Object.values(data).flat().join(', ');
+    }
+
+    toastError(mensaje);
+    return true;
 }
