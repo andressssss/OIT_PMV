@@ -761,9 +761,26 @@ document.addEventListener("DOMContentLoaded", function () {
             } finally {
                 hideSpinner(target3, originalBtnContent);
             }
+        };
+
+        const target4 = e.target.closest('.editar-aprendiz');
+        if(target4){
+          const originalBtnContent = target4.innerHTML;
+          showSpinner(target4);
+          const aprendizId = target4.getAttribute("data-id");
+            
+          try {
+              await fillDataAprendiz(aprendizId);
+          } finally {
+              hideSpinner(target4, originalBtnContent);
+          }
         }
 
     });
+
+    async function fillDataAprendiz(aprendizId){
+      alert("Continua");
+    }
 
     async function desasociarAprendiz(aprendizId){
         try {
