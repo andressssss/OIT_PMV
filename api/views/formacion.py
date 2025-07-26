@@ -9,21 +9,22 @@ from datetime import datetime
 from io import TextIOWrapper
 from django.db import transaction
 from django.forms import ValidationError
-from django.utils import timezone 
+from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.shortcuts import get_object_or_404
-from api.serializers.formacion import RAPSerializer, CompetenciaSerializer, FichaSerializer, BaseRapsSerializer
+from api.serializers.formacion import RAPSerializer, CompetenciaSerializer, FichaSerializer, FichaEditarSerializer, BaseRapsSerializer, ProgramaSerializer
 from commons.models import T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
 from django.contrib.auth.models import User
 
-from matricula.scripts.cargar_tree import crear_datos_prueba 
+from matricula.scripts.cargar_tree import crear_datos_prueba
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from commons.permisos import DenegarConsulta
 
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class RapsViewSet(ModelViewSet):
     queryset = T_raps.objects.all()
@@ -65,6 +66,7 @@ class RapsViewSet(ModelViewSet):
             'message': f'RAP {rap_nom} eliminado correctamente'
         }, status=status.HTTP_200_OK)
 
+
 class CompetenciasViewSet(ModelViewSet):
     serializer_class = CompetenciaSerializer
     queryset = T_compe.objects.all()
@@ -78,18 +80,24 @@ class CompetenciasViewSet(ModelViewSet):
             queryset = queryset.filter(progra__id=programa_id)
         return queryset
 
+
 class FichasViewSet(ModelViewSet):
     queryset = T_ficha.objects.all()
     serializer_class = FichaSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
+    def get_serializer_class(self):
+        if self.action in ['list', 'fichas_por_programa']:
+            return FichaSerializer
+        return FichaEditarSerializer
+
     @action(detail=False, methods=['get'], url_path='por_programa/(?P<programa_id>[^/.]+)')
     def fichas_por_programa(self, request, programa_id=None):
-        fichas = self.get_queryset().filter(progra = programa_id)
+        fichas = self.get_queryset().filter(progra=programa_id)
         serializer = self.get_serializer(fichas, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     @action(detail=True, methods=['post'], url_path='crear_carpeta')
     def crear_carpeta(self, request, pk=None):
         nombre = request.data.get("nombre", "").strip()
@@ -99,65 +107,75 @@ class FichasViewSet(ModelViewSet):
             return Response({
                 "message": "El nombre de la carpeta es obligatorio."
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         ficha = self.get_object()
 
         if T_DocumentFolder.objects.filter(name=nombre, ficha=ficha, parent_id=parent_id or None, tipo='carpeta').exists():
             return Response({
                 "Message": "Ya existe una carpeta con ese nombre en esta ubicación."
             })
-        
+
         nueva_carpeta = T_DocumentFolder.objects.create(
-            name = nombre,
-            parent_id = parent_id,
-            ficha = ficha,
+            name=nombre,
+            parent_id=parent_id,
+            ficha=ficha,
             tipo="carpetap"
         )
 
         return Response({
             "message": "Carpeta creada correctamente"
         }, status=status.HTTP_201_CREATED)
-    
+
     @action(detail=False, methods=['post'], url_path='importar', parser_classes=[MultiPartParser])
     def importar_fichas_csv(self, request):
         archivo = request.FILES.get('archivo')
         if not archivo:
             return Response({"message": "No se envió ningún archivo"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
-            lector = csv.DictReader(TextIOWrapper(archivo.file, encoding='utf-8-sig'), delimiter=';')
+            lector = csv.DictReader(TextIOWrapper(
+                archivo.file, encoding='utf-8-sig'), delimiter=';')
         except Exception as e:
             return Response({"message": "Archivo invalido", "errores": [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         errores = []
         resumen = {'insertados': 0}
 
         try:
             with transaction.atomic():
                 for i, fila in enumerate(lector, start=2):
-                    required_fields = ['num_ficha', 'fase', 'cod_centro_forma', 'dane_insti', 'nombre_progra', 'cedula_instru']
-                    missing = [field for field in required_fields if not fila.get(field, '').strip()]
+                    required_fields = ['num_ficha', 'fase', 'cod_centro_forma',
+                                        'dane_insti', 'nombre_progra', 'cedula_instru']
+                    missing = [field for field in required_fields if not fila.get(
+                        field, '').strip()]
                     if missing:
-                        raise ValidationError(f"Fila {i}: Campos faltantes: {', '.join(missing)}")
+                        raise ValidationError(
+                            f"Fila {i}: Campos faltantes: {', '.join(missing)}")
 
                     num_ficha = fila['num_ficha'].strip()
                     fase_actual = fila['fase'].strip()
 
                     # 🚨 Validaciones críticas — si fallan, se detiene TODO
                     try:
-                        centro = T_centro_forma.objects.get(cod=fila['cod_centro_forma'])
+                        centro = T_centro_forma.objects.get(
+                            cod=fila['cod_centro_forma'])
                     except T_centro_forma.DoesNotExist:
-                        raise ValidationError(f"Fila {i}: Centro de formación '{fila['cod_centro_forma']}' no encontrado")
+                        raise ValidationError(
+                            f"Fila {i}: Centro de formación '{fila['cod_centro_forma']}' no encontrado")
 
                     try:
-                        institucion = T_insti_edu.objects.get(dane=fila['dane_insti'])
+                        institucion = T_insti_edu.objects.get(
+                            dane=fila['dane_insti'])
                     except T_insti_edu.DoesNotExist:
-                        raise ValidationError(f"Fila {i}: Institución con DANE '{fila['dane_insti']}' no encontrada")
+                        raise ValidationError(
+                            f"Fila {i}: Institución con DANE '{fila['dane_insti']}' no encontrada")
 
                     try:
-                        programa = T_progra.objects.get(nom=fila['nombre_progra'])
+                        programa = T_progra.objects.get(
+                            nom=fila['nombre_progra'])
                     except T_progra.DoesNotExist:
-                        raise ValidationError(f"Fila {i}: Programa '{fila['nombre_progra']}' no encontrado")
+                        raise ValidationError(
+                            f"Fila {i}: Programa '{fila['nombre_progra']}' no encontrado")
 
                     # Instructor opcional
                     cedula = fila['cedula_instru'].strip()
@@ -166,12 +184,15 @@ class FichasViewSet(ModelViewSet):
                     else:
                         try:
                             perfil_instru = T_perfil.objects.get(dni=cedula)
-                            instructor = T_instru.objects.get(perfil=perfil_instru)
+                            instructor = T_instru.objects.get(
+                                perfil=perfil_instru)
                         except (T_perfil.DoesNotExist, T_instru.DoesNotExist):
-                            raise ValidationError(f"Fila {i}: Instructor con cédula '{cedula}' no encontrado")
+                            raise ValidationError(
+                                f"Fila {i}: Instructor con cédula '{cedula}' no encontrado")
 
                     if T_ficha.objects.filter(num=num_ficha).exists():
-                        raise ValidationError(f"Fila {i}: La ficha {num_ficha} ya existe.")
+                        raise ValidationError(
+                            f"Fila {i}: La ficha {num_ficha} ya existe.")
 
                     # 👇 Toda esta parte permanece igual
                     grupo = T_grupo.objects.create(
@@ -198,8 +219,10 @@ class FichasViewSet(ModelViewSet):
                     )
 
                     departamento = institucion.muni.nom_departa if institucion and institucion.muni else None
-                    gestor_depa = T_gestor_depa.objects.filter(depa=departamento).select_related('gestor').first()
-                    gestor = gestor_depa.gestor if gestor_depa else T_gestor.objects.get(pk=1)
+                    gestor_depa = T_gestor_depa.objects.filter(
+                        depa=departamento).select_related('gestor').first()
+                    gestor = gestor_depa.gestor if gestor_depa else T_gestor.objects.get(
+                        pk=1)
 
                     T_gestor_grupo.objects.create(
                         fecha_crea=timezone.now(),
@@ -209,10 +232,13 @@ class FichasViewSet(ModelViewSet):
                     )
 
                     for f in range(1, int(fase_actual)):
-                        T_fase_ficha.objects.create(fase_id=f, ficha=ficha, fecha_ini=timezone.now(), instru=instructor, vige=0)
-                    T_fase_ficha.objects.create(fase_id=fase_actual, ficha=ficha, fecha_ini=timezone.now(), instru=instructor, vige=1)
+                        T_fase_ficha.objects.create(
+                            fase_id=f, ficha=ficha, fecha_ini=timezone.now(), instru=instructor, vige=0)
+                    T_fase_ficha.objects.create(
+                        fase_id=fase_actual, ficha=ficha, fecha_ini=timezone.now(), instru=instructor, vige=1)
 
-                    compe_ids = T_compe_progra.objects.filter(progra=ficha.progra).values('compe_id')
+                    compe_ids = T_compe_progra.objects.filter(
+                        progra=ficha.progra).values('compe_id')
                     raps = T_raps.objects.filter(compe__in=Subquery(compe_ids))
 
                     raps_ficha_objs = [
@@ -240,7 +266,8 @@ class FichasViewSet(ModelViewSet):
             return Response({"message": "No se envió ningún archivo"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            lector = csv.DictReader(TextIOWrapper(archivo.file, encoding='utf-8-sig'), delimiter=';')
+            lector = csv.DictReader(TextIOWrapper(
+                archivo.file, encoding='utf-8-sig'), delimiter=';')
         except Exception as e:
             return Response({"message": "Archivo inválido", "errores": [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -260,10 +287,13 @@ class FichasViewSet(ModelViewSet):
             with transaction.atomic():
                 for i, fila in enumerate(lector, start=2):
                     try:
-                        required_fields = ['nom', 'apelli', 'email', 'tipo_dni', 'dni', 'tele', 'gene', 'num_ficha']
-                        missing = [field for field in required_fields if not fila.get(field, '').strip()]
+                        required_fields = [
+                            'nom', 'apelli', 'email', 'tipo_dni', 'dni', 'tele', 'gene', 'num_ficha']
+                        missing = [field for field in required_fields if not fila.get(
+                            field, '').strip()]
                         if missing:
-                            raise ValidationError(f"Campos faltantes: {', '.join(missing)}")
+                            raise ValidationError(
+                                f"Campos faltantes: {', '.join(missing)}")
 
                         dni = fila['dni'].strip()
                         email = fila['email'].strip()
@@ -271,22 +301,27 @@ class FichasViewSet(ModelViewSet):
 
                         # Validación de existencia de DNI o email
                         if T_perfil.objects.filter(dni=dni).exists():
-                            raise ValidationError(f"El DNI '{dni}' ya está registrado.")
+                            raise ValidationError(
+                                f"El DNI '{dni}' ya está registrado.")
                         if T_perfil.objects.filter(mail=email).exists():
-                            raise ValidationError(f"El correo '{email}' ya está registrado.")
+                            raise ValidationError(
+                                f"El correo '{email}' ya está registrado.")
 
                         try:
                             ficha = T_ficha.objects.get(num=ficha_num)
                         except T_ficha.DoesNotExist:
-                            raise ValidationError(f"La ficha {ficha_num} no existe!")
+                            raise ValidationError(
+                                f"La ficha {ficha_num} no existe!")
 
                         fichas_modificadas.add(ficha.id)
                         fecha_naci = fila['fecha_naci']
                         if fecha_naci:
-                            fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                            fecha_naci = datetime.strptime(
+                                fila['fecha_naci'].strip(), '%d/%m/%Y').date()
                         else:
                             fecha_naci = None
-                        base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()
+                        base_username = (
+                            fila['nom'][:3] + fila['apelli'][:3]).lower()
                         username = base_username
                         contador = 1
                         while User.objects.filter(username=username).exists():
@@ -339,11 +374,11 @@ class FichasViewSet(ModelViewSet):
                         errores.append(f"Fila {i}: {str(e)}")
                         raise ValidationError(f"Fila {i}: {str(e)}")
 
-
                 # Actualiza las fichas afectadas
                 for ficha_id in fichas_modificadas:
                     ficha = T_ficha.objects.get(id=ficha_id)
-                    aprendices_totales = T_apre.objects.filter(ficha=ficha).count()
+                    aprendices_totales = T_apre.objects.filter(
+                        ficha=ficha).count()
                     ficha.num_apre_pendi_regi = aprendices_totales
                     ficha.num_apre_proce = aprendices_totales
                     ficha.save()
@@ -363,15 +398,15 @@ class FichasViewSet(ModelViewSet):
 
         if not folder_id or not archivos:
             return Response({"message": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             folder = get_object_or_404(T_DocumentFolder, id=folder_id)
 
             errores = []
             documentos_creados = []
-            max_size = 15 * 1024 * 1024 # 15 MB
-            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg', 'png', 'ppt', 'mp3', 'mp4', 'xls', 'docx', 'psc', 'sql']
-            
+            max_size = 15 * 1024 * 1024  # 15 MB
+            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg',
+                                      'png', 'ppt', 'mp3', 'mp4', 'xls', 'docx', 'psc', 'sql']
 
             for archivo in archivos:
                 extension = archivo.name.split('.')[-1].lower()
@@ -388,20 +423,20 @@ class FichasViewSet(ModelViewSet):
                 ruta_guardada = default_storage.save(ruta, archivo)
 
                 new_docu = T_docu.objects.create(
-                    nom = archivo.name,
-                    tipo  = extension,
-                    tama = f"{archivo.size // 1020} KB",
-                    archi = ruta_guardada,
-                    priva = "No",
-                    esta = "Activo"
+                    nom=archivo.name,
+                    tipo=extension,
+                    tama=f"{archivo.size // 1020} KB",
+                    archi=ruta_guardada,
+                    priva="No",
+                    esta="Activo"
                 )
 
                 document_node = T_DocumentFolder.objects.create(
-                    name = archivo.name,
-                    parent = folder,
-                    tipo = "documento",
-                    ficha = folder.ficha,
-                    documento = new_docu
+                    name=archivo.name,
+                    parent=folder,
+                    tipo="documento",
+                    ficha=folder.ficha,
+                    documento=new_docu
                 )
 
                 documentos_creados.append({
@@ -417,22 +452,27 @@ class FichasViewSet(ModelViewSet):
                     "message": "Carga parcial de los documentos",
                     "documentos": documentos_creados,
                     "errores": errores
-                }, status = status.HTTP_206_PARTIAL_CONTENT)
-            
+                }, status=status.HTTP_206_PARTIAL_CONTENT)
+
             if errores and not documentos_creados:
                 return Response({
                     "message": "No se cargo ningún documento",
                     "errores": errores
-                }, status = status.HTTP_400_BAD_REQUEST)
-            
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             return Response({
                 "message": "Documentos cargados con éxito",
                 "documentos": documentos_creados
-            }, status= status.HTTP_201_CREATED)
-    
+            }, status=status.HTTP_201_CREATED)
+
         except Exception as e:
             return Response({
                 "message": "Error inesperado al cargar los documentos",
                 "error": str(e)
-            }, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ProgramasViewSet(ModelViewSet):
+    queryset = T_progra.objects.all()
+    serializer_class = ProgramaSerializer
+    permission_classes = [IsAuthenticated]

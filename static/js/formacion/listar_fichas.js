@@ -1,4 +1,4 @@
-import { setFormDisabled, validarArchivo, reiniciarTooltips, crearSelectForm,crearSelect, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
+import { setFormDisabled, setSelectValue, validarArchivo, reiniciarTooltips, crearSelectForm,crearSelect, confirmToast,confirmAction, confirmDialog, confirmDeletion, toastSuccess, toastError, toastWarning, toastInfo, fadeIn, fadeOut, fadeInElement, fadeOutElement, showSpinner, hideSpinner, csrfToken, showSuccessToast, showErrorToast } from '/static/js/utils.js';
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -77,9 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     data-bs-placement="top">
                     <i class="bi bi-journals"></i>
                 </a>
-                <a class="btn btn-outline-warning btn-sm mb-1 btnCambiarNum" 
+                <a class="btn btn-outline-warning btn-sm mb-1 btnEditarFicha" 
                     data-id="${el.id}"
-                    title="Cambiar numero de ficha"
+                    title="Editar ficha"
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">
                     <i class="bi bi-pencil-square"></i>
@@ -125,55 +125,184 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    tableEl.addEventListener('click', e => {
-        const btn = e.target.closest('.btnCambiarNum');
-        if (btn) {
-            const id = btn.getAttribute('data-id');
-            const fila = table.row(btn.closest('tr')).data();
+    tableEl.addEventListener('click', async e => {
+        if (e.target.closest('.btnEditarFicha')) {
+            const btn = e.target.closest('.btnEditarFicha');
+            const originalBtnContent = btn.innerHTML;
+            const fichaId = btn.getAttribute('data-id');
+            showSpinner(btn);
+            
+            const modalEl = document.getElementById('editarFichaModal');
+            const modalInstance = new bootstrap.Modal(modalEl);
+            modalInstance.show();
 
-            document.getElementById('inputFichaId').value = id;
-            document.getElementById('inputNuevoNum').value = fila[0];
-
-            const modal = new bootstrap.Modal(document.getElementById('cambiarNumModal'));
-            modal.show();
-        }
-    });
-
-    document.getElementById('formCambiarNum').addEventListener('submit', async e => {
-        e.preventDefault();
-
-        const id = document.getElementById('inputFichaId').value;
-        const nuevoNum = document.getElementById('inputNuevoNum').value;
-        const formData = new FormData();
-        const btn = document.getElementById('btnCambiarNum');
-        const originalBtnContent = btn.innerHTML;
-
-        showSpinner(btn);
-
-        formData.append('nuevo_num', nuevoNum);
-        
-        try {
-            const response = await fetch(`/api/ficha/cambiar_num/${id}/`,{
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            });
-            const data = await response.json();
-
-            if (!response.ok){
-                toastError(data.message);
-                return
-            }
-            toastSuccess(data.message);
-            bootstrap.Modal.getInstance(document.getElementById('cambiarNumModal')).hide();
-            aplicarFiltros();
-        } catch (error) {
-            toastError(error)
-        } finally {
+            await cargarDatosEditarFicha(fichaId);
             hideSpinner(btn, originalBtnContent);
         }
-        
     });
+
+    const formEditarFicha = document.getElementById('formEditarFicha');
+
+    async function cargarDatosEditarFicha(fichaId){
+        setFormDisabled(formEditarFicha, true);
+        try {
+            await Promise.all([
+                crearSelectForm({
+                    id: 'centro',
+                    nombre: 'centro_id',
+                    url: '/api/usuarios/centros/',
+                    contenedor: '#contenedor-centros',
+                    placeholderTexto: 'Seleccione un centro',
+                    required: true,
+                    disabled: true
+                }),
+                crearSelectForm({
+                    id: 'departamento',
+                    nombre: 'departamento',
+                    url: '/api/usuarios/departamentos/',
+                    contenedor: '#contenedor-departamentos',
+                    placeholderTexto: 'Seleccione un departamento',
+                    required: true,
+                    disabled: true
+                }),
+                crearSelectForm({
+                    id: 'municipio',
+                    nombre: 'municipio',
+                    url: '/api/usuarios/municipios/',
+                    contenedor: '#contenedor-municipios',
+                    placeholderTexto: 'Seleccione un municipio',
+                    required: true,
+                    disabled: true
+                })
+            ]);
+        } catch (error) {
+            toastError(error)
+        }
+        try{
+            const response = await fetch(`/api/formacion/fichas/${fichaId}/`);
+            const data = await response.json();
+
+            console.log(data);
+            setSelectValue('centro', data.centro_id);
+            setSelectValue('fase', data.fase_id);
+            setSelectValue('departamento', data.depa_id);
+            setSelectValue('municipio', data.muni_id);
+            document.querySelector('#num_ficha').value = data.num;
+
+            const institucionResponse = await fetch(`/api/usuarios/instituciones/${data.insti_id}/`);
+            const institucionData = await institucionResponse.json();
+
+            const select = document.querySelector('#institucion');
+            select.innerHTML = `
+                <option value="${institucionData.id}" selected>${institucionData.nom}</option>
+            `;
+
+            formEditarFicha.dataset.action = `/api/formacion/fichas/${data.id}/`;
+
+
+        } catch (e){
+            toastError(e);
+        } finally {
+            setFormDisabled(formEditarFicha, false);
+        }
+
+    };
+
+
+    formEditarFicha.addEventListener('change', async function(e) {
+        const target = e.target;
+
+        if (target && target.id === 'departamento') {
+            const departamentoId = target.value;
+
+            // Filtrar municipios por departamento
+            await crearSelectForm({
+                id: 'municipio',
+                nombre: 'municipio',
+                url: `/api/usuarios/municipios/?departamento=${departamentoId}`,
+                contenedor: '#contenedor-municipios',
+                placeholderTexto: '',
+                disabled: false,
+                required: true
+            });
+
+
+            document.querySelector('#contenedor-instituciones').innerHTML = `
+                <select id="institucion" class="form-select" name="institucion" disabled required>
+                    <option value="">Seleccione una opción</option>
+                </select>
+            `;
+
+
+        } else if (target && target.id === 'municipio') {
+            const municipioId = target.value;
+
+            // Filtrar instituciones por municipio
+            await crearSelectForm({
+                id: 'institucion',
+                nombre: 'insti_id',
+                url: `/api/usuarios/instituciones/?municipio=${municipioId}`,
+                contenedor: '#contenedor-instituciones',
+                placeholderTexto: '',
+                disabled: false,
+                required: true
+            });
+        }
+    });
+
+    formEditarFicha.addEventListener('submit', async e =>{
+        e.preventDefault()
+
+        const formData = new FormData(formEditarFicha);
+        const numFicha = formData.get('num')?.trim();
+        const btn = document.getElementById('btnEditarFicha');
+        const originalBtnContent = btn.innerHTML;
+
+        if (!numFicha) {
+            const confirmed = await confirmAction("¿Está seguro de editar la ficha sin número?");
+            if (!confirmed) return;
+        }
+
+        showSpinner(btn)
+        setFormDisabled(formEditarFicha, true)
+
+        try{
+            const response = await fetch(formEditarFicha.dataset.action,{
+                method: 'PATCH',
+                headers: {'X-CSRFTOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
+                body: formData
+            })
+            const data = await response.json();
+
+            if (!response.ok) {
+                let mensaje = "Ocurrió un error.";
+                if (data.message) {
+                    mensaje = data.message;
+                } else if (data.detail) {
+                    mensaje = data.detail;
+                } else if (typeof data === 'object') {
+                    mensaje = Object.values(data)
+                        .flat()
+                        .join(', ');
+                }
+                toastError(mensaje);
+                return;
+            }
+
+            toastSuccess(data.message || data.detail)
+            const modalEl = document.getElementById('editarFichaModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+            aplicarFiltros();
+        } catch (error){
+            toastError(error)
+        } finally {
+            setFormDisabled(formEditarFicha, false)
+            hideSpinner(btn, originalBtnContent)
+            reiniciarTooltips()
+        }
+    })
+
 
 
     // *******************************************************************

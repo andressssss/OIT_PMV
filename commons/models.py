@@ -416,7 +416,9 @@ class T_apre(models.Model):
     ESTADO_ESTUDIANTE_CHOICES = [
         ('activo', 'Activo'),
         ('suspendido', 'Suspendido'),
-        ('prematricula', 'Pre matricula')
+        ('prematricula', 'Pre matricula'),
+        ('desertado', 'Desertado'),
+        ('sinficha', 'Sin Ficha')
     ]
     perfil = models.OneToOneField(T_perfil, on_delete=models.CASCADE)
     cod = models.CharField(max_length=200)
