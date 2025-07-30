@@ -4,217 +4,187 @@
 {% load custom_filters %}
 
 {% block content %}
-<main class="container py-5">
+  <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 display-5">
+          {% if ficha.num == '' %}
+            Panel de ficha sin numero - Fase
+          {% else %}
+            Panel de la ficha {{ ficha.num }} - Fase
+          {% endif %}
+          {% if fase|lower == 'analisis' %}
+            análisis
+          {% else %}
+            {{ fase }}
+          {% endif %}- Grupo {{ ficha.grupo.id }}
+        </h2>
+        {% if ficha.instru %}
+          <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
+        {% else %}
+          <span class="h5 text-muted mb-0">Sin instructor</span>
+        {% endif %}
+      </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0 display-5">
-                {% if ficha.num == "" %}
-                    Panel de ficha sin numero - Fase 
-                {% else %}
-                    Panel de la ficha {{ ficha.num }} - Fase 
-                {% endif %}
-                {% if fase|lower == "analisis" %}
-                    análisis
-                {% else %}
-                    {{ fase }}
-                {% endif %}
-                - Grupo {{ ficha.grupo.id }}
-            </h2>
-            {% if ficha.instru %}
-                <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
-            {% else %}
-                <span class="h5 text-muted mb-0">Sin instructor</span>
-            {% endif %}
-        </div>
-            
+      <!-- NavPills -->
+      <ul class="nav nav-pills mb-4 nav-fill" id="instructorTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <a class="nav-link active" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true">Portafolio Ficha</a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link" id="cronograma-tab" data-bs-toggle="pill" href="#cronograma" role="tab" aria-controls="cronograma" aria-selected="false">Evaluar RAPS</a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link" id="inasistencias-tab" data-bs-toggle="pill" href="#inasistencias" role="tab" aria-controls="inasistencias" aria-selected="false">Inasistencias</a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link" id="reportes-tab" data-bs-toggle="pill" href="#reportes" role="tab" aria-controls="reportes" aria-selected="false">Reportes</a>
+        </li>
+      </ul>
 
-        <!-- NavPills -->
-        <ul class="nav nav-pills mb-4 nav-fill" id="instructorTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true">Portafolio Ficha</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="cronograma-tab" data-bs-toggle="pill" href="#cronograma" role="tab" aria-controls="cronograma" aria-selected="false">Evaluar RAPS</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="inasistencias-tab" data-bs-toggle="pill" href="#inasistencias" role="tab" aria-controls="inasistencias" aria-selected="false">Inasistencias</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="reportes-tab" data-bs-toggle="pill" href="#reportes" role="tab" aria-controls="reportes" aria-selected="false">Reportes</a>
-            </li>
-        </ul>
-
-        <!-- Contenido de las Pills -->
-        <div class="tab-content" id="instructorTabContent">
-
-            <!-- Portafolio Ficha -->
-            <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-end mb-3">
-                            <a href="{% url 'descargar_portafolio_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-download"></i> Descargar portafolio
-                            </a>
-                        </div>
-                        <div id="folderTree"></div>
+      <!-- Contenido de las Pills -->
+      <div class="tab-content" id="instructorTabContent">
+        <!-- Portafolio Ficha -->
+        <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-end mb-3">
+                <a href="{% url 'descargar_portafolio_zip' ficha.id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> Descargar portafolio</a>
+              </div>
+              <div id="folderTree"></div>
+              <div class="accordion mt-4" id="formatosPlantillasAccordion">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingFormatos"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormatos" aria-expanded="true" aria-controls="collapseFormatos">Formatos y Plantillas Oficiales</button></h2>
+                  <div id="collapseFormatos" class="accordion-collapse collapse show" aria-labelledby="headingFormatos" data-bs-parent="#formatosPlantillasAccordion">
+                    <div class="accordion-body">
+                      <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                          <a href="{% static 'documentos/formato_informe.docx' %}" download>Formato de Informe</a>
+                        </li>
+                        <li class="list-group-item">
+                          <a href="{% static 'documentos/plantilla_evaluacion.xlsx' %}" download>Plantilla de Evaluación</a>
+                        </li>
+                        <!-- Agrega más elementos aquí -->
+                      </ul>
                     </div>
+                  </div>
                 </div>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Aprendices -->
-            <div class="tab-pane fade" id="aprendicespes" role="tabpanel" aria-labelledby="aprendices-tab">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <!-- Botón para agregar nuevo aprendiz -->
-                        <div class="d-flex justify-content-end mb-3">
-                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz">
-                                <i class="bi bi-person-plus"></i> Agregar Aprendiz
-                            </button>
-                        </div>
-                        <!-- <div class="d-flex justify-content-end mb-3">
+        <!-- Aprendices -->
+        <div class="tab-pane fade" id="aprendicespes" role="tabpanel" aria-labelledby="aprendices-tab">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <!-- Botón para agregar nuevo aprendiz -->
+              <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz"><i class="bi bi-person-plus"></i> Agregar Aprendiz</button>
+              </div>
+              <!--  <div class="d-flex justify-content-end mb-3">
                             <a href="{% url 'descargar_portafolios_ficha_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-download"></i> Descargar portafolios
                             </a>
-                        </div> -->
-                        <table id="tabla_aprendices_ficha" class="table table-hover table-bordered align-middle">
-                            <thead class="table-secondary text-center">
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Apellido</th>
-                                <th>DNI</th>
-                                <th>Estado</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for aprendiz in aprendices %}
-                            <tr>
-                                <td>{{ aprendiz.perfil.nom}}</td>
-                                <td>{{ aprendiz.perfil.apelli}}</td>
-                                <td>{{ aprendiz.perfil.dni}}</td>
-                                <td>
-                                    {% if aprendiz.esta == 'activo' %}
-                                        <span class="badge bg-success">Activo</span>
-                                    {% elif aprendiz.esta == 'desertado' %}
-                                        <span class="badge bg-danger">Desertado</span>
-                                    {% elif aprendiz.esta == 'en_formacion' %}
-                                        <span class="badge bg-primary">En formación</span>
-                                    {% elif aprendiz.esta == 'prematricula' %}
-                                        <span class="badge bg-primary">Prematricula</span>
-                                    {% elif aprendiz.esta == 'aplazado' %}
-                                        <span class="badge bg-warning text-dark">Aplazado</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ aprendiz.esta|title }}</span>
-                                    {% endif %}
-                                </td>
+                        </div>  -->
+              <table id="tabla_aprendices_ficha" class="table table-hover table-bordered align-middle">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>DNI</th>
+                    <th>Estado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for aprendiz in aprendices %}
+                    <tr>
+                      <td>{{ aprendiz.perfil.nom }}</td>
+                      <td>{{ aprendiz.perfil.apelli }}</td>
+                      <td>{{ aprendiz.perfil.dni }}</td>
+                      <td>
+                        {% if aprendiz.esta == 'activo' %}
+                          <span class="badge bg-success">Activo</span>
+                        {% elif aprendiz.esta == 'desertado' %}
+                          <span class="badge bg-danger">Desertado</span>
+                        {% elif aprendiz.esta == 'en_formacion' %}
+                          <span class="badge bg-primary">En formación</span>
+                        {% elif aprendiz.esta == 'prematricula' %}
+                          <span class="badge bg-primary">Prematricula</span>
+                        {% elif aprendiz.esta == 'aplazado' %}
+                          <span class="badge bg-warning text-dark">Aplazado</span>
+                        {% else %}
+                          <span class="badge bg-secondary">{{ aprendiz.esta|title }}</span>
+                        {% endif %}
+                      </td>
 
-                                <td>
-                                    <button class="btn btn-outline-warning btn-sm mb-1 ver-portafolio"
-                                            data-id="{{aprendiz.id}}" 
-                                            data-nombre="{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}"
-                                            data-bs-toggle="tooltip" 
-                                            data-bs-placement="top"
-                                            data-bs-title="Subir portafolio">
-                                        <i class="bi bi-folder"></i>
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
-                                            data-id="{{aprendiz.id}}"
-                                            title="Ver Perfil"
-                                            data-bs-toggle="tooltip" 
-                                            data-bs-placement="top">
-                                        <i class="bi bi-plus-lg"></i>
-                                    </button>
-                                    {% if aprendiz.esta != 'desertado' %}
-                                    <button class="btn btn-outline-danger btn-sm mb-1 desertar-aprendiz"
-                                            data-id="{{aprendiz.id}}"
-                                            title="Marcar como desertado"
-                                            data-bs-toggle="tooltip" 
-                                            data-bs-placement="top">
-                                        <i class="bi bi-person-dash"></i>
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm mb-1 desasociar-aprendiz"
-                                            data-id="{{aprendiz.id}}"
-                                            title="Eliminar de la ficha"
-                                            data-bs-toggle="tooltip" 
-                                            data-bs-placement="top">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                    {% comment %} <button class="btn btn-outline-secondary btn-sm mb-1 editar-aprendiz"
-                                            data-id="{{aprendiz.id}}"
-                                            title="Editar"
-                                            data-bs-toggle="tooltip" 
-                                            data-bs-placement="top">
-                                        <i class="bi bi-pencil"></i>
-                                    </button> {% endcomment %}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
+                      <td>
+                        <button class="btn btn-outline-warning btn-sm mb-1 ver-portafolio" data-id="{{ aprendiz.id }}" data-nombre="{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Subir portafolio"><i class="bi bi-folder"></i></button>
+                        <button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" data-id="{{ aprendiz.id }}" title="Ver Perfil" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-plus-lg"></i></button>
+                        {% if aprendiz.esta != 'desertado' %}
+                          <button class="btn btn-outline-danger btn-sm mb-1 desertar-aprendiz" data-id="{{ aprendiz.id }}" title="Marcar como desertado" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-person-dash"></i></button>
+                          <button class="btn btn-outline-secondary btn-sm mb-1 desasociar-aprendiz" data-id="{{ aprendiz.id }}" title="Eliminar de la ficha" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-x-circle"></i></button>
+                          {% comment %} <button class="btn btn-outline-secondary btn-sm mb-1 editar-aprendiz" data-id="{{ aprendiz.id }}" title="Editar" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-pencil"></i></button> {% endcomment %}
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
+          </div>
+        </div>
 
-            <!-- Cronograma -->
-            <div class="tab-pane fade" id="cronograma" role="tabpanel" aria-labelledby="cronograma-tab">
-                <div class="card shadow-sm">
-                    <div class="card-body text-center">
-                        <h5 class="text-primary fw-bold mb-3">Estamos trabajando en una mejor experiencia</h5>
-                        <p class="mb-2">
-                            El módulo de evaluación de RAPS se encuentra <strong>temporalmente inhabilitado</strong> debido a procesos de mejora.
-                        </p>
-                        <p class="mb-0">
-                            Muy pronto podrá acceder a una versión optimizada pensada especialmente para facilitar su gestión de actividades.
-                        </p>
-                        <p class="text-muted mt-3" style="font-size: 0.9rem;">
-                            Agradecemos su comprensión y lo invitamos a volver a consultar este espacio próximamente.
-                        </p>
-                    </div>
-                </div>
+        <!-- Cronograma -->
+        <div class="tab-pane fade" id="cronograma" role="tabpanel" aria-labelledby="cronograma-tab">
+          <div class="card shadow-sm">
+            <div class="card-body text-center">
+              <h5 class="text-primary fw-bold mb-3">Estamos trabajando en una mejor experiencia</h5>
+              <p class="mb-2">
+                El módulo de evaluación de RAPS se encuentra <strong>temporalmente inhabilitado</strong> debido a procesos de mejora.
+              </p>
+              <p class="mb-0">Muy pronto podrá acceder a una versión optimizada pensada especialmente para facilitar su gestión de actividades.</p>
+              <p class="text-muted mt-3" style="font-size: 0.9rem;">Agradecemos su comprensión y lo invitamos a volver a consultar este espacio próximamente.</p>
             </div>
+          </div>
+        </div>
 
-            <!-- Inasistencias -->
-            <div class="tab-pane fade" id="inasistencias" role="tabpanel" aria-labelledby="inasistencias-tab">
-                <div class="card shadow-sm">
-                    <div class="card-body">
+        <!-- Inasistencias -->
+        <div class="tab-pane fade" id="inasistencias" role="tabpanel" aria-labelledby="inasistencias-tab">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-end mb-3">
+                <a class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Crear encuentro" data-bs-toggle="modal" data-bs-target="#crearEncuentroModal"><i class="bi bi-plus"></i></a>
+              </div>
 
-                <div class="d-flex justify-content-end mb-3">
-                    <a class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Crear encuentro" data-bs-toggle="modal" data-bs-target="#crearEncuentroModal">
-                        <i class="bi bi-plus"></i>
-                    </a>
-                </div>
-
-                <div class="table-responsive">
-                    <table id="encuentros_ficha" class="table table-bordered align-middle mt-1">
-                        <thead class="table-secondary text-center">
-                            <tr>
-                                <th>Fecha encuentro</th>
-                                <th>Tema</th>
-                                <th>Lugar</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
-                </div>
+              <div class="table-responsive">
+                <table id="encuentros_ficha" class="table table-bordered align-middle mt-1">
+                  <thead class="table-secondary text-center">
+                    <tr>
+                      <th>Fecha encuentro</th>
+                      <th>Tema</th>
+                      <th>Lugar</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
-            </div>
-            </div>
-            
+          </div>
+        </div>
 
-            <!-- Reportes -->
-            <div class="tab-pane fade" id="reportes" role="tabpanel" aria-labelledby="reportes-tab">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                <div class="row row-cols-1 row-cols-md-2 g-4">
-                    <!-- Reporte 2 -->
-                    <!-- <div class="col">
+        <!-- Reportes -->
+        <div class="tab-pane fade" id="reportes" role="tabpanel" aria-labelledby="reportes-tab">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="row row-cols-1 row-cols-md-2 g-4">
+                <!-- Reporte 2 -->
+                <!--  <div class="col">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
                                 <h5 class="card-title">Asistencia por aprendiz</h5>
@@ -222,70 +192,67 @@
                                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActaAsistenciaAprendiz">Generar</button>
                             </div>
                         </div>
-                    </div> -->
-                    
-                    <!-- Reporte 2 -->
-                    <div class="col">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">Acta de asistencia</h5>
-                                <p class="card-text">Detalle de asistencias para los encuentros de la ficha.</p>
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActaAsistencia">Generar</button>
-                            </div>
-                        </div>
+                    </div>  -->
+
+                <!-- Reporte 2 -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                      <h5 class="card-title">Acta de asistencia</h5>
+                      <p class="card-text">Detalle de asistencias para los encuentros de la ficha.</p>
+                      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActaAsistencia">Generar</button>
                     </div>
-                    <!-- Reporte 1 -->
-                    <div class="col">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">Calificaciones</h5>
-                                <p class="card-text">Muestra las calificaciones de cada actividad.</p>
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCalificacionesActi">Generar</button>
-                            </div>
-                        </div>
-                    </div>
+                  </div>
                 </div>
-                
+                <!-- Reporte 1 -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                      <h5 class="card-title">Calificaciones</h5>
+                      <p class="card-text">Muestra las calificaciones de cada actividad.</p>
+                      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCalificacionesActi">Generar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            </div>
-            </div>
-            
-
+          </div>
         </div>
+      </div>
     </section>
-</main>
+  </main>
 
-<!-- Modal carga de documentos portafolio ficha -->
-<div class="modal fade" id="uploadModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
-<div class="modal-dialog">
-    <div class="modal-content">
-    <div class="modal-header">
-        <h5 class="modal-title" id="uploadModalLabel">Subir Documento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Modal carga de documentos portafolio ficha -->
+  <div class="modal fade" id="uploadModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="uploadModalLabel">Subir Documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="file" id="fileInput" class="form-control" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" id="uploadButton" class="btn btn-primary">Subir</button>
+        </div>
+      </div>
     </div>
-    <div class="modal-body">
-        <input type="file" id="fileInput" class="form-control">
-    </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" id="uploadButton" class="btn btn-primary">Subir</button>
-    </div>
-    </div>
-</div>
-</div>
+  </div>
 
-<!-- Modal portafolio aprendiz -->
-<div class="modal fade" id="portafolioAprendizModal" tabindex="-1" aria-labelledby="portafolioAprendizModalLabel">
+  <!-- Modal portafolio aprendiz -->
+  <div class="modal fade" id="portafolioAprendizModal" tabindex="-1" aria-labelledby="portafolioAprendizModalLabel">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header d-flex justify-content-between align-items-center">
-                <h5 class="modal-title m-0" id="portafolioAprendizModalLabel"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <div id="folderTreeAprendiz"></div>
-                <!-- Sección de Historial -->
-                <!-- <div class="card mt-4">
+      <div class="modal-content">
+        <div class="modal-header d-flex justify-content-between align-items-center">
+          <h5 class="modal-title m-0" id="portafolioAprendizModalLabel"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="folderTreeAprendiz"></div>
+          <!-- Sección de Historial -->
+          <!--  <div class="card mt-4">
                     <div class="card-header bg-secondary text-white">
                         <h6 class="m-0">Historial de Acciones</h6>
                     </div>
@@ -305,415 +272,436 @@
                             </tbody>
                         </table>
                     </div>
-                </div> -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
+                </div>  -->
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Modal carga de documentos portafolio aprendiz -->
-<div class="modal fade" id="uploadModalAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalAprendizLabel" aria-hidden="true">
+  <!-- Modal carga de documentos portafolio aprendiz -->
+  <div class="modal fade" id="uploadModalAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalAprendizLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
+      <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="uploadModalAprendizLabel">Subir Documento</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="uploadModalAprendizLabel">Subir Documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-            <input type="file" id="fileInputAprendiz" class="form-control">
+          <input type="file" id="fileInputAprendiz" class="form-control" />
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            <button type="button" id="uploadButtonAprendiz" class="btn btn-primary">Subir</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" id="uploadButtonAprendiz" class="btn btn-primary">Subir</button>
         </div>
-        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Modal Ver Perfil -->
-<div class="modal fade" id="modalVerPerfil" tabindex="-1" role="dialog" aria-labelledby="modalVerPerfilLabel" aria-hidden="true">
+  <!-- Modal Ver Perfil -->
+  <div class="modal fade" id="modalVerPerfil" tabindex="-1" role="dialog" aria-labelledby="modalVerPerfilLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalEditAprendizLabel"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-        <div class="modal-body" id="contenidoPerfil">
-            <!-- Aquí se cargará el perfil  -->
-            Cargando...
-        </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal asociar nuevo aprendiz -->
-<div class="modal fade" id="modalAgregarAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAgregarAprendizLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+      <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="modalAgregarAprendizLabel">Agregar aprendiz</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="modalEditAprendizLabel"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="contenidoPerfil">
+          <!-- Aquí se cargará el perfil -->
+          Cargando...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal asociar nuevo aprendiz -->
+  <div class="modal fade" id="modalAgregarAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAgregarAprendizLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalAgregarAprendizLabel">Agregar aprendiz</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-            <p class="text-muted small mb-3">
-            Aquí se validará si el aprendiz es actualmente asociable, si está vinculado a otra ficha o si es necesario crearlo ya que no existe en el sistema.
-            </p>
-            <label for="aprendizDni">Numero de identificación:</label>
-            <input type="text" id="aprendizDni" class="form-control" placeholder="Ingrese número de documento">
+          <p class="text-muted small mb-3">Aquí se validará si el aprendiz es actualmente asociable, si está vinculado a otra ficha o si es necesario crearlo ya que no existe en el sistema.</p>
+          <label for="aprendizDni">Numero de identificación:</label>
+          <input type="text" id="aprendizDni" class="form-control" placeholder="Ingrese número de documento" />
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            <button type="button" id="validateBtn" class="btn btn-primary">Validar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" id="validateBtn" class="btn btn-primary">Validar</button>
         </div>
-        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Modal: crear apre -->
-<div class="modal fade" id="modalCrearAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalCrearAprendizLabel" aria-hidden="true">
+  <!-- Modal: crear apre -->
+  <div class="modal fade" id="modalCrearAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalCrearAprendizLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <form id="formCrearApre" enctype="multipart/form-data">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalCrearAprendizLabel">Crear aprendiz desde CSV</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        Cargue acá la información del aprendiz siguiendo las reglas con las que ya está familiarizado. En este caso, <strong>solo puede existir un registro en el archivo CSV</strong>.
-                    </div>
-
-                    <!-- NUEVO AVISO -->
-                    <div class="alert alert-warning">
-                        Tenga en cuenta que algunos campos del representante (<strong>correo, teléfono, dirección y tipo de documento</strong>) son opcionales y pueden dejarse en blanco si no aplica o no tiene la información.
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="archivoAprendiz" class="form-label">Archivo CSV</label>
-                        <input class="form-control" type="file" id="archivoAprendiz" name="archivo" accept=".csv" required>
-                    </div>
-
-                    <div id="errores" class="alert alert-danger d-none"></div>
-                    <div id="resumen" class="alert alert-success d-none"></div>
-                </div>
-                <div class="modal-footer">
-                    <button id="btnCrear" type="submit" class="btn btn-primary">Crear</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-
-
-<!-- Modal del calendario -->
-<div class="modal fade" id="calendarioActividadModal" tabindex="-1" aria-labelledby="calendarioActividadModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <form id="formCrearApre" enctype="multipart/form-data">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Calendario de actividades</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalCrearAprendizLabel">Crear aprendiz desde CSV</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info">
+              Cargue acá la información del aprendiz siguiendo las reglas con las que ya está familiarizado. En este caso, <strong>solo puede existir un registro en el archivo CSV</strong>.
             </div>
-            <div class="modal-body">
-                <div id="calendario" class="p-3 border rounded"></div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Modal calificar -->
-<div class="modal fade" id="modalCalificacion" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-        <form id="formularioCalificacion" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="actividad_id" id="inputActividadId">
+            <!-- NUEVO AVISO -->
+            <div class="alert alert-warning">
+              Tenga en cuenta que algunos campos del representante (<strong>correo, teléfono, dirección y tipo de documento</strong>) son opcionales y pueden dejarse en blanco si no aplica o no tiene la información.
+            </div>
+
+            <div class="mb-3">
+              <label for="archivoAprendiz" class="form-label">Archivo CSV</label>
+              <input class="form-control" type="file" id="archivoAprendiz" name="archivo" accept=".csv" required />
+            </div>
+
+            <div id="errores" class="alert alert-danger d-none"></div>
+            <div id="resumen" class="alert alert-success d-none"></div>
+          </div>
+          <div class="modal-footer">
+            <button id="btnCrear" type="submit" class="btn btn-primary">Crear</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal del calendario -->
+  <div class="modal fade" id="calendarioActividadModal" tabindex="-1" aria-labelledby="calendarioActividadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
         <div class="modal-header">
+          <h5 class="modal-title">Calendario de actividades</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="calendario" class="p-3 border rounded"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal calificar -->
+  <div class="modal fade" id="modalCalificacion" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="formularioCalificacion" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="actividad_id" id="inputActividadId" />
+          <div class="modal-header">
             <h5 class="modal-title">Calificar Actividad</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-            <p><strong>Nombre:</strong> <span id="modalNombre"></span></p>
-            <p><strong>Fase:</strong> <span id="modalFase"></span></p>
-            <p><strong>Inicio:</strong> <span id="modalFechaInicio"></span></p>
-            <p><strong>Fin:</strong> <span id="modalFechaFin"></span></p>
-            <p><strong>Inicio calificación:</strong> <span id="modalFechaInicioCali"></span></p>
-            <p><strong>Fin calificación:</strong> <span id="modalFechaFinCali"></span></p>
+          </div>
+          <div class="modal-body">
+            <p>
+              <strong>Nombre:</strong> <span id="modalNombre"></span>
+            </p>
+            <p>
+              <strong>Fase:</strong> <span id="modalFase"></span>
+            </p>
+            <p>
+              <strong>Inicio:</strong> <span id="modalFechaInicio"></span>
+            </p>
+            <p>
+              <strong>Fin:</strong> <span id="modalFechaFin"></span>
+            </p>
+            <p>
+              <strong>Inicio calificación:</strong> <span id="modalFechaInicioCali"></span>
+            </p>
+            <p>
+              <strong>Fin calificación:</strong> <span id="modalFechaFinCali"></span>
+            </p>
 
             <div class="table-responsive">
-            <table id="tabla_cali" class="table table-bordered">
+              <table id="tabla_cali" class="table table-bordered">
                 <thead class="table-secondary">
-                <tr>
+                  <tr>
                     <th>Aprendiz</th>
                     <th>¿Aprobó?</th>
-                </tr>
+                  </tr>
                 </thead>
-                <tbody id="tablaAprendicesCali">
-                </tbody>
-            </table>
+                <tbody id="tablaAprendicesCali"></tbody>
+              </table>
             </div>
-        </div>
-        <div class="modal-footer">
+          </div>
+          <div class="modal-footer">
             <button type="submit" id="guardarCaliBtn" class="btn btn-success">Guardar Calificaciones</button>
-        </div>
+          </div>
         </form>
+      </div>
     </div>
-    </div>
-</div>
+  </div>
 
-<!-- Modal detalle actividad -->
-<div id="detalleActividadModal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <!-- Modal detalle actividad -->
+  <div id="detalleActividadModal" class="modal fade" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
+      <div class="modal-content">
         <div class="modal-header">
-        <h5 class="modal-title">Detalle de Actividad</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <h5 class="modal-title">Detalle de Actividad</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-        <div class="row">
-
+          <div class="row">
             <!-- Información de la actividad -->
             <div class="col-lg-6">
-            <div class="card mb-4 shadow">
+              <div class="card mb-4 shadow">
                 <div class="card-header">Información de la Actividad</div>
                 <div class="card-body">
-                <p><strong>Nombre:</strong> <span id="act-nombre"></span></p>
-                <p><strong>Descripción:</strong> <span id="act-descripcion"></span></p>
-                <p><strong>Tipo:</strong> <span id="act-tipo"></span></p>
-                <p><strong>Fase:</strong> <span id="act-fase"></span></p>
+                  <p>
+                    <strong>Nombre:</strong> <span id="act-nombre"></span>
+                  </p>
+                  <p>
+                    <strong>Descripción:</strong> <span id="act-descripcion"></span>
+                  </p>
+                  <p>
+                    <strong>Tipo:</strong> <span id="act-tipo"></span>
+                  </p>
+                  <p>
+                    <strong>Fase:</strong> <span id="act-fase"></span>
+                  </p>
                 </div>
-            </div>
+              </div>
 
-            <!-- RAPs asociados -->
-            <div class="card mb-4 shadow">
+              <!-- RAPs asociados -->
+              <div class="card mb-4 shadow">
                 <div class="card-header">RAPs Asociados</div>
                 <div class="card-body">
-                <ul id="act-raps" class="list-group list-group-flush"></ul>
+                  <ul id="act-raps" class="list-group list-group-flush"></ul>
                 </div>
-            </div>
+              </div>
             </div>
 
             <!-- Guía y cronograma -->
             <div class="col-lg-6">
-            <!-- Horas de la actividad -->
-            <div class="card mb-4 shadow">
+              <!-- Horas de la actividad -->
+              <div class="card mb-4 shadow">
                 <div class="card-header">Horas de la Actividad</div>
                 <div class="card-body">
-                <p><strong>Horas Directas:</strong> <span id="act-horas-directas"></span></p>
-                <p><strong>Horas Autónomas:</strong> <span id="act-horas-autonomas"></span></p>
+                  <p>
+                    <strong>Horas Directas:</strong> <span id="act-horas-directas"></span>
+                  </p>
+                  <p>
+                    <strong>Horas Autónomas:</strong> <span id="act-horas-autonomas"></span>
+                  </p>
                 </div>
-            </div>
+              </div>
 
-            <div class="card mb-4 shadow">
+              <div class="card mb-4 shadow">
                 <div class="card-header">Cronograma</div>
                 <div class="card-body">
-                <p><strong>Inicio:</strong> <span id="cron-inicio"></span></p>
-                <p><strong>Fin:</strong> <span id="cron-fin"></span></p>
-                <p><strong>Inicio Calificación:</strong> <span id="cron-inicio-cali"></span></p>
-                <p><strong>Fin Calificación:</strong> <span id="cron-fin-cali"></span></p>
-                <p><strong>Novedades:</strong> <span id="cron-novedades"></span></p>
+                  <p>
+                    <strong>Inicio:</strong> <span id="cron-inicio"></span>
+                  </p>
+                  <p>
+                    <strong>Fin:</strong> <span id="cron-fin"></span>
+                  </p>
+                  <p>
+                    <strong>Inicio Calificación:</strong> <span id="cron-inicio-cali"></span>
+                  </p>
+                  <p>
+                    <strong>Fin Calificación:</strong> <span id="cron-fin-cali"></span>
+                  </p>
+                  <p>
+                    <strong>Novedades:</strong> <span id="cron-novedades"></span>
+                  </p>
                 </div>
+              </div>
             </div>
-            </div>
-
+          </div>
         </div>
-        </div>
+      </div>
     </div>
-    </div>
-</div>
+  </div>
 
-<!-- Modal detalle encuentro -->
-<div class="modal fade" id="detalleEncuentroModal" tabindex="-1" role="dialog" aria-labelledby="detalleEncuentroModalLabel" aria-hidden="true">
+  <!-- Modal detalle encuentro -->
+  <div class="modal fade" id="detalleEncuentroModal" tabindex="-1" role="dialog" aria-labelledby="detalleEncuentroModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-            <h5 class="modal-title">Detalle del encuentro</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="detalle-encuentro-contenido">
-                    <p><strong>Lugar:</strong> <span id="modal-lugar"></span></p>
-                    <p><strong>Fecha:</strong> <span id="modal-fecha"></span></p>
-                    <p><strong>Participantes:</strong> <span id="modal-participantes"></span></p>
-                    
-                    <hr>
-                    <h6><strong>Aprendices que asistieron:</strong></h6>
-                    <ul id="modal-aprendices-asistieron">
-                    </ul>
-                    
-                    <h6><strong>Aprendices ausentes:</strong></h6>
-                    <ul id="modal-aprendices-faltaron">
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para crear encuentro -->
-<div class="modal fade" id="crearEncuentroModal" tabindex="-1" aria-labelledby="crearEncuentroModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-    <div class="modal-content">
+      <div class="modal-content">
         <div class="modal-header">
-        <h5 class="modal-title" id="crearEncuentroModalLabel">Crear Encuentro</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Detalle del encuentro</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="detalle-encuentro-contenido">
+            <p>
+              <strong>Lugar:</strong> <span id="modal-lugar"></span>
+            </p>
+            <p>
+              <strong>Fecha:</strong> <span id="modal-fecha"></span>
+            </p>
+            <p>
+              <strong>Participantes:</strong> <span id="modal-participantes"></span>
+            </p>
+
+            <hr />
+            <h6><strong>Aprendices que asistieron:</strong></h6>
+            <ul id="modal-aprendices-asistieron"></ul>
+
+            <h6><strong>Aprendices ausentes:</strong></h6>
+            <ul id="modal-aprendices-faltaron"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para crear encuentro -->
+  <div class="modal fade" id="crearEncuentroModal" tabindex="-1" aria-labelledby="crearEncuentroModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="crearEncuentroModalLabel">Crear Encuentro</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="formCrearEncuentro" autocomplete="off">
-        <div class="modal-body">
+          <div class="modal-body">
             {% csrf_token %}
 
             <h5 class="mb-3">Datos del encuentro:</h5>
             <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
-                    {{ encuentro_form.tema }}
-                    <small class="form-text text-muted">
-                        Escriba el tema que representa el enfoque principal del encuentro.
-                    </small>
-                </div>
+              <div class="col-md-12 mb-3">
+                <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
+                {{ encuentro_form.tema }}
+                <small class="form-text text-muted">Escriba el tema que representa el enfoque principal del encuentro.</small>
+              </div>
             </div>
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
-                    {{ encuentro_form.lugar }}
-                    <small class="form-text text-muted">
-                        Indique el espacio físico o virtual donde se realizó el encuentro, por ejemplo: aula 301, laboratorio de sistemas, o Google Meet.
-                    </small>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="{{ encuentro_form.fecha.id_for_label }}" class="form-label">Fecha</label>
-                    {{ encuentro_form.fecha }}
-                    <small class="form-text text-muted">
-                        Seleccione la fecha en la que se llevó a cabo la sesión o clase. Asegúrese de que corresponda al calendario real del encuentro.
-                    </small>
-                </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
+                {{ encuentro_form.lugar }}
+                <small class="form-text text-muted">Indique el espacio físico o virtual donde se realizó el encuentro, por ejemplo: aula 301, laboratorio de sistemas, o Google Meet.</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ encuentro_form.fecha.id_for_label }}" class="form-label">Fecha</label>
+                {{ encuentro_form.fecha }}
+                <small class="form-text text-muted">Seleccione la fecha en la que se llevó a cabo la sesión o clase. Asegúrese de que corresponda al calendario real del encuentro.</small>
+              </div>
             </div>
 
-            <hr class="my-4">
+            <hr class="my-4" />
 
             <h5 class="mb-3">Seleccione los aprendices ausentes:</h5>
             <div class="mb-3">
-                <label for="{{ encuapre_form.aprendices.id_for_label }}" class="form-label">Aprendices</label>
-                {{ encuapre_form.aprendices }}
-                <small class="form-text text-muted">
-                    Seccione solo aquellos aprendices que no asistieron al encuentro.
-                </small>
+              <label for="{{ encuapre_form.aprendices.id_for_label }}" class="form-label">Aprendices</label>
+              {{ encuapre_form.aprendices }}
+              <small class="form-text text-muted">Seccione solo aquellos aprendices que no asistieron al encuentro.</small>
             </div>
 
             <div id="errorCrearEncuentro" class="text-danger mt-2"></div>
-        </div>
+          </div>
 
-        <div class="modal-footer">
+          <div class="modal-footer">
             <button type="submit" id="btnCrearEncuentro" class="btn btn-primary">Crear encuentro</button>
-        </div>
+          </div>
         </form>
+      </div>
     </div>
-    </div>
-</div>
+  </div>
 
-<!-- Modal para editar encuentro -->
-<div class="modal fade" id="editarEncuentroModal" tabindex="-1" aria-labelledby="editarEncuentroModalLabel" aria-hidden="true">
+  <!-- Modal para editar encuentro -->
+  <div class="modal fade" id="editarEncuentroModal" tabindex="-1" aria-labelledby="editarEncuentroModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
-    <div class="modal-content">
+      <div class="modal-content">
         <div class="modal-header">
-        <h5 class="modal-title" id="editarEncuentroModalLabel">Editar Encuentro</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="editarEncuentroModalLabel">Editar Encuentro</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="formEditarEncuentro" autocomplete="off">
-        <div class="modal-body">
+          <div class="modal-body">
             {% csrf_token %}
 
             <h5 class="mb-3">Datos del encuentro:</h5>
             <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
-                    {{ encuentro_form.tema }}
-                </div>
+              <div class="col-md-12 mb-3">
+                <label for="{{ encuentro_form.tema.id_for_label }}" class="form-label">Tema</label>
+                {{ encuentro_form.tema }}
+              </div>
             </div>
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
-                    {{ encuentro_form.lugar }}
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="{{ encuentro_form.fecha.id_for_label }}" class="form-label">Fecha</label>
-                    {{ encuentro_form.fecha }}
-                </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ encuentro_form.lugar.id_for_label }}" class="form-label">Lugar</label>
+                {{ encuentro_form.lugar }}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ encuentro_form.fecha.id_for_label }}" class="form-label">Fecha</label>
+                {{ encuentro_form.fecha }}
+              </div>
             </div>
 
-            <hr class="my-4">
+            <hr class="my-4" />
 
             <h5 class="mb-3">Seleccione los aprendices ausentes:</h5>
-            <div class="mb-3">
-            {{encuapre_form.as_p}}
-            </div>
+            <div class="mb-3">{{ encuapre_form.as_p }}</div>
 
             <div id="errorEditarEncuentro" class="text-danger mt-2"></div>
-        </div>
+          </div>
 
-        <div class="modal-footer">
+          <div class="modal-footer">
             <button type="submit" id="btnEditarEncuentro" class="btn btn-primary">Editar encuentro</button>
-        </div>
+          </div>
         </form>
+      </div>
     </div>
-    </div>
-</div>
+  </div>
 
-<!-- Modal Acta de Asistencia -->
-<div class="modal fade" id="modalActaAsistencia" tabindex="-1" aria-labelledby="modalActaAsistenciaLabel" aria-hidden="true">
+  <!-- Modal Acta de Asistencia -->
+  <div class="modal fade" id="modalActaAsistencia" tabindex="-1" aria-labelledby="modalActaAsistenciaLabel" aria-hidden="true">
     <div class="modal-dialog">
-    <div class="modal-content">
+      <div class="modal-content">
         <form method="get" action="{% url 'generar_acta_asistencia' %}">
-        <div class="modal-header">
+          <div class="modal-header">
             <h5 class="modal-title" id="modalActaAsistenciaLabel">Seleccionar Formato</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" name="ficha_id" value="{{ ficha.id }}">
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="ficha_id" value="{{ ficha.id }}" />
             <label for="formato" class="form-label">Formato del reporte:</label>
             <select class="form-select" name="formato" id="formato" required>
-                <option value="pdf">PDF</option>
-                <option value="excel">Excel</option>
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
             </select>
-        </div>
-        <div class="modal-footer">
+          </div>
+          <div class="modal-footer">
             <button type="submit" class="btn btn-success">Generar reporte</button>
-        </div>
+          </div>
         </form>
+      </div>
     </div>
-    </div>
-</div>
+  </div>
 
-<!-- Modal informe de calificaciones -->
-<div class="modal fade" id="modalCalificacionesActi" tabindex="-1" aria-labelledby="modalCalificacionesActi" aria-hidden="true">
+  <!-- Modal informe de calificaciones -->
+  <div class="modal fade" id="modalCalificacionesActi" tabindex="-1" aria-labelledby="modalCalificacionesActi" aria-hidden="true">
     <div class="modal-dialog">
-    <div class="modal-content">
+      <div class="modal-content">
         <form method="get" action="{% url 'generar_informe_calificaciones' %}">
-        <div class="modal-header">
+          <div class="modal-header">
             <h5 class="modal-title" id="modalCalificacionesActiLabel">Seleccionar Formato</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" name="ficha_id" value="{{ ficha.id }}">
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="ficha_id" value="{{ ficha.id }}" />
             <label for="formato" class="form-label">Formato del reporte:</label>
             <select class="form-select" name="formato" id="formato" required>
-                <option value="pdf">PDF</option>
-                <option value="excel">Excel</option>
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
             </select>
-        </div>
-        <div class="modal-footer">
+          </div>
+          <div class="modal-footer">
             <button type="submit" class="btn btn-success" id="btnGenerarReporteCali">Generar reporte</button>
-        </div>
+          </div>
         </form>
+      </div>
     </div>
-    </div>
-</div>
+  </div>
 
-<!-- Modal aprendiz Asistencia -->
-<!-- <div class="modal fade" id="modalActaAsistenciaAprendiz" tabindex="-1" aria-labelledby="modalActaAsistenciaAprendizLabel" aria-hidden="true">
+  <!-- Modal aprendiz Asistencia -->
+  <!--  <div class="modal fade" id="modalActaAsistenciaAprendiz" tabindex="-1" aria-labelledby="modalActaAsistenciaAprendizLabel" aria-hidden="true">
     <div class="modal-dialog">
     <div class="modal-content">
         <form method="get" action="{% url 'generar_acta_asistencia_aprendiz' %}">
@@ -737,9 +725,9 @@
         </form>
     </div>
     </div>
-</div> -->
+</div>  -->
 {% endblock %}
 
 {% block scripts %}
-<script type ="module" src="{% static 'js/formacion/panel_ficha.js' %}"></script>
+  <script type="module" src="{% static 'js/formacion/panel_ficha.js' %}"></script>
 {% endblock %}
