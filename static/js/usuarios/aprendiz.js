@@ -11,11 +11,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ======= Inicialización de DataTable =======
     const table = new DataTable(tableElement, {
+        ajax: {
+          url: `/api/usuarios/aprendices/filtrar/`,
+          type: 'GET',
+          data: function(d){
+            const form = document.getElementById('filtros-form');
+            if (form){
+              const formData = new FormData(form);
+              for (const [key, value] of formData.entries()) {
+                d[key] = value;
+              }
+            }
+          }
+        },
+        columns: [
+          { data: 'nom' },
+          { data: 'apelli' },
+          { data: 'tele' },
+          { data: 'dire' },
+          { data: 'fecha_naci' },
+          { data: 'esta' },
+          { data: 'tipo_dni' },
+          { data: 'dni' },
+          {
+            data: null,
+            orderable: false,
+            render: function(data, type, row){
+              return `
+                <button class="btn btn-outline-warning btn-sm mb-1 edit-btn" 
+                    data-id="${row.id}"
+                    title="Editar"
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top">
+                    <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
+                    data-id="${row.id}"
+                    title="Ver Perfil"
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+              `;
+            }
+          }
+        ],
         language: {
             url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
         },
         deferRender: true,
-        ordering: false
+        ordering: false,
+        drawCallback: () => {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                new bootstrap.Tooltip(el);
+            });
+        }
     });
 
     // ======== Funcion para llenar la tabla =========
@@ -29,11 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
         ];
 
-        const promesaTabla = fetch('/api/aprendices/filtrar-aprendices/')
-        .then(response => response.json())
-        .then(data => actualizarTabla(data))
-        .catch(error => console.error('Error al cargar datos iniciales:', error));
-
         // =======Iniciar select organizar ========
         new TomSelect(selectElemento,{
             placeholder: 'Ordenar por...',
@@ -45,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        Promise.all([...promesasSelect2, promesaTabla]).finally(() => {
+        Promise.all([...promesasSelect2]).finally(() => {
             fadeOut(loadingDiv);
             fadeInElement(contenedor);
         });
@@ -54,15 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========= Funcion para filtrar la tabla =======
     function aplicarFiltros() {
         fadeIn(loadingDiv)
-
-        const formData = new FormData(document.getElementById('filtros-form'));
-        const params = new URLSearchParams(formData).toString();
-
-        fetch(`/api/aprendices/filtrar-aprendices/?${params}`)
-            .then(response => response.json())
-            .then(data => actualizarTabla(data))
-            .catch(error => console.error('Error al filtrar los datos:', error))
-            .finally(() => fadeOut(loadingDiv));
+        table.ajax.reload(() => fadeOut(loadingDiv));
     }
 
     // ======= Cargar opciones dinámicas para filtros =======
@@ -95,45 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(error => console.error(`Error al cargar las opciones para ${elemento}`, error));
     }
-
-    // ======= Actualizar tabla con datos =======
-    function actualizarTabla(data) {
-
-        table.clear();
-
-        data.forEach(item => {
-            table.row.add([
-                item.nombre,
-                item.apellido,
-                item.telefono,
-                item.direccion,
-                item.mail,
-                item.fecha_naci,
-                item.estado,
-                item.dni,
-                `<button class="btn btn-outline-warning btn-sm mb-1 edit-btn" 
-                    data-id="${item.id}"
-                    title="Editar"
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top">
-                    <i class="bi bi-pencil-square"></i>
-                </button>
-                <button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
-                    data-id="${item.id}"
-                    title="Ver Perfil"
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top">
-                    <i class="bi bi-plus-lg"></i>
-                </button>`
-            ]);
-        });
-
-        table.draw();
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            new bootstrap.Tooltip(el);
-        });
-    }
-
 
     // Aplicar filtros al cambiar
     document.querySelectorAll('#usuarios_creacion, #estados, #ordenar_por, #fecha_creacion').forEach(select => {

@@ -48,6 +48,50 @@ class CentroFormacionSerializer(serializers.ModelSerializer):
         fields= ['id', 'nom']
 
 class AprendizSerializer(serializers.ModelSerializer):
+    nom = serializers.SerializerMethodField()
+    apelli = serializers.SerializerMethodField()
+    tele = serializers.SerializerMethodField()
+    dire = serializers.SerializerMethodField()
+    mail = serializers.SerializerMethodField()
+    fecha_naci = serializers.SerializerMethodField()
+    tipo_dni = serializers.SerializerMethodField()
+    dni = serializers.SerializerMethodField()
+
     class Meta:
         model = T_apre
-        fields = '__all__'
+        fields = [
+          'id',
+          'nom',
+          'apelli',
+          'tele',
+          'dire',
+          'mail',
+          'fecha_naci',
+          'tipo_dni',
+          'dni',
+          'esta'
+        ]
+        
+    def get_nom(self, obj):
+      return obj.perfil.nom
+    
+    def get_apelli(self, obj):
+      return obj.perfil.apelli
+    
+    def get_tele(self, obj):
+      return obj.perfil.tele
+    
+    def get_dire(self, obj):
+      return obj.perfil.dire
+    
+    def get_mail(self, obj):
+      return obj.perfil.mail
+    
+    def get_fecha_naci(self, obj):
+      return obj.perfil.fecha_naci
+    
+    def get_tipo_dni(self, obj):
+      return obj.perfil.tipo_dni
+    
+    def get_dni(self, obj):
+      return obj.perfil.dni
