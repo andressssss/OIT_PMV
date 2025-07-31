@@ -164,15 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     placeholderTexto: 'Seleccione un departamento',
                     required: true,
                     disabled: true
-                }),
-                crearSelectForm({
-                    id: 'municipio',
-                    nombre: 'municipio',
-                    url: '/api/usuarios/municipios/',
-                    contenedor: '#contenedor-municipios',
-                    placeholderTexto: 'Seleccione un municipio',
-                    required: true,
-                    disabled: true
                 })
             ]);
         } catch (error) {
@@ -182,12 +173,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/formacion/fichas/${fichaId}/`);
             const data = await response.json();
 
-            console.log(data);
             setSelectValue('centro', data.centro_id);
             setSelectValue('fase', data.fase_id);
             setSelectValue('departamento', data.depa_id);
-            setSelectValue('municipio', data.muni_id);
             document.querySelector('#num_ficha').value = data.num;
+
+            await crearSelectForm({
+                id: 'municipio',
+                nombre: 'municipio',
+                url: `/api/usuarios/municipios/?departamento=${data.depa_id}`,
+                contenedor: '#contenedor-municipios',
+                placeholderTexto: 'Seleccione un municipio',
+                required: true,
+                disabled: true
+            });
+
+            setSelectValue('municipio', data.muni_id)
 
             const institucionResponse = await fetch(`/api/usuarios/instituciones/${data.insti_id}/`);
             const institucionData = await institucionResponse.json();

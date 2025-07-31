@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha
+from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha, T_insti_edu, T_centro_forma
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,10 @@ class FichaSerializer(serializers.ModelSerializer):
         fields = ['id', 'num']
 
 class FichaEditarSerializer(FichaSerializer):
+  
+    insti_id = serializers.PrimaryKeyRelatedField(queryset=T_insti_edu.objects.all(), required=False)
+    centro_id = serializers.PrimaryKeyRelatedField(queryset=T_centro_forma.objects.all(), required=False)
+  
     fase_id = serializers.SerializerMethodField()
     muni_id = serializers.SerializerMethodField()
     depa_id = serializers.SerializerMethodField()
@@ -49,17 +53,19 @@ class FichaEditarSerializer(FichaSerializer):
 
         
     def update(self, instance, validated_data):
-        instance.num = validated_data.get('num', instance.num)
-        instance.insti_id = validated_data.get('insti_id', instance.insti_id)
-        instance.centro_id = validated_data.get('centro_id', instance.centro_id)
-        instance.progra_id = validated_data.get('progra_id', instance.progra_id)
+      logger.warning(f"Mensaje to wapo")
+      logger.warning(f"{self.context['request'].data}")
 
-        fase_id = self.context['request'].data.get('fase_id')
-        if fase_id:
-            T_fase_ficha.objects.filter(ficha=instance, vige=1).update(fase_id=fase_id)
+      instance.num = validated_data.get('num', instance.num)
+      instance.insti = validated_data.get('insti_id', instance.insti)
+      instance.centro = validated_data.get('centro_id', instance.centro)
 
-        instance.save()
-        return instance
+      fase_id = self.context['request'].data.get('fase_id')
+      if fase_id:
+          T_fase_ficha.objects.filter(ficha=instance, vige=1).update(fase_id=fase_id)
+
+      instance.save()
+      return instance
 
 
 # Serializer base compartido entre Create y Update
