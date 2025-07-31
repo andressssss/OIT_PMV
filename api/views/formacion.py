@@ -86,7 +86,6 @@ class FichasViewSet(ModelViewSet):
     serializer_class = FichaSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
-
     def get_serializer_class(self):
         if self.action in ['list', 'fichas_por_programa']:
             return FichaSerializer

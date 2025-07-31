@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from django.core.validators import validate_email
 from django.core.files.storage import default_storage
+from django.db.models.functions import Cast
 from datetime import datetime
 from io import TextIOWrapper
 from django.db import transaction
@@ -17,11 +18,11 @@ from django.contrib.auth.models import User
 from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal
 from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q
+from django.db.models import Q, DateField
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from commons.permisos import DenegarConsulta
 
-class PerfilPagination(PageNumberPagination):
+class DataTablesPagination(PageNumberPagination):
     page_size_query_param = 'length'
     page_query_param = 'start'
 
@@ -48,7 +49,7 @@ class PerfilViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = T_perfil.objects.all()
     serializer_class = PerfilSerializer
-    pagination_class = PerfilPagination
+    pagination_class = DataTablesPagination
 
     @action(detail=False, methods=['get'], url_path='filtrar')
     def filtrar(self, request):
@@ -75,8 +76,14 @@ class PerfilViewSet(ModelViewSet):
             )
 
         paginated = self.paginate_queryset(perfiles)
-        serializer = PerfilSerializer(paginated, many=True)
-        return self.get_paginated_response(serializer.data)
+        
+        if paginated is not None:
+          serializer = PerfilSerializer(paginated, many=True)
+          return self.get_paginated_response(serializer.data)
+        
+        serializer = PerfilSerializer(perfiles, many=True)
+        return Response(serializer.data)
+
 
 
 class CentroFormacionViewSet(ModelViewSet):
@@ -121,6 +128,72 @@ class AprendizViewSet(ModelViewSet):
     queryset = T_apre.objects.all()
     serializer_class = AprendizSerializer
     permission_classes = [IsAuthenticated, DenegarConsulta]
+    pagination_class = DataTablesPagination
+
+    @action(detail=False, methods=['get'], url_path='filtrar')
+    def filtrar(self, request):
+        usuarios = request.GET.getlist('usuario_creacion', [])
+        fecha = request.GET.get('fecha_creacion_', [])
+        estado = request.GET.getlist('estado', [])
+        ordenar = request.GET.get('ordenar_por', [])
+        search = request.GET.get('search[value]', '').strip()
+
+        aprendices = T_apre.objects.all()
+
+        if usuarios:
+          filtros = Q()
+
+          for usuario in usuarios:
+              nombre, *apellido = usuario.split(" ")
+              apellido = " ".join(apellido)
+
+              filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre, usu_crea__t_perfil__apelli__icontains=apellido)
+          
+          aprendices = aprendices.filter(filtros)
+        if fecha:
+          fecha_creacion = datetime.strptime(fecha, '%Y-%m-%d').date()
+
+          aprendices = aprendices.annotate(fecha_sin_hora=Cast('perfil__user__date_joined', output_field=DateField()))
+
+          aprendices = aprendices.filter(fecha_sin_hora=fecha_creacion)
+
+        if estado:
+          aprendices = aprendices.filter(esta__in=estado)
+
+        if ordenar:
+          if ordenar == 'fecha_desc':
+              aprendices = aprendices.order_by('-perfil__user__date_joined')
+          elif ordenar == 'fecha_asc':
+              aprendices = aprendices.order_by('perfil__user__date_joined')
+
+        if search:
+            aprendices = aprendices.filter(
+                Q(perfil__nom__icontains=search) |
+                Q(perfil__apelli__icontains=search) |
+                Q(perfil__tele__icontains=search) |
+                Q(perfil__mail__icontains=search) |
+                Q(perfil__dni__icontains=search)
+            )
+            
+        total = T_apre.objects.count()
+        filtrados = aprendices.count()
+
+        paginated = self.paginate_queryset(aprendices)
+    
+        if paginated is not None:
+            serializer = AprendizSerializer(paginated, many=True)
+            return Response({
+                "recordsTotal": total,
+                "recordsFiltered": filtrados,
+                "data": serializer.data
+            })
+
+        serializer = AprendizSerializer(aprendices, many=True)
+        return Response({
+            "recordsTotal": total,
+            "recordsFiltered": filtrados,
+            "data": serializer.data
+        })
 
     def partial_update(self, request, *args, **kwargs):
         response = super().partial_update(request, *args, **kwargs)
