@@ -1795,260 +1795,260 @@ document.addEventListener("DOMContentLoaded", function () {
     cargarDatosTablaEncuentros();
 
     // ======= Inicialización de DataTables =======
-    const tableEncuentros = new DataTable(tablaAsistencia, {
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-            drawCallback: () => {
-            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-                new bootstrap.Tooltip(el);
-            });
-        }
-        }
-    });
+    // const tableEncuentros = new DataTable(tablaAsistencia, {
+    //     language: {
+    //         url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+    //         drawCallback: () => {
+    //         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    //             new bootstrap.Tooltip(el);
+    //         });
+    //     }
+    //     }
+    // });
 
     //== Enviar formulario crear encuentro
-    formCrearEncuentro.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // formCrearEncuentro.addEventListener('submit', async (e) => {
+    //     e.preventDefault();
 
-        const form = e.target;
-        const submitBtn = document.getElementById('btnCrearEncuentro');
-        const originalBtnContent = submitBtn.innerHTML;
-        const errorDiv = document.getElementById('errorCrearEncuentro');
+    //     const form = e.target;
+    //     const submitBtn = document.getElementById('btnCrearEncuentro');
+    //     const originalBtnContent = submitBtn.innerHTML;
+    //     const errorDiv = document.getElementById('errorCrearEncuentro');
 
-        const formData = new FormData(form);
-        for (let pair of formData.entries()) {
-            console.log(`${pair[0]}: ${pair[1]}`);
-        }
-        showSpinner(submitBtn);
-        form.querySelectorAll('select, button, input').forEach(el => el.disabled = true);
+    //     const formData = new FormData(form);
+    //     for (let pair of formData.entries()) {
+    //         console.log(`${pair[0]}: ${pair[1]}`);
+    //     }
+    //     showSpinner(submitBtn);
+    //     form.querySelectorAll('select, button, input').forEach(el => el.disabled = true);
 
-        try {
-            const response = await fetch(`/api/ficha/crear_encuentro/${fichaId}/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            });
+    //     try {
+    //         const response = await fetch(`/api/ficha/crear_encuentro/${fichaId}/`, {
+    //             method: 'POST',
+    //             headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+    //             body: formData
+    //         });
 
-            if (response.ok ){
-                const data = await response.json();
-                toastSuccess(data.message);
-                form.reset()
-                bootstrap.Modal.getInstance(document.getElementById('crearEncuentroModal')).hide();
-                cargarDatosTablaEncuentros();
-            } else {
-                const data = await response.json();
-                toastError("Error al guardar: "+ data.message)
-                errorDiv.innerHTML = data.errors || "Error desconocido al crear la actividad.";
-            }
-        } catch (error) {
-            toastError("Error al guardar el formulario.");
-            errorDiv.innerHTML = error || "Error desconocido al crear la actividad.";
-        } finally {
-            hideSpinner(submitBtn, originalBtnContent);
-            form.querySelectorAll('select, button, input').forEach(el => el.disabled = false);
-        }
-    });
+    //         if (response.ok ){
+    //             const data = await response.json();
+    //             toastSuccess(data.message);
+    //             form.reset()
+    //             bootstrap.Modal.getInstance(document.getElementById('crearEncuentroModal')).hide();
+    //             cargarDatosTablaEncuentros();
+    //         } else {
+    //             const data = await response.json();
+    //             toastError("Error al guardar: "+ data.message)
+    //             errorDiv.innerHTML = data.errors || "Error desconocido al crear la actividad.";
+    //         }
+    //     } catch (error) {
+    //         toastError("Error al guardar el formulario.");
+    //         errorDiv.innerHTML = error || "Error desconocido al crear la actividad.";
+    //     } finally {
+    //         hideSpinner(submitBtn, originalBtnContent);
+    //         form.querySelectorAll('select, button, input').forEach(el => el.disabled = false);
+    //     }
+    // });
 
     //== Listeners tabla encuentros
-    tablaAsistencia.addEventListener('click', async (e) => {
-        const btn = e.target.closest('button');
+    // tablaAsistencia.addEventListener('click', async (e) => {
+    //     const btn = e.target.closest('button');
         
-        if (!btn) return;
+    //     if (!btn) return;
         
     //== Boton ver detalle encuentro
-        if  (btn.classList.contains('btn-detalle-encuentro')){
-            const encuentroId = btn.getAttribute('data-id');
-            const originalBtnContent = btn.innerHTML;
-            showSpinner(btn);
-            tablaAsistencia.querySelectorAll('button').forEach(el => el.disabled = true);
-            try {
-                const response = await fetch(`/api/ficha/encuentro_detalle/${encuentroId}`);
-                if (response.ok){
-                    const data = await response.json();
-                    cargarDetalleEncuentro(data);
-                    modalAsistencia.show();
-                } else {
-                    throw new Error("Error al cargar la data");
+        // if  (btn.classList.contains('btn-detalle-encuentro')){
+        //     const encuentroId = btn.getAttribute('data-id');
+        //     const originalBtnContent = btn.innerHTML;
+        //     showSpinner(btn);
+        //     tablaAsistencia.querySelectorAll('button').forEach(el => el.disabled = true);
+        //     try {
+        //         const response = await fetch(`/api/ficha/encuentro_detalle/${encuentroId}`);
+        //         if (response.ok){
+        //             const data = await response.json();
+        //             cargarDetalleEncuentro(data);
+        //             modalAsistencia.show();
+        //         } else {
+        //             throw new Error("Error al cargar la data");
                     
-                }
-            } catch (error) {
-                console.error("Error de red:", error);
-                toastError("Ocurrió un error al cargar la data.");        
-            } finally {
-                hideSpinner(btn, originalBtnContent);
-                tablaAsistencia.querySelectorAll('button').forEach(el => el.disabled = false);
-            }
+        //         }
+        //     } catch (error) {
+        //         console.error("Error de red:", error);
+        //         toastError("Ocurrió un error al cargar la data.");        
+        //     } finally {
+        //         hideSpinner(btn, originalBtnContent);
+        //         tablaAsistencia.querySelectorAll('button').forEach(el => el.disabled = false);
+        //     }
 
-        };
+        // };
         
     //== Boton editar encuentro
-        if (btn.classList.contains('btnEditarEncuentro')){
-            const encuentroId = btn.getAttribute('data-id');
-            const originalBtnContent = btn.innerHTML;
-            showSpinner(btn);
+    //     if (btn.classList.contains('btnEditarEncuentro')){
+    //         const encuentroId = btn.getAttribute('data-id');
+    //         const originalBtnContent = btn.innerHTML;
+    //         showSpinner(btn);
 
-            const modalEl = document.getElementById('editarEncuentroModal');
-            const modalInstance = new bootstrap.Modal(modalEl);
-            modalInstance.show();
+    //         const modalEl = document.getElementById('editarEncuentroModal');
+    //         const modalInstance = new bootstrap.Modal(modalEl);
+    //         modalInstance.show();
 
-            await cargarDatosEditarEncuentro(encuentroId);
-            hideSpinner(btn, originalBtnContent);
+    //         await cargarDatosEditarEncuentro(encuentroId);
+    //         hideSpinner(btn, originalBtnContent);
 
-        };
+    //     };
 
-    });
+    // });
 
     //== Poblar formulario para editar encuentro
-    async function cargarDatosEditarEncuentro(encuentroId) {
-        formEditarEncuentro.querySelectorAll('input, select, button').forEach(el => el.disabled=true);
+    // async function cargarDatosEditarEncuentro(encuentroId) {
+    //     formEditarEncuentro.querySelectorAll('input, select, button').forEach(el => el.disabled=true);
 
-        try {
-            const response = await fetch(`/api/ficha/encuentro/${encuentroId}/`);
-            const data = await response.json();
+    //     try {
+    //         const response = await fetch(`/api/ficha/encuentro/${encuentroId}/`);
+    //         const data = await response.json();
 
-            formEditarEncuentro.querySelector('input[name="tema"]').value = data.tema;
-            formEditarEncuentro.querySelector('input[name="lugar"]').value = data.lugar;
-            formEditarEncuentro.querySelector('input[name="fecha"]').value = data.fecha;
+    //         formEditarEncuentro.querySelector('input[name="tema"]').value = data.tema;
+    //         formEditarEncuentro.querySelector('input[name="lugar"]').value = data.lugar;
+    //         formEditarEncuentro.querySelector('input[name="fecha"]').value = data.fecha;
 
-            const checkboxes = formEditarEncuentro.querySelectorAll('input[type="checkbox"][name="aprendices"]');
-            checkboxes.forEach(cb => {
-                cb.checked = data.ausentes.includes(parseInt(cb.value));
-            });
+    //         const checkboxes = formEditarEncuentro.querySelectorAll('input[type="checkbox"][name="aprendices"]');
+    //         checkboxes.forEach(cb => {
+    //             cb.checked = data.ausentes.includes(parseInt(cb.value));
+    //         });
 
-            formEditarEncuentro.setAttribute('action', `/api/ficha/encuentro/editar/${encuentroId}/`);
-        } catch (error) {
-            toastError(error)
-        } finally {
-            formEditarEncuentro.querySelectorAll('input, select, button').forEach(el => el.disabled=false);
-        }
-    };
+    //         formEditarEncuentro.setAttribute('action', `/api/ficha/encuentro/editar/${encuentroId}/`);
+    //     } catch (error) {
+    //         toastError(error)
+    //     } finally {
+    //         formEditarEncuentro.querySelectorAll('input, select, button').forEach(el => el.disabled=false);
+    //     }
+    // };
 
-    formEditarEncuentro.addEventListener('submit', async e => {
-        e.preventDefault();
+    // formEditarEncuentro.addEventListener('submit', async e => {
+    //     e.preventDefault();
 
-        const formData = new FormData(formEditarEncuentro);
-        const btn = document.getElementById('btnEditarEncuentro');
-        const originalBtnContent = btn.innerHTML;
-        showSpinner(btn);
+    //     const formData = new FormData(formEditarEncuentro);
+    //     const btn = document.getElementById('btnEditarEncuentro');
+    //     const originalBtnContent = btn.innerHTML;
+    //     showSpinner(btn);
 
-        formEditarEncuentro.querySelectorAll('button, select, input').forEach(el => el.disabled=true);
-        try {
-            const response = await fetch(formEditarEncuentro.action, {
-                method: 'POST',
-                headers: {'X_CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
-                body: formData
-            });
-            const data = await response.json();
-            if (!response.ok){
-                toastError(data.message);
-                return
-            }
+    //     formEditarEncuentro.querySelectorAll('button, select, input').forEach(el => el.disabled=true);
+    //     try {
+    //         const response = await fetch(formEditarEncuentro.action, {
+    //             method: 'POST',
+    //             headers: {'X_CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
+    //             body: formData
+    //         });
+    //         const data = await response.json();
+    //         if (!response.ok){
+    //             toastError(data.message);
+    //             return
+    //         }
 
-            toastSuccess(data.message);
-            const modalEl = document.getElementById('editarEncuentroModal');
-            const modalInstance = bootstrap.Modal.getInstance(modalEl);
-            modalInstance.hide();
-            cargarDatosTablaEncuentros();
-        } catch (error) {
-            toastError(error)
-        } finally {
-            hideSpinner(btn, originalBtnContent);
-            formEditarEncuentro.querySelectorAll('button, select, input').forEach(el => el.disabled=false);
-        }
+    //         toastSuccess(data.message);
+    //         const modalEl = document.getElementById('editarEncuentroModal');
+    //         const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    //         modalInstance.hide();
+    //         cargarDatosTablaEncuentros();
+    //     } catch (error) {
+    //         toastError(error)
+    //     } finally {
+    //         hideSpinner(btn, originalBtnContent);
+    //         formEditarEncuentro.querySelectorAll('button, select, input').forEach(el => el.disabled=false);
+    //     }
 
-    });
+    // });
 
     //==Cargar detalle encuentro
-    function cargarDetalleEncuentro(encuentroData){
-        reiniciarTooltips();
-        document.getElementById('modal-lugar'). textContent = encuentroData.data.lugar;
-        document.getElementById('modal-fecha'). textContent = encuentroData.data.fecha;
-        document.getElementById('modal-participantes'). textContent = encuentroData.data.participantes;
+    // function cargarDetalleEncuentro(encuentroData){
+    //     reiniciarTooltips();
+    //     document.getElementById('modal-lugar'). textContent = encuentroData.data.lugar;
+    //     document.getElementById('modal-fecha'). textContent = encuentroData.data.fecha;
+    //     document.getElementById('modal-participantes'). textContent = encuentroData.data.participantes;
 
-        //Asistieron:
-        const listaAsistieron = document.getElementById('modal-aprendices-asistieron');
-        listaAsistieron.innerHTML = '';
+    //     //Asistieron:
+    //     const listaAsistieron = document.getElementById('modal-aprendices-asistieron');
+    //     listaAsistieron.innerHTML = '';
 
-        encuentroData.data.aprendicesAsistieron.forEach(apre => {
-            const li = document.createElement('li');
-            li.textContent = apre.nombre;
-            listaAsistieron.appendChild(li);
-        });
+    //     encuentroData.data.aprendicesAsistieron.forEach(apre => {
+    //         const li = document.createElement('li');
+    //         li.textContent = apre.nombre;
+    //         listaAsistieron.appendChild(li);
+    //     });
 
-        //Faltaron
-        const listaFaltaron = document.getElementById('modal-aprendices-faltaron');
-        listaFaltaron.innerHTML = '';
+    //     //Faltaron
+    //     const listaFaltaron = document.getElementById('modal-aprendices-faltaron');
+    //     listaFaltaron.innerHTML = '';
 
-        encuentroData.data.aprendicesFaltaron.forEach(apre => {
-            const li = document.createElement('li');
-            li.textContent = apre.nombre;
-            listaFaltaron.appendChild(li);
-        });
-    }
+    //     encuentroData.data.aprendicesFaltaron.forEach(apre => {
+    //         const li = document.createElement('li');
+    //         li.textContent = apre.nombre;
+    //         listaFaltaron.appendChild(li);
+    //     });
+    // }
 
     //== LLamar API encuentros
-    async function cargarDatosTablaEncuentros(){
-        fadeIn(loadingDiv);
-        try {
-            const response = await fetch(`/api/ficha/encuentros/${fichaId}/`);
-            const data = await response.json();
-            actualizarTablaEncuentros(data);
-        } catch (error){
-            toastError("Error al cargar las actividades: ", error);
-        } finally {
-            fadeOut(loadingDiv);
-        }
-    }
+    // async function cargarDatosTablaEncuentros(){
+    //     fadeIn(loadingDiv);
+    //     try {
+    //         const response = await fetch(`/api/ficha/encuentros/${fichaId}/`);
+    //         const data = await response.json();
+    //         actualizarTablaEncuentros(data);
+    //     } catch (error){
+    //         toastError("Error al cargar las actividades: ", error);
+    //     } finally {
+    //         fadeOut(loadingDiv);
+    //     }
+    // }
 
     //== Poblar tabla encuentros
-    function actualizarTablaEncuentros(data){
-        tableEncuentros.clear();
+    // function actualizarTablaEncuentros(data){
+    //     tableEncuentros.clear();
 
-        data.forEach(item => {
-            const fecha = new Date(item.fecha);
-            const fechaFormateada = fecha.toLocaleDateString('es-CO', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            });
-            let botones =`
-                <button class="btn btn-outline-primary btn-sm btn-detalle-encuentro"
-                        data-id="${item.id}"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Detalle">
-                    <i class="bi bi-plus-lg"></i>
-                </button>
-                <button class="btn btn-outline-warning btn-sm btnEditarEncuentro"
-                        data-id="${item.id}"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Editar Encuentro">
-                    <i class="bi bi-pencil-square"></i>
-                </button>
-            `;
-            tableEncuentros.row.add([
-                fechaFormateada,
-                item.tema,
-                item.lugar,
-                botones
-            ]);
-        });
+    //     data.forEach(item => {
+    //         const fecha = new Date(item.fecha);
+    //         const fechaFormateada = fecha.toLocaleDateString('es-CO', {
+    //             year: 'numeric',
+    //             month: '2-digit',
+    //             day: '2-digit'
+    //         });
+    //         let botones =`
+    //             <button class="btn btn-outline-primary btn-sm btn-detalle-encuentro"
+    //                     data-id="${item.id}"
+    //                     data-bs-toggle="tooltip"
+    //                     data-bs-placement="top"
+    //                     title="Detalle">
+    //                 <i class="bi bi-plus-lg"></i>
+    //             </button>
+    //             <button class="btn btn-outline-warning btn-sm btnEditarEncuentro"
+    //                     data-id="${item.id}"
+    //                     data-bs-toggle="tooltip"
+    //                     data-bs-placement="top"
+    //                     title="Editar Encuentro">
+    //                 <i class="bi bi-pencil-square"></i>
+    //             </button>
+    //         `;
+    //         tableEncuentros.row.add([
+    //             fechaFormateada,
+    //             item.tema,
+    //             item.lugar,
+    //             botones
+    //         ]);
+    //     });
 
-        tableEncuentros.draw();
+    //     tableEncuentros.draw();
 
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            const tooltipInstance = bootstrap.Tooltip.getInstance(el);
-            if (tooltipInstance) {
-                tooltipInstance.dispose();
-            }
-        });
+    //     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    //         const tooltipInstance = bootstrap.Tooltip.getInstance(el);
+    //         if (tooltipInstance) {
+    //             tooltipInstance.dispose();
+    //         }
+    //     });
 
-        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            new bootstrap.Tooltip(el);
-        });
+    //     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    //         new bootstrap.Tooltip(el);
+    //     });
 
-    }
+    // }
     
 
     // *******************************************************************
