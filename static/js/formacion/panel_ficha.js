@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subFolderContainer.id = `folder-${node.id}`;
 
         if (
-          userRole === "instructor" &&
+          userRole === "instructor" || userRole === "admin" &&
           (!node.children ||
             node.children.length === 0 ||
             node.children.every((child) => child.tipo === "documento"))
@@ -180,6 +180,9 @@ document.addEventListener("DOMContentLoaded", function () {
           xls: "file-earmark-spreadsheet",
           psc: "bi-file-earmark-code",
           sql: "bi-database",
+          zip: "bi-file-earmark-zip-fill",
+          rar: "bi-file-earmark-zip-fill",
+          "7z": "bi-file-earmark-zip-fill"
         };
         icon.classList.add(
           "bi",
@@ -193,7 +196,7 @@ document.addEventListener("DOMContentLoaded", function () {
         link.appendChild(span);
         li.appendChild(link);
 
-        if (userRole === "instructor") {
+        if (userRole === "instructor" || userRole === "admin") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
@@ -306,6 +309,9 @@ document.addEventListener("DOMContentLoaded", function () {
       "docx",
       "psc",
       "sql",
+      "zip",
+      "rar",
+      "7z"
     ];
     const maxSize = 15 * 1024 * 1024; // 15 MB
 
@@ -436,6 +442,9 @@ document.addEventListener("DOMContentLoaded", function () {
       "xls",
       "psc",
       "sql",
+      "zip",
+      "rar",
+      "7z"
     ];
     const extension = file.name.split(".").pop().toLowerCase();
     if (!allowedExtensions.includes(extension)) {

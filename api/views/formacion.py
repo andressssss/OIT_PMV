@@ -405,7 +405,7 @@ class FichasViewSet(ModelViewSet):
             documentos_creados = []
             max_size = 15 * 1024 * 1024  # 15 MB
             extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg',
-                                      'png', 'ppt', 'mp3', 'mp4', 'xls', 'docx', 'psc', 'sql']
+                                      'png', 'ppt', 'mp3', 'mp4', 'xls', 'docx', 'psc', 'sql', 'zip', 'rar', '7z']
 
             for archivo in archivos:
                 extension = archivo.name.split('.')[-1].lower()
