@@ -625,14 +625,36 @@ export function validarErrorDRF(response, data) {
   if (response.ok) return false;
 
   let mensaje = "Ocurrió un error.";
+
   if (data?.message) {
     mensaje = data.message;
   } else if (data?.detail) {
     mensaje = data.detail;
   } else if (typeof data === "object") {
-    mensaje = Object.values(data).flat().join(", ");
+    mensaje = extraerMensajesDeError(data).join("\n");
   }
 
   toastError(mensaje);
   return true;
+}
+
+function extraerMensajesDeError(obj, path = "") {
+  const mensajes = [];
+
+  for (const key in obj) {
+    const value = obj[key];
+    const currentPath = path ? `${path}.${key}` : key;
+
+    if (Array.isArray(value)) {
+      value.forEach((msg) => {
+        mensajes.push(`${currentPath}: ${msg}`);
+      });
+    } else if (typeof value === "object" && value !== null) {
+      mensajes.push(...extraerMensajesDeError(value, currentPath));
+    } else if (typeof value === "string") {
+      mensajes.push(`${currentPath}: ${value}`);
+    }
+  }
+
+  return mensajes;
 }
