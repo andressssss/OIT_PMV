@@ -25,6 +25,8 @@ Thumbs.db
 
 # Archivos guardados por la app
 media/
+staticfiles/
+
 
 .env*
 
