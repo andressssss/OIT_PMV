@@ -321,6 +321,10 @@ select.form-select.choices__input {
   color: #adb5bd;
 } /* Gris claro para bases de datos (SQL) */
 
+.bi-file-earmark-zip-fill{
+  color: #FD7E14
+} /* Naranja para zips  */
+
 /* ESTILOS PARA ENCABEZADO DE NAV PILLS - Portafolio ficha*/
 
 .nav-pills .nav-link.active,
@@ -363,7 +367,6 @@ select.form-select.choices__input {
   background-color: #f0f4ff;
   border-radius: 8px;
 }
-
 
 .folder-disabled {
   pointer-events: none;
