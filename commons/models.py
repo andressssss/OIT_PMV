@@ -60,9 +60,9 @@ class T_repre_legal(models.Model):
     ]
     nom = models.CharField(max_length=200)
     dni = models.BigIntegerField()
-    tele = models.CharField(max_length=200)
-    dire = models.CharField(max_length=200)
-    mail = models.EmailField(max_length=200)
+    tele = models.CharField(null=True, blank=True, max_length=200)
+    dire = models.CharField(null=True, blank=True, max_length=200)
+    mail = models.EmailField(null=True, blank=True, max_length=200)
     paren = models.CharField(max_length=200, choices=PARENTESCO_CHOICES)
     
     def __str__(self):
