@@ -129,10 +129,11 @@ document.addEventListener("DOMContentLoaded", function () {
         subFolderContainer.id = `folder-${node.id}`;
 
         if (
-          userRole === "instructor" || userRole === "admin" &&
-          (!node.children ||
-            node.children.length === 0 ||
-            node.children.every((child) => child.tipo === "documento"))
+          userRole === "instructor" ||
+          (userRole === "admin" &&
+            (!node.children ||
+              node.children.length === 0 ||
+              node.children.every((child) => child.tipo === "documento")))
         ) {
           // Botón de carga (solo para carpetas)
           const uploadLi = document.createElement("li");
@@ -175,6 +176,10 @@ document.addEventListener("DOMContentLoaded", function () {
           png: "bi-image",
           ppt: "bi-file-earmark-easel",
           docx: "bi-file-earmark-richtext",
+          doc: "bi-file-earmark-richtext",
+          dotm: "bi-file-earmark-richtext",
+          dotx: "bi-file-earmark-richtext",
+          docm: "bi-file-earmark-richtext",
           mp3: "bi-file-earmark-music",
           mp4: "bi-file-earmark-play",
           xls: "file-earmark-spreadsheet",
@@ -182,7 +187,7 @@ document.addEventListener("DOMContentLoaded", function () {
           sql: "bi-database",
           zip: "bi-file-earmark-zip-fill",
           rar: "bi-file-earmark-zip-fill",
-          "7z": "bi-file-earmark-zip-fill"
+          "7z": "bi-file-earmark-zip-fill",
         };
         icon.classList.add(
           "bi",
@@ -307,11 +312,15 @@ document.addEventListener("DOMContentLoaded", function () {
       "mp4",
       "xls",
       "docx",
+      "doc",
+      "dotx",
+      "dotm",
+      "docm",
       "psc",
       "sql",
       "zip",
       "rar",
-      "7z"
+      "7z",
     ];
     const maxSize = 15 * 1024 * 1024; // 15 MB
 
@@ -439,17 +448,22 @@ document.addEventListener("DOMContentLoaded", function () {
       "ppt",
       "mp3",
       "mp4",
+      "docx",
+      "doc",
+      "dotx",
+      "dotm",
+      "docm",
       "xls",
       "psc",
       "sql",
       "zip",
       "rar",
-      "7z"
+      "7z",
     ];
     const extension = file.name.split(".").pop().toLowerCase();
     if (!allowedExtensions.includes(extension)) {
       toastError(
-        "Tipo de archivo no permitido. Solo se permiten PDF, Excel o imágenes."
+        "Tipo de archivo no permitido."
       );
       return;
     }
