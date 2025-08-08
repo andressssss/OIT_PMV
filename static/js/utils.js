@@ -597,27 +597,41 @@ export function setSelectValue(selectId, value) {
     return;
   }
 
-  // Si el select tiene una instancia de TomSelect
+  const isMultiple = select.multiple || Array.isArray(value);
+
   if (select.tomselect) {
     const tomSelect = select.tomselect;
-    const optionExists = tomSelect.options[value] !== undefined;
 
-    if (optionExists) {
-      tomSelect.setValue(value, true); // true para trigger del evento 'change'
+    // Asegurarse de que todos los valores existan como opciones
+    if (isMultiple) {
+      value.forEach((val) => {
+        if (!tomSelect.options[val]) {
+          console.warn(
+            `Valor ${val} no encontrado en el select #${selectId} (TomSelect).`
+          );
+        }
+      });
+
+      tomSelect.setValue(value, true);
     } else {
-      console.warn(
-        `Valor ${value} no encontrado en el select #${selectId} (TomSelect).`
-      );
+      if (tomSelect.options[value]) {
+        tomSelect.setValue(value, true);
+      } else {
+        console.warn(
+          `Valor ${value} no encontrado en el select #${selectId} (TomSelect).`
+        );
+      }
     }
   } else {
-    // Fallback para selects normales
-    const option = select.querySelector(`option[value="${value}"]`);
-    if (option) {
-      select.value = value;
-      select.dispatchEvent(new Event("change")); // Para que otros scripts reaccionen
+    if (isMultiple) {
+      for (let option of select.options) {
+        option.selected = value.includes(option.value);
+      }
     } else {
-      console.warn(`Valor ${value} no encontrado en el select #${selectId}.`);
+      select.value = value;
     }
+
+    select.dispatchEvent(new Event("change"));
   }
 }
 
@@ -657,4 +671,20 @@ function extraerMensajesDeError(obj, path = "") {
   }
 
   return mensajes;
+}
+
+export function resetForm(element) {
+  if (element.tagName === "FORM") {
+    element.reset();
+  }
+
+  if (element.tagName === "SELECT" && element.tomselect) {
+    element.tomselect.clear();
+  }
+
+  element.childNodes.forEach((child) => {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      resetForm(child);
+    }
+  });
 }

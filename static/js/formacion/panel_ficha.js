@@ -129,11 +129,10 @@ document.addEventListener("DOMContentLoaded", function () {
         subFolderContainer.id = `folder-${node.id}`;
 
         if (
-          userRole === "instructor" ||
-          (userRole === "admin" &&
-            (!node.children ||
-              node.children.length === 0 ||
-              node.children.every((child) => child.tipo === "documento")))
+          (userRole === "instructor" || userRole === "admin") &&
+          (!node.children ||
+            node.children.length === 0 ||
+            node.children.every((child) => child.tipo === "documento"))
         ) {
           // Botón de carga (solo para carpetas)
           const uploadLi = document.createElement("li");
@@ -462,9 +461,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ];
     const extension = file.name.split(".").pop().toLowerCase();
     if (!allowedExtensions.includes(extension)) {
-      toastError(
-        "Tipo de archivo no permitido."
-      );
+      toastError("Tipo de archivo no permitido.");
       return;
     }
 
