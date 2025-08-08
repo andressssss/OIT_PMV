@@ -1719,115 +1719,13 @@ def crear_programa(request):
 
 @login_required
 def competencias(request):
-    competencia_form = CompetenciaForm()
-    return render(request, 'competencias.html', {
-        'competencia_form': competencia_form
-        })
-
-@login_required
-@bloquear_si_consulta
-def crear_competencia(request):
-    if request.method == 'POST':
-        competencia_form = CompetenciaForm(request.POST)
-        if competencia_form.is_valid():
-            nombre = competencia_form.cleaned_data['nom']
-            if T_compe.objects.filter(nom = nombre).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe una competencia con el nombre indicado'}, status = 400)
-            
-            competencia_form.save()
-            return JsonResponse({'status': 'error', 'message': 'Competencia creada'}, status = 200)
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status =  405)
-
-@login_required
-@bloquear_si_consulta
-def eliminar_competencia(request, competencia_id):
-    if request.method == 'DELETE':
-        try:
-            competencia = get_object_or_404(T_compe, id=competencia_id)
-
-            if T_raps.objects.filter(compe=competencia).exists():
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'No se puede eliminar la competencia porque tiene RAPs asociadas.'
-                }, status=400)
-
-            competencia.delete()
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Competencia eliminada con éxito.'
-            }, status=200)
-
-        except T_compe.DoesNotExist:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Competencia no encontrada.'
-            }, status=404)
-
-    return JsonResponse({
-        'status': 'error',
-        'message': 'Método no permitido.'
-    }, status=405)
-
-
-@require_GET
-@login_required
-def filtrar_competencias(request):
-    programa = request.GET.getlist('programas', [])
-
-    competencias = T_compe.objects.all()
-
-    if programa:
-        competencias = competencias.filter(progra__nom__in = programa)
-
-    data = [
-        {
-            'id': c.id,
-            'nom': c.nom,
-            'progra': [p.nom for p in c.progra.all()]
-        } for c in competencias
-    ]
-    return JsonResponse(data, safe=False)
-
-@login_required
-def obtener_opciones_fases(request):
-    fases = T_fase.objects.filter(t_compe_fase__isnull=False).distinct().values_list('nom')
-    return JsonResponse(list(fases), safe=False)
+    return render(request, 'competencias.html')
 
 @login_required
 def obtener_opciones_programas(request):
     programas = T_progra.objects.filter(t_compe_progra__isnull=False).distinct().values_list('nom')
     return JsonResponse(list(programas), safe=False)
 
-@login_required
-def obtener_competencia(request, competencia_id):
-    competencia = T_compe.objects.filter(pk=competencia_id).first()
-    if competencia:
-        data = {
-            'id': competencia.id,
-            'nom': competencia.nom,
-            'progra': list(competencia.progra.values_list('id', flat=True)),
-        }
-        return JsonResponse(data)
-    return JsonResponse({'status': 'error', 'message': 'Competencia no encontrada'}, status=404)
-
-@login_required
-@bloquear_si_consulta
-def editar_competencia(request, competencia_id):
-    competencia = T_compe.objects.filter(pk = competencia_id).first()
-
-    if request.method == 'POST':
-        form_competencia = CompetenciaForm(request.POST, instance=competencia)
-        
-        if form_competencia.is_valid():
-            nombre = form_competencia.cleaned_data['nom']
-            if T_compe.objects.filter(nom=nombre).exclude(pk=competencia_id).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe una competencia con el nombre indicado'}, status = 400)
-
-            form_competencia.save()
-            return JsonResponse({'status': 'success', 'message': 'Competencia actualizada con exito.'}, status = 200)
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Error al actualizar la competencia', 'errors': form_competencia.errors}, status=400) 
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
 
 ###############################################################################################################
 #        VISTAS RAPS

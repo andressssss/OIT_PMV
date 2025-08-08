@@ -494,6 +494,8 @@ class T_compe(models.Model):
     nom = models.CharField(max_length=200)
     fase = models.ManyToManyField(T_fase, through=T_compe_fase, blank=True)
     progra = models.ManyToManyField(T_progra, through=T_compe_progra)
+    cod = models.IntegerField(default = 0)
+    
 
     def __str__(self):
         return f"{self.nom} - Fase: {self.fase}"
@@ -514,6 +516,7 @@ class T_raps(models.Model):
     compe = models.ForeignKey(T_compe, on_delete=models.CASCADE)
     fase = models.ManyToManyField(T_fase, through=T_raps_fase)
     comple = models.CharField(max_length=100, default='No')
+    cod = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.nom} - Fase: {self.fase}"

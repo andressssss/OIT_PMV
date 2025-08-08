@@ -242,13 +242,7 @@ urlpatterns = [
 
     # Competencias
     path('competencias/', formacion_views.competencias, name='competencias'),
-    path('api/competencia/crear/', formacion_views.crear_competencia, name="api_crear_competencia"),
-    path('api/competencia/eliminar/<int:competencia_id>/', formacion_views.eliminar_competencia, name="api_crear_competencia"),
-    path('api/competencias/filtrar/', formacion_views.filtrar_competencias, name="api_filtrar_competencias"),
-    path('api/competencias/fases/', formacion_views.obtener_opciones_fases, name="api_opciones_fases"),
     path('api/competencias/programas/', formacion_views.obtener_opciones_programas, name="api_opciones_programas"),
-    path('api/competencia/<int:competencia_id>/', formacion_views.obtener_competencia, name="api_obtener_competencia"),
-    path('api/competencia/editar/<int:competencia_id>/', formacion_views.editar_competencia, name="api_editar_competencia"),
 
     # RAPS
     path('raps/', formacion_views.listar_raps, name = 'raps'),
