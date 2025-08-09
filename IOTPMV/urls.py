@@ -174,6 +174,7 @@ urlpatterns = [
     # Tree
     path("api/tree/obtener_carpetas/<int:ficha_id>/", formacion_views.obtener_carpetas, name="api_obtener_carpetas"),
     path("api/tree/cargar_doc/", formacion_views.cargar_documento, name="api_cargar_documento"),
+    path("api/tree/mover_documento/", formacion_views.mover_documento, name="api_mover_documento"),
     path('api/tree/eliminar_documento/<int:documento_id>', formacion_views.eliminar_documento_portafolio_ficha, name='api_eliminar_documento_portafolio_ficha'),
     path('api/tree/obtener_hijos_carpeta/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta, name='api_obtener_hijos_carpeta'),
     path('tree/descargar_portafolio/<int:ficha_id>', formacion_views.descargar_portafolio_zip, name='descargar_portafolio_zip'),

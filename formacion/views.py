@@ -12,6 +12,7 @@ import openpyxl
 import csv
 import random
 import string
+import json
 from commons.permisos import bloquear_si_consulta
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -535,6 +536,52 @@ def cargar_documento(request):
             }, status=200)
         return JsonResponse({'status': 'error', 'message': 'Debe cargar un documento'}, status = 400)
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status = 405)
+  
+@login_required
+def mover_documento(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            document_id = data.get("document_id")
+            target_folder_id = data.get("target_folder_id")
+
+            if not document_id or not target_folder_id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Faltan parámetros: document_id o target_folder_id'
+                }, status=400)
+
+            # Obtener el documento y la carpeta destino
+            documento_node = get_object_or_404(T_DocumentFolder, id=document_id, tipo="documento")
+            carpeta_destino = get_object_or_404(T_DocumentFolder, id=target_folder_id, tipo="carpeta")
+
+            # Evitar mover dentro de sí mismo o a un documento
+            if documento_node.id == carpeta_destino.id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No se puede mover un documento dentro de sí mismo.'
+                }, status=400)
+
+            # Actualizar la carpeta padre
+            documento_node.parent = carpeta_destino
+            documento_node.save()
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Documento movido con éxito',
+                'document': {
+                    'id': documento_node.id,
+                    'name': documento_node.name,
+                    'folder_id': carpeta_destino.id
+                }
+            }, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Formato JSON inválido'}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
 
 @login_required
 def eliminar_documento_portafolio_ficha(request, documento_id):

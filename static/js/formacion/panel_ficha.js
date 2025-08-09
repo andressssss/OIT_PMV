@@ -223,6 +223,8 @@ document.addEventListener("DOMContentLoaded", function () {
           });
 
           li.dataset.folderId = node.parent_id;
+          li.dataset.documentId = node.id;
+          li.draggable = true;
           li.appendChild(deleteBtn);
         }
       }
@@ -233,51 +235,93 @@ document.addEventListener("DOMContentLoaded", function () {
     return ul;
   }
 
+  let treeListenersInitialized = false;
+
   // Agregar event listeners después de renderizar el árbol
   function addEventListeners() {
-    document
-      .getElementById("folderTree")
-      .addEventListener("click", async function (e) {
-        const target = e.target.closest(
-          ".folder-item > i, .folder-item > span"
-        );
-        if (target) {
-          const folderId = target.dataset.folderId;
-          const icon =
-            target.tagName === "I" ? target : target.previousElementSibling;
-          toggleFolder(folderId, icon);
-        }
+    if (treeListenersInitialized) return;
+    const folderTree = document.getElementById("folderTree");
+    if (!folderTree) return;
 
-        const target2 = e.target.closest(".bi-trash");
-        if (target2) {
-          const li = target2.closest("li");
-          const docId =
-            li.querySelector("[data-document-id]")?.dataset.documentId;
-          const folderId = li.dataset.folderId;
-          if (!docId) return;
+    // Click delegado: toggle, borrar, abrir modal upload
+    folderTree.addEventListener("click", async (e) => {
+      // Toggle carpetas (i o span dentro de .folder-item)
+      const target = e.target.closest(".folder-item > i, .folder-item > span");
+      if (target) {
+        const folderId = target.dataset.folderId;
+        const icon =
+          target.tagName === "I" ? target : target.previousElementSibling;
+        toggleFolder(folderId, icon);
+        return;
+      }
 
-          const confirmed = await confirmDeletion("¿Eliminar este documento?");
-          if (confirmed) deleteFile(docId, folderId);
-        }
+      // Botón eliminar documento
+      const trash = e.target.closest(".bi-trash");
+      if (trash) {
+        const li = trash.closest("li");
+        const docId = li?.dataset.documentId;
+        const folderId = li?.dataset.folderId;
+        if (!docId) return;
+        const confirmed = await confirmDeletion("¿Eliminar este documento?");
+        if (confirmed) deleteFile(docId, folderId);
+        return;
+      }
 
-        const target3 = e.target.closest(".upload-item");
-        if (target3) {
-          const folderId = target3.dataset.folderId;
-          openUploadModal(folderId);
-        }
-      });
+      // Cargar documento (upload-item)
+      const uploadItem = e.target.closest(".upload-item");
+      if (uploadItem) {
+        const folderId = uploadItem.dataset.folderId;
+        openUploadModal(folderId);
+        return;
+      }
+    });
 
-    document
-      .querySelectorAll("[data-folder-id][data-droppable='true']")
-      .forEach((folder) => {
-        folder.addEventListener("dragover", handleDragOver);
-        folder.addEventListener("dragleave", handleDragLeave);
-        folder.addEventListener("drop", handleDrop);
-      });
+    // Dragover delegado
+    folderTree.addEventListener("dragover", (e) => {
+      const folder = e.target.closest(
+        "[data-folder-id][data-droppable='true']"
+      );
+      if (folder) {
+        e.preventDefault(); // necesario para permitir drop
+        folder.classList.add("dragover-highlight");
+      }
+    });
 
-    document
-      .getElementById("uploadButton")
-      .addEventListener("click", uploadFile);
+    // Dragleave delegado
+    folderTree.addEventListener("dragleave", (e) => {
+      const folder = e.target.closest(
+        "[data-folder-id][data-droppable='true']"
+      );
+      if (folder) folder.classList.remove("dragover-highlight");
+    });
+
+    // Drop delegado
+    folderTree.addEventListener("drop", async (e) => {
+      const folder = e.target.closest(
+        "[data-folder-id][data-droppable='true']"
+      );
+      if (!folder) return;
+      e.preventDefault();
+      folder.classList.remove("dragover-highlight");
+      await handleDropOnFolder(folder, e);
+    });
+
+    // Dragstart delegado (se propaga)
+    folderTree.addEventListener("dragstart", (e) => {
+      const docItem = e.target.closest("li[data-document-id]");
+      if (!docItem) return;
+      e.dataTransfer.setData("type", "document");
+      e.dataTransfer.setData("documentId", docItem.dataset.documentId);
+      e.dataTransfer.setData("sourceFolderId", docItem.dataset.folderId);
+      // Opcional: indicar el efecto
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    // Botón subir (fuera del árbol)
+    const uploadButton = document.getElementById("uploadButton");
+    if (uploadButton) uploadButton.addEventListener("click", uploadFile);
+
+    treeListenersInitialized = true;
   }
 
   function handleDragOver(event) {
@@ -288,19 +332,64 @@ document.addEventListener("DOMContentLoaded", function () {
   function handleDragLeave(event) {
     event.currentTarget.classList.remove("dragover-highlight");
   }
-
-  async function handleDrop(event) {
-    event.preventDefault();
-    const folderElement = event.currentTarget;
-    folderElement.classList.remove("dragover-highlight");
-
+  async function handleDropOnFolder(folderElement, e) {
     const folderId = folderElement.dataset.folderId;
-    const files = event.dataTransfer.files;
+    const type = e.dataTransfer.getData("type");
 
-    if (files.length === 0) return;
+    // --- 1) Mover documento existente ---
+    if (type === "document") {
+      const documentId = e.dataTransfer.getData("documentId");
+      const sourceFolderId = e.dataTransfer.getData("sourceFolderId");
+      if (!documentId) return;
+      if (String(folderId) === String(sourceFolderId)) return; // mismo lugar: no hacer nada
+
+      const sourceFolderEl = document.querySelector(
+        `[data-folder-id="${sourceFolderId}"]`
+      );
+      const targetFolderEl = folderElement;
+
+      targetFolderEl.classList.add("loading");
+      if (sourceFolderEl) sourceFolderEl.classList.add("loading");
+
+      try {
+        const resp = await fetch("/api/tree/mover_documento/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          body: JSON.stringify({
+            document_id: documentId,
+            target_folder_id: folderId,
+          }),
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) {
+          toastError(data.message || "Error al mover el documento.");
+          return;
+        }
+
+        toastSuccess(data.message || "Documento movido con éxito.");
+        // Recargar carpeta origen y destino
+        await actualizarCarpeta(sourceFolderId);
+        await actualizarCarpeta(folderId);
+      } catch (err) {
+        console.error("Error moviendo documento:", err);
+        toastError("Error al mover el documento.");
+      } finally {
+        targetFolderEl.classList.remove("loading");
+        if (sourceFolderEl) sourceFolderEl.classList.remove("loading");
+      }
+      return;
+    }
+
+    // --- 2) Subir archivos arrastrados (como ya tenías) ---
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
 
     const allowedExtensions = [
-      "pdf",
+      /* idem a tu lista */ "pdf",
       "xlsx",
       "csv",
       "jpg",
@@ -321,10 +410,9 @@ document.addEventListener("DOMContentLoaded", function () {
       "rar",
       "7z",
     ];
-    const maxSize = 15 * 1024 * 1024; // 15 MB
 
-    const formData = new FormData();
     let invalidFiles = [];
+    const formData = new FormData();
 
     for (let file of files) {
       const extension = file.name.split(".").pop().toLowerCase();
@@ -332,22 +420,28 @@ document.addEventListener("DOMContentLoaded", function () {
         invalidFiles.push(`${file.name}: tipo no permitido`);
         continue;
       }
+      const maxSize = ["zip", "rar", "7z"].includes(extension)
+        ? 100 * 1024 * 1024
+        : 15 * 1024 * 1024;
       if (file.size > maxSize) {
-        invalidFiles.push(`${file.name}: excede tamaño`);
+        invalidFiles.push(
+          `${file.name}: excede tamaño máximo (${
+            maxSize === 100 * 1024 * 1024 ? "100MB" : "15MB"
+          })`
+        );
         continue;
       }
       formData.append("documentos", file);
     }
 
-    if (invalidFiles.length > 0) {
+    if (invalidFiles.length) {
       toastError("Errores al subir:\n" + invalidFiles.join("\n"));
       return;
     }
 
     formData.append("folder_id", folderId);
-
-    // Inhabilitar y aplicar efecto visual
-    folderElement.classList.add("folder-disabled", "folder-glow");
+    // efecto visual
+    folderElement.classList.add("loading");
 
     try {
       const response = await fetch(
@@ -358,31 +452,25 @@ document.addEventListener("DOMContentLoaded", function () {
           headers: { "X-CSRFToken": csrfToken },
         }
       );
-
       const responseData = await response.json();
-
       if (!response.ok) {
         toastError(responseData.message || "Error desconocido");
-        console.log(responseData.message);
         return;
       }
-
       if (response.status === 201) {
         toastSuccess(responseData.message || "Documentos subidos con éxito.");
       } else if (response.status === 206) {
         toastSuccess(responseData.message || "Algunos documentos se subieron.");
         toastError(responseData.errores.join("\n"));
       } else {
-        throw new Error(responseData.message || "Error desconocido");
+        toastSuccess(responseData.message || "Operación finalizada.");
       }
-
-      await actualizarCarpeta(folderId); // Solo recarga esa carpeta
+      await actualizarCarpeta(folderId);
     } catch (err) {
       console.error("Error en la subida por drag & drop:", err);
       toastError("Error al subir los documentos: " + err.message);
     } finally {
-      // Quitar efecto y habilitar nuevamente
-      folderElement.classList.remove("folder-disabled", "folder-glow");
+      folderElement.classList.remove("loading");
     }
   }
 
@@ -430,13 +518,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const uploadModal = document.getElementById("uploadModal");
     const inputs = uploadModal.querySelectorAll("input, select, button");
 
-    const file = fileInputElement.files[0];
-    if (!file) {
-      toastError("Seleccione un archivo para subir.");
+    const files = fileInputElement.files;
+    if (!files.length) {
+      toastError("Seleccione al menos un archivo para subir.");
       return;
     }
 
-    // Validación de tipo de archivo
     const allowedExtensions = [
       "pdf",
       "xlsx",
@@ -459,45 +546,57 @@ document.addEventListener("DOMContentLoaded", function () {
       "rar",
       "7z",
     ];
-    const extension = file.name.split(".").pop().toLowerCase();
-    if (!allowedExtensions.includes(extension)) {
-      toastError("Tipo de archivo no permitido.");
-      return;
-    }
-
-    // Validación de tamaño
-    const maxSize = 15 * 1024 * 1024; // 15MB
-    if (file.size > maxSize) {
-      toastError("El archivo supera el tamaño máximo permitido (15 MB).");
-      return;
-    }
 
     inputs.forEach((el) => (el.disabled = true));
     const originalBtnContent = btnElement.innerHTML;
     showSpinner(btnElement);
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder_id", folderId);
-
     try {
-      const response = await fetch("/api/tree/cargar_doc/", {
-        method: "POST",
-        headers: { "X-CSRFToken": csrfToken },
-        body: formData,
-      });
+      for (const file of files) {
+        const extension = file.name.split(".").pop().toLowerCase();
+        if (!allowedExtensions.includes(extension)) {
+          toastError(
+            `El archivo "${file.name}" tiene una extension no permitida.`
+          );
+          continue;
+        }
 
-      if (response.ok) {
-        toastSuccess("Documento subido con éxito.");
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById("uploadModal")
-        );
-        modal.hide();
-        fileInputElement.value = "";
-        await actualizarCarpeta(folderId);
-      } else {
-        toastError("Error al subir el documento.");
+        const maxSize = ["zip", "rar"].includes(extension)
+          ? 100 * 1024 * 1024
+          : 15 * 1024 * 1024;
+
+        if (file.size > maxSize) {
+          toastError(
+            `El archivo "${file.name}" supera el tamaño máximo permitido (${
+              maxSize === 100 * 1024 * 1024 ? "100MB" : "15MB"
+            }).`
+          );
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder_id", folderId);
+
+        const response = await fetch("/api/tree/cargar_doc/", {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          toastError(`Error al subir el archivo "${file.name}".`);
+          continue;
+        }
+        toastSuccess(`Carga completada para el archivo "${file.name}".`);
       }
+
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("uploadModal")
+      );
+      modal.hide();
+      fileInputElement.value = "";
+      await actualizarCarpeta(folderId);
     } catch (error) {
       console.error("Error al subir el archivo:", error);
       toastError("Ocurrió un error inesperado.");
@@ -566,7 +665,7 @@ document.addEventListener("DOMContentLoaded", function () {
       uploadLi.appendChild(uploadSpan);
       subFolderContainer.appendChild(uploadLi);
 
-      // Renderizar hijos si hay
+      // Renderizar hijos
       if (data.length > 0) {
         const hijos = renderTree(data);
         if (hijos) {
