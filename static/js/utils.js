@@ -146,7 +146,7 @@ export function confirmAction({
 function showToast(
   message,
   backgroundColor = "#333",
-  duration = 3000,
+  duration = 5000,
   position = "right",
   gravity = "top"
 ) {
