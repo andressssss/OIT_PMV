@@ -384,14 +384,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // --- 2) Subir archivos arrastrados (como ya tenías) ---
+    // --- 2) Subir archivos arrastrados ---
     const files = e.dataTransfer.files;
     if (!files || files.length === 0) return;
 
     const allowedExtensions = [
-      /* idem a tu lista */ "pdf",
-      "xlsx",
-      "csv",
+      "pdf",
       "jpg",
       "jpeg",
       "png",
@@ -399,77 +397,163 @@ document.addEventListener("DOMContentLoaded", function () {
       "mp3",
       "mp4",
       "xls",
-      "docx",
-      "doc",
-      "dotx",
-      "dotm",
-      "docm",
       "psc",
       "sql",
       "zip",
       "rar",
       "7z",
+      "docx",
+      "doc",
+      "dotx",
+      "dotm",
+      "docm",
+      "dot",
+      "htm",
+      "html",
+      "mht",
+      "mhtml",
+      "xlt",
+      "xltx",
+      "xltm",
+      "xml",
+      "xlsb",
+      "xlsx",
+      "csv",
+      "pptm",
+      "pps",
+      "ppsx",
+      "ppsm",
+      "pot",
+      "potx",
+      "potm",
+      "sldx",
+      "sldm",
+      "pst",
+      "ost",
+      "msg",
+      "eml",
+      "mdb",
+      "accdb",
+      "accde",
+      "accdt",
+      "accdr",
+      "one",
+      "pub",
+      "vsd",
+      "vsdx",
+      "xps",
     ];
 
-    let invalidFiles = [];
-    const formData = new FormData();
-
+    const validFiles = [];
     for (let file of files) {
       const extension = file.name.split(".").pop().toLowerCase();
+
       if (!allowedExtensions.includes(extension)) {
-        invalidFiles.push(`${file.name}: tipo no permitido`);
-        continue;
-      }
-      const maxSize = ["zip", "rar", "7z"].includes(extension)
-        ? 100 * 1024 * 1024
-        : 15 * 1024 * 1024;
-      if (file.size > maxSize) {
-        invalidFiles.push(
-          `${file.name}: excede tamaño máximo (${
-            maxSize === 100 * 1024 * 1024 ? "100MB" : "15MB"
-          })`
+        toastError(
+          `El archivo "${file.name}" tiene una extensión no permitida.`
         );
         continue;
       }
-      formData.append("documentos", file);
+
+      const maxSize = ["zip", "rar", "7z"].includes(extension)
+        ? 200 * 1024 * 1024
+        : 15 * 1024 * 1024;
+
+      if (file.size > maxSize) {
+        toastError(
+          `El archivo "${file.name}" supera el tamaño máximo permitido (${
+            maxSize === 200 * 1024 * 1024 ? "200MB" : "15MB"
+          }).`
+        );
+        continue;
+      }
+
+      validFiles.push(file);
     }
 
-    if (invalidFiles.length) {
-      toastError("Errores al subir:\n" + invalidFiles.join("\n"));
-      return;
-    }
+    if (validFiles.length === 0) return;
 
-    formData.append("folder_id", folderId);
+    const modalDndEl = document.getElementById("uploadModalDnd");
+    const modalDnd = new bootstrap.Modal(modalDndEl);
+    modalDnd.show();
+
+    const progressContainer =
+      document.getElementById("uploadProgressListDnd") ||
+      (() => {
+        const div = document.createElement("div");
+        div.id = "uploadProgressListDnd";
+        div.style.marginTop = "10px";
+        document.body.appendChild(div);
+        return div;
+      })();
+    progressContainer.innerHTML = "";
+
     // efecto visual
     folderElement.classList.add("loading");
 
     try {
-      const response = await fetch(
-        `/api/formacion/fichas/cargar_documentos_ficha/`,
-        {
-          method: "POST",
-          body: formData,
-          headers: { "X-CSRFToken": csrfToken },
-        }
-      );
-      const responseData = await response.json();
-      if (!response.ok) {
-        toastError(responseData.message || "Error desconocido");
-        return;
-      }
-      if (response.status === 201) {
-        toastSuccess(responseData.message || "Documentos subidos con éxito.");
-      } else if (response.status === 206) {
-        toastSuccess(responseData.message || "Algunos documentos se subieron.");
-        toastError(responseData.errores.join("\n"));
-      } else {
-        toastSuccess(responseData.message || "Operación finalizada.");
-      }
+      const uploadTasks = validFiles.map((file) => {
+        const progressItem = document.createElement("div");
+        progressItem.classList.add("mb-2");
+        progressItem.innerHTML = `
+          <strong>${file.name}</strong>
+          <div class="progress" style="height: 20px;">
+            <div class="progress-bar" style="width: 0%">0%</div>
+          </div>
+        `;
+
+        progressContainer.appendChild(progressItem);
+
+        const progressBar = progressItem.querySelector(".progress-bar");
+
+        return new Promise((resolve) => {
+          const formData = new FormData();
+          formData.append("documento", file);
+          formData.append("folder_id", folderId);
+
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", `/api/formacion/fichas/cargar_documentos_ficha/`);
+          xhr.setRequestHeader("X-CSRFToken", csrfToken);
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              progressBar.style.width = `${percent}%`;
+              progressBar.textContent = `${percent}%`;
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              progressBar.classList.add("bg-success");
+              progressBar.textContent = "Completado";
+              toastSuccess(`Carga completada para "${file.name}".`);
+            } else {
+              progressBar.classList.add("bg-danger");
+              progressBar.textContent = "Error";
+              toastError(`Error al subir "${file.name}".`);
+            }
+            resolve();
+          };
+
+          xhr.onerror = () => {
+            progressBar.classList.add("bg-danger");
+            progressBar.textContent = "Error conexión ❌";
+            toastError(`Error de conexión para "${file.name}".`);
+            resolve();
+          };
+
+          xhr.send(formData);
+        });
+      });
+
+      await Promise.all(uploadTasks);
       await actualizarCarpeta(folderId);
     } catch (err) {
       console.error("Error en la subida por drag & drop:", err);
       toastError("Error al subir los documentos: " + err.message);
     } finally {
+      modalDnd.hide();
       folderElement.classList.remove("loading");
     }
   }
@@ -518,7 +602,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const uploadModal = document.getElementById("uploadModal");
     const inputs = uploadModal.querySelectorAll("input, select, button");
 
-    const files = fileInputElement.files;
+    const files = Array.from(fileInputElement.files);
     if (!files.length) {
       toastError("Seleccione al menos un archivo para subir.");
       return;
@@ -526,76 +610,166 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const allowedExtensions = [
       "pdf",
-      "xlsx",
-      "csv",
       "jpg",
       "jpeg",
       "png",
       "ppt",
       "mp3",
       "mp4",
-      "docx",
-      "doc",
-      "dotx",
-      "dotm",
-      "docm",
       "xls",
       "psc",
       "sql",
       "zip",
       "rar",
       "7z",
+      "docx",
+      "doc",
+      "dotx",
+      "dotm",
+      "docm",
+      "dot",
+      "htm",
+      "html",
+      "mht",
+      "mhtml",
+      "xlt",
+      "xltx",
+      "xltm",
+      "xml",
+      "xlsb",
+      "xlsx",
+      "csv",
+      "pptm",
+      "pps",
+      "ppsx",
+      "ppsm",
+      "pot",
+      "potx",
+      "potm",
+      "sldx",
+      "sldm",
+      "pst",
+      "ost",
+      "msg",
+      "eml",
+      "mdb",
+      "accdb",
+      "accde",
+      "accdt",
+      "accdr",
+      "one",
+      "pub",
+      "vsd",
+      "vsdx",
+      "xps",
     ];
+
+    const progressContainer =
+      document.getElementById("uploadProgressList") ||
+      (() => {
+        const div = document.createElement("div");
+        div.id = "uploadProgressList";
+        div.style.marginTop = "10px";
+        uploadModal.querySelector(".modal-body").appendChild(div);
+        return div;
+      })();
+
+    progressContainer.innerHTML = "";
 
     inputs.forEach((el) => (el.disabled = true));
     const originalBtnContent = btnElement.innerHTML;
     showSpinner(btnElement);
 
     try {
+      const uploadTasks = [];
+
       for (const file of files) {
         const extension = file.name.split(".").pop().toLowerCase();
         if (!allowedExtensions.includes(extension)) {
           toastError(
-            `El archivo "${file.name}" tiene una extension no permitida.`
+            `El archivo "${file.name}" tiene una extensión no permitida.`
           );
           continue;
         }
 
         const maxSize = ["zip", "rar"].includes(extension)
-          ? 100 * 1024 * 1024
+          ? 200 * 1024 * 1024
           : 15 * 1024 * 1024;
 
         if (file.size > maxSize) {
           toastError(
             `El archivo "${file.name}" supera el tamaño máximo permitido (${
-              maxSize === 100 * 1024 * 1024 ? "100MB" : "15MB"
+              maxSize === 200 * 1024 * 1024 ? "200MB" : "15MB"
             }).`
           );
           continue;
         }
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder_id", folderId);
+        const progressItem = document.createElement("div");
+        progressItem.classList.add("mb-2");
+        progressItem.innerHTML = `
+        <strong>${file.name}</strong>
+        <div class="progress" style="height: 20px;">
+          <div class="progress-bar" style="width: 0%">0%</div>
+        </div>
+      `;
+        progressContainer.appendChild(progressItem);
+        const progressBar = progressItem.querySelector(".progress-bar");
 
-        const response = await fetch("/api/tree/cargar_doc/", {
-          method: "POST",
-          headers: { "X-CSRFToken": csrfToken },
-          body: formData,
+        const uploadPromise = new Promise((resolve) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("folder_id", folderId);
+
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "/api/tree/cargar_doc/");
+          xhr.setRequestHeader("X-CSRFToken", csrfToken);
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              progressBar.style.width = `${percent}%`;
+              progressBar.textContent = `${percent}%`;
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              progressBar.classList.add("bg-success");
+              progressBar.textContent = "Completado";
+              toastSuccess(`Carga completada para "${file.name}".`);
+            } else {
+              progressBar.classList.add("bg-danger");
+              progressBar.textContent = "Error";
+              toastError(`Error al subir "${file.name}".`);
+            }
+            resolve();
+          };
+
+          xhr.onerror = () => {
+            progressBar.classList.add("bg-danger");
+            progressBar.textContent = "Error de conexión ❌";
+            toastError(`Error de conexión para "${file.name}".`);
+            resolve();
+          };
+
+          xhr.send(formData);
         });
 
-        if (!response.ok) {
-          toastError(`Error al subir el archivo "${file.name}".`);
-          continue;
-        }
-        toastSuccess(`Carga completada para el archivo "${file.name}".`);
+        uploadTasks.push(uploadPromise);
       }
 
-      const modal = bootstrap.Modal.getInstance(
-        document.getElementById("uploadModal")
-      );
-      modal.hide();
-      fileInputElement.value = "";
+      await Promise.all(uploadTasks);
+
+      setTimeout(() => {
+        progressContainer.innerHTML = "";
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("uploadModal")
+        );
+        modal.hide();
+        fileInputElement.value = "";
+      }, 1500);
+
       await actualizarCarpeta(folderId);
     } catch (error) {
       console.error("Error al subir el archivo:", error);
