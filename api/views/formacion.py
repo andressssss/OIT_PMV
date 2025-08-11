@@ -86,34 +86,32 @@ class CompetenciasViewSet(ModelViewSet):
         elif self.action in ['create', 'update', 'partial_update']:
             return CompetenciaWriteSerializer
         return CompetenciaSerializer
-      
+
     def destroy(self, request, *args, **kwargs):
         competencia = self.get_object()
-        
+
         if T_raps.objects.filter(compe=competencia).exists():
-          return Response(
-            {"detail": "No se puede eliminar. Hay RAPS asociados a esta competencia."},
-            status = status.HTTP_400_BAD_REQUEST
-          )
-          
+            return Response(
+                {"detail": "No se puede eliminar. Hay RAPS asociados a esta competencia."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         super().destroy(request, *args, **kwargs)
         return Response(
-          {"message": "Competencia eliminada correctamente"},
-          status = status.HTTP_200_OK
+            {"message": "Competencia eliminada correctamente"},
+            status=status.HTTP_200_OK
         )
 
-  
     @action(detail=False, methods=['get'], url_path='tabla')
     def tabla(self, request):
-      programas = request.GET.getlist('programas', [])
-      qs = self.get_queryset()
-      
-      if programas:
-        qs = qs.filter(progra__nom__in=programas)
-        
-      serializer = self.get_serializer(qs, many=True)
-      return Response(serializer.data)
+        programas = request.GET.getlist('programas', [])
+        qs = self.get_queryset()
 
+        if programas:
+            qs = qs.filter(progra__nom__in=programas)
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
 
 class FichasViewSet(ModelViewSet):
@@ -429,80 +427,122 @@ class FichasViewSet(ModelViewSet):
     @action(detail=False, methods=['post'], url_path='cargar_documentos_ficha', parser_classes=[MultiPartParser])
     def cargar_documentos_ficha(self, request):
         folder_id = request.data.get("folder_id")
-        archivos = request.FILES.getlist("documentos")
+        archivo = request.FILES.get("documento")
 
-        if not folder_id or not archivos:
+        if not folder_id or not archivo:
             return Response({"message": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             folder = get_object_or_404(T_DocumentFolder, id=folder_id)
 
-            errores = []
-            documentos_creados = []
-            max_size = 15 * 1024 * 1024  # 15 MB
-            extensiones_permitidas = ['pdf', 'xlsx', 'csv', 'jpg', 'jpeg',
-                                      'png', 'ppt', 'mp3', 'mp4', 'xls', 'docx', 'psc', 'sql', 'zip', 'rar', '7z']
+            extensiones_permitidas = [
+                "pdf",
+                "jpg",
+                "jpeg",
+                "png",
+                "ppt",
+                "mp3",
+                "mp4",
+                "xls",
+                "psc",
+                "sql",
+                "zip",
+                "rar",
+                "7z",
+                "docx",
+                "doc",
+                "dotx",
+                "dotm",
+                "docm",
+                "dot",
+                "htm",
+                "html",
+                "mht",
+                "mhtml",
+                "xlt",
+                "xltx",
+                "xltm",
+                "xml",
+                "xlsb",
+                "xlsx",
+                "csv",
+                "pptm",
+                "pps",
+                "ppsx",
+                "ppsm",
+                "pot",
+                "potx",
+                "potm",
+                "sldx",
+                "sldm",
+                "pst",
+                "ost",
+                "msg",
+                "eml",
+                "mdb",
+                "accdb",
+                "accde",
+                "accdt",
+                "accdr",
+                "one",
+                "pub",
+                "vsd",
+                "vsdx",
+                "xps",
+            ]
 
-            for archivo in archivos:
-                extension = archivo.name.split('.')[-1].lower()
+            extension = archivo.name.split('.')[-1].lower()
 
-                if extension not in extensiones_permitidas:
-                    errores.append(f"{archivo.name}: tipo no permitido")
-                    continue
+            if extension not in extensiones_permitidas:
+                return Response({
+                    "message": f"{archivo.name}: tipo no permitido"
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-                if archivo.size > max_size:
-                    errores.append(f"{archivo.name}: excede tamaño 15mb")
-                    continue
+            if extension in ['zip', 'rar', '7z']:
+                max_size = 200 * 1024 * 1024  # 200MB
+            else:
+                max_size = 15 * 1024 * 1024  # 15MB
 
-                ruta = f'documentos/fichas/portafolio/{folder.ficha.id}/{archivo.name}'
-                ruta_guardada = default_storage.save(ruta, archivo)
+            if archivo.size > max_size:
+                return Response({
+                    "message": f"{archivo.name}: excede tamaño máximo "
+                    f"({'200MB' if max_size > 15*1024*1024 else '15MB'})"
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-                new_docu = T_docu.objects.create(
-                    nom=archivo.name,
-                    tipo=extension,
-                    tama=f"{archivo.size // 1020} KB",
-                    archi=ruta_guardada,
-                    priva="No",
-                    esta="Activo"
-                )
+            ruta = f'documentos/fichas/portafolio/{folder.ficha.id}/{archivo.name}'
+            ruta_guardada = default_storage.save(ruta, archivo)
 
-                document_node = T_DocumentFolder.objects.create(
-                    name=archivo.name,
-                    parent=folder,
-                    tipo="documento",
-                    ficha=folder.ficha,
-                    documento=new_docu
-                )
+            new_docu = T_docu.objects.create(
+                nom=archivo.name,
+                tipo=extension,
+                tama=f"{archivo.size // 1020} KB",
+                archi=ruta_guardada,
+                priva="No",
+                esta="Activo"
+            )
 
-                documentos_creados.append({
+            document_node = T_DocumentFolder.objects.create(
+                name=archivo.name,
+                parent=folder,
+                tipo="documento",
+                ficha=folder.ficha,
+                documento=new_docu
+            )
+
+            return Response({
+                "message": "Documento cargado con éxito",
+                "documento": {
                     "id": document_node.id,
                     "name": document_node.name,
                     "url": new_docu.archi.url,
                     "folder_id": folder.id,
                     "tipo": "documento"
-                })
-
-            if errores and documentos_creados:
-                return Response({
-                    "message": "Carga parcial de los documentos",
-                    "documentos": documentos_creados,
-                    "errores": errores
-                }, status=status.HTTP_206_PARTIAL_CONTENT)
-
-            if errores and not documentos_creados:
-                return Response({
-                    "message": "No se cargo ningún documento",
-                    "errores": errores
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            return Response({
-                "message": "Documentos cargados con éxito",
-                "documentos": documentos_creados
+                }
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({
-                "message": "Error inesperado al cargar los documentos",
+                "message": "Error inesperado al cargar el documento",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
