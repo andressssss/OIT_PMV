@@ -548,12 +548,12 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       await Promise.all(uploadTasks);
+      modalDnd.hide();
       await actualizarCarpeta(folderId);
     } catch (err) {
       console.error("Error en la subida por drag & drop:", err);
       toastError("Error al subir los documentos: " + err.message);
     } finally {
-      modalDnd.hide();
       folderElement.classList.remove("loading");
     }
   }
