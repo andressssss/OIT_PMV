@@ -131,8 +131,13 @@ class FichaEditarSerializer(FichaSerializer):
         return instance
 
 
-# Serializer base compartido entre Create y Update
-class BaseRapsSerializer(serializers.ModelSerializer):
+class RapSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = T_raps
+        fields = ['id', 'nom']
+
+
+class RapWriteSerializer(RapSerializer):
     compe = serializers.PrimaryKeyRelatedField(
         queryset=T_compe.objects.all()
     )
@@ -140,9 +145,8 @@ class BaseRapsSerializer(serializers.ModelSerializer):
         queryset=T_fase.objects.all(), many=True
     )
 
-    class Meta:
-        model = T_raps
-        fields = ['nom', 'compe', 'fase']
+    class Meta(CompetenciaSerializer.Meta):
+        fields = CompetenciaSerializer.Meta.fields + ['compe', 'fase']
 
     def validate_nom(self, value):
         qs = T_raps.objects.filter(nom=value)
@@ -175,10 +179,8 @@ class BaseRapsSerializer(serializers.ModelSerializer):
                 f"[PATCH RAP] Fases asociadas: {[f.id for f in instance.fase.all()]}")
         return instance
 
-# Serializer para lectura (GET)
 
-
-class RAPSerializer(serializers.ModelSerializer):
+class RapDetalleSerializer(RapSerializer):
     compe = serializers.PrimaryKeyRelatedField(queryset=T_compe.objects.all())
     programas = serializers.SerializerMethodField()
     fase = serializers.PrimaryKeyRelatedField(
@@ -186,13 +188,25 @@ class RAPSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    class Meta:
+    class Meta(RapSerializer.Meta):
         model = T_raps
-        fields = ['id', 'nom', 'compe', 'programas', 'fase']
+        fields = RapSerializer.Meta.fields + ['compe', 'programas', 'fase']
 
     def get_programas(self, obj):
-        programas = obj.compe.progra.all()
-        return [{'id': p.id, 'nom': p.nom} for p in programas]
+        return list(obj.progra.values_list('id', flat=True))
+
+
+class RapTablaSerializer(RapSerializer):
+    compe = serializers.CharField(source="compe.nom", read_only=True)
+    programas = serializers.SerializerMethodField()
+    fase = serializers.CharField(source="fase.first.nom", read_only=True)
+
+    class Meta(RapSerializer.Meta):
+        model = T_raps
+        fields = RapSerializer.Meta.fields + ['compe', 'programas', 'fase']
+
+    def get_programas(self, obj):
+        return [p.nom for p in obj.compe.progra.all()]
 
 
 class ProgramaSerializer(serializers.ModelSerializer):

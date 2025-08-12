@@ -11,22 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ordering: false,
     });
 
-    document.querySelectorAll('.tomselect').forEach(function(select) {
-        new TomSelect(select, {
-            create: false,
-            persist: false,
-            maxItems: 1,
-        });
-    });
-    
-    document.querySelectorAll('.tomselectm').forEach(function(select) {
-        new TomSelect(select, {
-            create: false,
-            persist: false,
-            plugins: ['remove_button']
-        });
-    });
-    
     cargarDatosTabla();
 
     async function cargarDatosTabla(){
@@ -59,10 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.addEventListener('change', aplicarFiltros);
             })
 
-            const response = await fetch(`/api/raps/filtrar/`);
+            const response = await fetch(`/api/formacion/raps/tabla/`);
             const data = await response.json();
             renderTabla(data);
-
         } catch (error) {
             toastError(error)
         }
@@ -74,8 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach(el => {
             table.row.add([
                 el.nom,
-                el.competencia,
-                el.programa,
+                el.compe,
+                el.programas,
                 el.fase,
                 `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${el.id}"
