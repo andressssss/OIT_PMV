@@ -146,7 +146,7 @@ class RapWriteSerializer(RapSerializer):
     )
 
     class Meta(CompetenciaSerializer.Meta):
-        fields = CompetenciaSerializer.Meta.fields + ['compe', 'fase']
+        fields = CompetenciaSerializer.Meta.fields + ['cod', 'compe', 'fase']
 
     def validate_nom(self, value):
         qs = T_raps.objects.filter(nom=value)
@@ -166,17 +166,14 @@ class RapWriteSerializer(RapSerializer):
         return rap
 
     def update(self, instance, validated_data):
-        fases = validated_data.pop('fase', None)
+        fases_ids = validated_data.pop('fase', [])
 
-        instance.nom = validated_data.get('nom', instance.nom)
-        instance.compe = validated_data.get('compe', instance.compe)
+        for attr, value in validated_data.items():
+          setattr(instance, attr, value)
         instance.save()
 
-        if fases is not None:
-            logger.warning(f"[PATCH RAP] Fases a asociar: {fases}")
-            instance.fase.set(fases)
-            logger.warning(
-                f"[PATCH RAP] Fases asociadas: {[f.id for f in instance.fase.all()]}")
+        if fases_ids is not None:
+            instance.fase.set(fases_ids)
         return instance
 
 
@@ -190,26 +187,36 @@ class RapDetalleSerializer(RapSerializer):
 
     class Meta(RapSerializer.Meta):
         model = T_raps
-        fields = RapSerializer.Meta.fields + ['compe', 'programas', 'fase']
+        fields = RapSerializer.Meta.fields + \
+            ['cod', 'compe', 'programas', 'fase']
 
     def get_programas(self, obj):
-        return list(obj.progra.values_list('id', flat=True))
+        return list(obj.compe.progra.values_list('id', flat=True))
 
 
 class RapTablaSerializer(RapSerializer):
     compe = serializers.CharField(source="compe.nom", read_only=True)
     programas = serializers.SerializerMethodField()
-    fase = serializers.CharField(source="fase.first.nom", read_only=True)
+    fase = serializers.SerializerMethodField()
 
     class Meta(RapSerializer.Meta):
         model = T_raps
-        fields = RapSerializer.Meta.fields + ['compe', 'programas', 'fase']
+        fields = RapSerializer.Meta.fields + ['cod', 'compe', 'programas', 'fase']
 
     def get_programas(self, obj):
         return [p.nom for p in obj.compe.progra.all()]
+      
+    def get_fase(self, obj):
+      return [f.nom for f in obj.fase.all()]
 
 
 class ProgramaSerializer(serializers.ModelSerializer):
     class Meta:
         model = T_raps
+        fields = ['id', 'nom']
+
+
+class FaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = T_fase
         fields = ['id', 'nom']

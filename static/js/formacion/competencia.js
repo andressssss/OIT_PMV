@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${item.id}"
                     title="Editar"
-                    data-bs-toggle="tooltip" 
+                    data-bs-toggle="tooltip"
                     data-bs-placement="top">
                     <i class="bi bi-pencil-square"></i>
                 </button>

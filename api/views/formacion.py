@@ -13,8 +13,8 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.shortcuts import get_object_or_404
-from api.serializers.formacion import RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer
-from commons.models import T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
+from api.serializers.formacion import FaseSerializer, RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer
+from commons.models import T_fase, T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
 from django.contrib.auth.models import User
 
 from matricula.scripts.cargar_tree import crear_datos_prueba
@@ -54,10 +54,18 @@ class RapsViewSet(ModelViewSet):
     @action(detail=False, methods=['get'], url_path='tabla')
     def tabla(self, request):
         programas = request.GET.getlist('programas', [])
+        fases = request.GET.getlist('fases', [])
+        competencias = request.GET.getlist('competencias', [])
         qs = self.get_queryset()
 
         if programas:
             qs = qs.filter(compe__progra__nom__in=programas)
+            
+        if fases:
+            qs = qs.filter(fase__nom__in=fases)
+            
+        if competencias:
+          qs = qs.filter(compe__nom__in=competencias)
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
@@ -547,3 +555,9 @@ class ProgramasViewSet(ModelViewSet):
     queryset = T_progra.objects.all()
     serializer_class = ProgramaSerializer
     permission_classes = [IsAuthenticated]
+
+class FasesViewSet(ModelViewSet):
+  queryset = T_fase.objects.all()
+  serializer_class = FaseSerializer
+  permission_classes = [IsAuthenticated]
+  
