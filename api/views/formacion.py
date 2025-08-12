@@ -13,8 +13,8 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.shortcuts import get_object_or_404
-from api.serializers.formacion import RAPSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, BaseRapsSerializer, ProgramaSerializer
-from commons.models import T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
+from api.serializers.formacion import FaseSerializer, RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer
+from commons.models import T_fase, T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
 from django.contrib.auth.models import User
 
 from matricula.scripts.cargar_tree import crear_datos_prueba
@@ -31,31 +31,16 @@ class RapsViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, DenegarConsulta]
 
     def get_serializer_class(self):
-        return RAPSerializer if self.action in ['list', 'retrieve'] else BaseRapsSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            self.perform_create(serializer)
-            return Response({
-                'status': 'success',
-                'message': 'RAP creado correctamente',
-                'data': serializer.data
-            }, status=status.HTTP_201_CREATED)
-
-        return Response({
-            'status': 'error',
-            'message': 'Formulario inválido',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    def partial_update(self, request, *args, **kwargs):
-        response = super().partial_update(request, *args, **kwargs)
-        return response
+        if self.action == 'retrieve':
+            return RapDetalleSerializer
+        elif self.action == 'tabla':
+            return RapTablaSerializer
+        elif self.action in ['create', 'update', 'partial_update']:
+            return RapWriteSerializer
+        return RapSerializer
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        rap_id = instance.id
         rap_nom = instance.nom
 
         instance.fase.clear()
@@ -65,6 +50,25 @@ class RapsViewSet(ModelViewSet):
             'status': 'success',
             'message': f'RAP {rap_nom} eliminado correctamente'
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='tabla')
+    def tabla(self, request):
+        programas = request.GET.getlist('programas', [])
+        fases = request.GET.getlist('fases', [])
+        competencias = request.GET.getlist('competencias', [])
+        qs = self.get_queryset()
+
+        if programas:
+            qs = qs.filter(compe__progra__nom__in=programas)
+            
+        if fases:
+            qs = qs.filter(fase__nom__in=fases)
+            
+        if competencias:
+          qs = qs.filter(compe__nom__in=competencias)
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
 
 class CompetenciasViewSet(ModelViewSet):
@@ -551,3 +555,9 @@ class ProgramasViewSet(ModelViewSet):
     queryset = T_progra.objects.all()
     serializer_class = ProgramaSerializer
     permission_classes = [IsAuthenticated]
+
+class FasesViewSet(ModelViewSet):
+  queryset = T_fase.objects.all()
+  serializer_class = FaseSerializer
+  permission_classes = [IsAuthenticated]
+  
