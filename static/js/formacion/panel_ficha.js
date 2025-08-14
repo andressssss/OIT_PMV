@@ -194,7 +194,13 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         const link = document.createElement("a");
-        link.href = "/media/" + node.url;
+
+        const lastSlashIndex = node.url.lastIndexOf("/");
+        const path = node.url.substring(0, lastSlashIndex + 1);
+        const filename = node.url.substring(lastSlashIndex + 1);
+
+
+        link.href = "/media/" + path + encodeURIComponent(filename)
         link.target = "_blank";
         link.appendChild(icon);
         link.appendChild(span);
