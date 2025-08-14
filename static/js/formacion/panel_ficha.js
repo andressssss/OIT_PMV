@@ -194,7 +194,13 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         const link = document.createElement("a");
-        link.href = "/media/" + node.url;
+
+        const lastSlashIndex = node.url.lastIndexOf("/");
+        const path = node.url.substring(0, lastSlashIndex + 1);
+        const filename = node.url.substring(lastSlashIndex + 1);
+
+
+        link.href = "/media/" + path + encodeURIComponent(filename)
         link.target = "_blank";
         link.appendChild(icon);
         link.appendChild(span);
@@ -332,6 +338,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function handleDragLeave(event) {
     event.currentTarget.classList.remove("dragover-highlight");
   }
+
   async function handleDropOnFolder(folderElement, e) {
     const folderId = folderElement.dataset.folderId;
     const type = e.dataTransfer.getData("type");
@@ -1030,40 +1037,37 @@ document.addEventListener("DOMContentLoaded", function () {
   tableAprendicesElement.addEventListener("click", async (e) => {
     //== Boton ver portafolio aprendiz
     const target = e.target.closest(".ver-portafolio");
-    // if (target) {
-    //     const aprendizId = target.getAttribute("data-id");
-    //     const aprendizNombre = target.getAttribute("data-nombre");
-
-    //     document.getElementById("portafolioAprendizModalLabel").textContent = `Portafolio de ${aprendizNombre}`;
-
-    //     document.getElementById("folderTreeAprendiz").innerHTML = "";
-    //     //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
-
-    //     cargarPortafolio(aprendizId);
-    //     // cargarTablaHistorial(aprendizId);
-
-    //     const modalEl = document.getElementById("portafolioAprendizModal");
-    //     modalEl.removeAttribute('aria-hidden');
-    //     new bootstrap.Modal(modalEl).show();
-
-    //     modalEl.addEventListener("hidden.bs.modal", function () {
-    //         document.getElementById("folderTreeAprendiz").innerHTML = "";
-    //         modalEl.setAttribute('aria-hidden', 'true');
-
-    //         if (document.activeElement && modalEl.contains(document.activeElement)) {
-    //             document.activeElement.blur();
-    //         }
-
-    //         const btnAbrir = document.querySelector('.ver-portafolio');
-    //         if (btnAbrir) btnAbrir.focus();
-    //     });
-    // }
     if (target) {
-      Swal.fire({
-        icon: "info",
-        title: "Función inhabilitada temporalmente",
-        text: "Esta acción estará inhabilitada temporalmente debido a procesos de mejora.",
-        confirmButtonText: "Ok",
+      const aprendizId = target.getAttribute("data-id");
+      const aprendizNombre = target.getAttribute("data-nombre");
+
+      document.getElementById(
+        "portafolioAprendizModalLabel"
+      ).textContent = `Portafolio de ${aprendizNombre}`;
+
+      document.getElementById("folderTreeAprendiz").innerHTML = "";
+      //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
+
+      cargarPortafolio(aprendizId);
+      // cargarTablaHistorial(aprendizId);
+
+      const modalEl = document.getElementById("portafolioAprendizModal");
+      modalEl.removeAttribute("aria-hidden");
+      new bootstrap.Modal(modalEl).show();
+
+      modalEl.addEventListener("hidden.bs.modal", function () {
+        document.getElementById("folderTreeAprendiz").innerHTML = "";
+        modalEl.setAttribute("aria-hidden", "true");
+
+        if (
+          document.activeElement &&
+          modalEl.contains(document.activeElement)
+        ) {
+          document.activeElement.blur();
+        }
+
+        const btnAbrir = document.querySelector(".ver-portafolio");
+        if (btnAbrir) btnAbrir.focus();
       });
     }
     //== Boton ver perfil aprendiz
@@ -1389,7 +1393,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subFolderContainer.id = `portafolio-folder-${node.id}`;
 
         if (
-          userRole === "instructor" &&
+          (userRole === "instructor" || userRole === "admin") &&
           (!node.children ||
             node.children.length === 0 ||
             node.children.every((child) => child.tipo === "documento"))
@@ -1422,13 +1426,26 @@ document.addEventListener("DOMContentLoaded", function () {
         const extension = node.documento_nombre.split(".").pop().toLowerCase();
         // Determinar icono según extensión
         const extensionIcons = {
-          jpg: "bi-image",
-          png: "bi-image",
-          jpeg: "bi-image",
           pdf: "bi-file-earmark-pdf",
           xlsx: "bi-file-earmark-spreadsheet",
           csv: "bi-file-earmark-spreadsheet",
+          jpg: "bi-image",
+          jpeg: "bi-image",
+          png: "bi-image",
+          ppt: "bi-file-earmark-easel",
           docx: "bi-file-earmark-richtext",
+          doc: "bi-file-earmark-richtext",
+          dotm: "bi-file-earmark-richtext",
+          dotx: "bi-file-earmark-richtext",
+          docm: "bi-file-earmark-richtext",
+          mp3: "bi-file-earmark-music",
+          mp4: "bi-file-earmark-play",
+          xls: "file-earmark-spreadsheet",
+          psc: "bi-file-earmark-code",
+          sql: "bi-database",
+          zip: "bi-file-earmark-zip-fill",
+          rar: "bi-file-earmark-zip-fill",
+          "7z": "bi-file-earmark-zip-fill",
         };
         icon.classList.add(
           "bi",
@@ -1441,7 +1458,7 @@ document.addEventListener("DOMContentLoaded", function () {
         link.append(icon, span);
         li.appendChild(link);
 
-        if (userRole === "instructor") {
+        if (userRole === "instructor" || userRole === "admin") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
@@ -1461,9 +1478,11 @@ document.addEventListener("DOMContentLoaded", function () {
           });
           deleteBtn.addEventListener("mouseleave", () => {
             deleteBtn.style.opacity = "1";
-          });
+          }); 
 
           li.dataset.folderId = node.parent_id;
+          li.dataset.documentId = node.id;
+          li.draggable = true;
           li.appendChild(deleteBtn);
         }
       }
@@ -1474,47 +1493,46 @@ document.addEventListener("DOMContentLoaded", function () {
     return ul;
   }
 
-  let portafolioClickListener = null;
+  let treeApreListenersInitialized = false;
 
   // Event listeners específicos para el portafolio
   function agregarEventListenersPortafolio() {
-    const treeContainer = document.getElementById("folderTreeAprendiz");
+    if (treeApreListenersInitialized) return;
 
-    // Eliminar listener anterior si existe
-    if (portafolioClickListener) {
-      treeContainer.removeEventListener("click", portafolioClickListener);
-    }
+    const treeContainer = document.getElementById("folderTreeAprendiz");
+    if (!treeContainer) return;
 
     // Crear nuevo listener
-    portafolioClickListener = async function (e) {
+    treeContainer.addEventListener("click", async (e) => {
       const target = e.target.closest(".folder-item > i, .folder-item > span");
       if (target) {
         const folderId = target.dataset.folderId;
         const icon =
           target.tagName === "I" ? target : target.previousElementSibling;
         togglePortafolioFolder(folderId, icon);
+        return;
       }
 
       const target2 = e.target.closest(".bi-trash");
       if (target2) {
         const li = target2.closest("li");
-        const docId =
-          li.querySelector("[data-document-id]")?.dataset.documentId;
+        const docId = li?.dataset.documentId;
         const folderId = li.dataset.folderId;
         if (!docId) return;
 
         const confirmed = await confirmToast("¿Eliminar este documento?");
         if (confirmed) deleteFileAprendiz(docId, folderId);
+        return;
       }
 
       const target3 = e.target.closest(".upload-item");
       if (target3) {
         const folderId = target3.dataset.folderId;
         openUploadModalAprendiz(folderId);
+        return;
       }
-    };
+    });
 
-    treeContainer.addEventListener("click", portafolioClickListener);
     document
       .getElementById("uploadButtonAprendiz")
       .addEventListener("click", uploadFileAprendiz);

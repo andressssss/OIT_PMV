@@ -1,51 +1,106 @@
-from commons.models import T_DocumentFolderAprendiz, T_apre
+from commons.models import T_DocumentFolderAprendiz, T_apre, T_fase, T_compe, T_raps
+
+estructura_documental_aprendiz = {
+    "1. ACTA PLAN DE MEJORAMIENTO": {
+        "1. ANÁLISIS": {},
+        "2. PLANEACIÓN": {},
+        "3. EJECUCIÓN": {},
+        "4. EVALUACIÓN": {},
+    },
+    "2. PLANEACION SEGUIMIENTO Y EVALUACION ETAPA PRODUCTIVA": {},
+    "3. GUIA DE APRENDIZAJE": {
+        "1. ANÁLISIS": {
+            "GUIAS DE LA FASE": {},
+            "INSTRUMENTOS DE EVALUACION": {},
+        },
+        "2. PLANEACIÓN": {
+            "GUIAS DE LA FASE": {},
+            "INSTRUMENTOS DE EVALUACION": {},
+        },
+        "3. EJECUCIÓN": {
+            "GUIAS DE LA FASE": {},
+            "INSTRUMENTOS DE EVALUACION": {},
+        },
+        "4. EVALUACIÓN": {
+            "GUIAS DE LA FASE": {},
+            "INSTRUMENTOS DE EVALUACION": {},
+        },
+    },
+    "4. EVIDENCIAS DE APRENDIZAJE": {},
+    "5. PLAN DE TRABAJO CON SUS DESCRIPTORES": {
+        "1. ANÁLISIS": {},
+        "2. PLANEACIÓN": {},
+        "3. EJECUCIÓN": {},
+        "4. EVALUACIÓN": {},
+    },
+}
+
+
+FASES_LABELS = {
+    "ANALISIS": "1. ANÁLISIS",
+    "PLANEACION": "2. PLANEACIÓN",
+    "EJECUCION": "3. EJECUCIÓN",
+    "EVALUACION": "4. EVALUACIÓN"
+}
+
+
+def crear_estructura_arbol_aprendiz(aprendiz, estructura, parent=None):
+    """
+    Crea la estructura de carpetas para un aprendiz.
+    Si encuentra la clave '4. EVIDENCIAS DE APRENDIZAJE',
+    genera dinámicamente las subcarpetas según fases, competencias y RAPs.
+    """
+    for nombre, hijos in estructura.items():
+        carpeta = T_DocumentFolderAprendiz.objects.create(
+            name=nombre,
+            tipo="carpeta",
+            aprendiz=aprendiz,
+            parent=parent
+        )
+
+        if nombre == "4. EVIDENCIAS DE APRENDIZAJE":
+            fases = T_fase.objects.filter(
+                nom__in=FASES_LABELS.keys()
+            ).order_by('id')
+
+            for fase in fases:
+                carpeta_fase = T_DocumentFolderAprendiz.objects.create(
+                    name=FASES_LABELS.get(fase.nom.upper(), fase.nom),
+                    tipo="carpeta",
+                    aprendiz=aprendiz,
+                    parent=carpeta
+                )
+
+                raps_fase = T_raps.objects.filter(
+                    compe__progra=aprendiz.ficha.progra,
+                    fase=fase
+                ).select_related('compe')
+
+                competencias = {}
+                for rap in raps_fase:
+                    competencias.setdefault(rap.compe, []).append(rap)
+
+                for compe, raps in competencias.items():
+                    carpeta_compe = T_DocumentFolderAprendiz.objects.create(
+                        name=f"{compe.cod} - {compe.nom}",
+                        tipo="carpeta",
+                        aprendiz=aprendiz,
+                        parent=carpeta_fase
+                    )
+                    for rap in raps:
+                        T_DocumentFolderAprendiz.objects.create(
+                            name=rap.nom,
+                            tipo="carpeta",
+                            aprendiz=aprendiz,
+                            parent=carpeta_compe
+                        )
+
+        elif hijos:
+            crear_estructura_arbol_aprendiz(aprendiz, hijos, carpeta)
+
 
 def crear_datos_prueba_aprendiz(aprendiz_id):
     aprendiz = T_apre.objects.get(id=aprendiz_id)
-
-    # Crear carpetas raíz
-    root_folders = {
-        "1": "1. ACTA PLAN DE MEJORAMIENTO",
-        "2": "2. PLANEACION SEGUIMIENTO Y EVALUACION ETAPA PRODUCTIVA",
-        "3": "3. GUIA DE APRENDIZAJE",
-        "4": "4. EVIDENCIAS DE APRENDIZAJE",
-        "5": "5. PLAN DE TRABAJO CON SUS DESCRIPTORES",
-    }
-
-    root_folder_objs = {}
-
-    for iden, name in root_folders.items():
-        root_folder_objs[iden] = T_DocumentFolderAprendiz.objects.create(
-            name=name, tipo="carpeta", aprendiz=aprendiz
-        )
-
-    # Crear subcarpetas de ACTA PLAN DE MEJORAMIENTO
-    subfolders_1 = ["1. ANÁLISIS", "2. PLANEACIÓN", "3. EJECUCIÓN", "4. EVALUACIÓN"]
-    for name in subfolders_1:
-        T_DocumentFolderAprendiz.objects.create(
-            name=name, tipo="carpeta", parent=root_folder_objs["1"], aprendiz=aprendiz
-        )
-
-    # Crear subcarpetas de GUIA DE APRENDIZAJE
-    subfolders_3 = ["1. ANÁLISIS", "2. PLANEACIÓN", "3. EJECUCIÓN", "4. EVALUACIÓN"]
-    subfolder_objs_3 = {}
-    for name in subfolders_3:
-        subfolder_objs_3[name] = T_DocumentFolderAprendiz.objects.create(
-            name=name, tipo="carpeta", parent=root_folder_objs["3"], aprendiz=aprendiz
-        )
-
-    # Crear sub-subcarpetas en GUIA DE APRENDIZAJE
-    for parent_name in subfolders_3:
-        for sub_name in ["GUIAS DE LA FASE", "INSTRUMENTOS DE EVALUACION"]:
-            T_DocumentFolderAprendiz.objects.create(
-                name=sub_name, tipo="carpeta", parent=subfolder_objs_3[parent_name], aprendiz=aprendiz
-            )
-
-    # Crear subcarpetas en EVIDENCIAS y PLAN DE TRABAJO
-    for root_id in ["4", "5"]:
-        for name in ["1. ANÁLISIS", "2. PLANEACIÓN", "3. EJECUCIÓN", "4. EVALUACIÓN"]:
-            T_DocumentFolderAprendiz.objects.create(
-                name=name, tipo="carpeta", parent=root_folder_objs[root_id], aprendiz=aprendiz
-            )
-
-    print("Estructura documental creada exitosamente para el aprendiz:", aprendiz_id)
+    crear_estructura_arbol_aprendiz(aprendiz, estructura_documental_aprendiz)
+    print(
+        f"Estructura documental creada exitosamente para el aprendiz {aprendiz_id}")
