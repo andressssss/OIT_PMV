@@ -13,13 +13,9 @@ class CompetenciaSerializer(serializers.ModelSerializer):
 
 
 class CompetenciaWriteSerializer(CompetenciaSerializer):
-    progra = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True
-    )
 
     class Meta(CompetenciaSerializer.Meta):
-        fields = CompetenciaSerializer.Meta.fields + ['cod', 'progra']
+        fields = CompetenciaSerializer.Meta.fields + ['cod']
 
     def validate_nom(self, value):
         qs = T_compe.objects.filter(nom__iexact=value)
@@ -33,42 +29,25 @@ class CompetenciaWriteSerializer(CompetenciaSerializer):
         return value
 
     def create(self, validated_data):
-        programas_ids = validated_data.pop('progra', [])
         competencia = T_compe.objects.create(**validated_data)
-        competencia.progra.set(programas_ids)
         return competencia
 
     def update(self, instance, validated_data):
-        programas_ids = validated_data.pop('progra', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         instance.save()
 
-        if programas_ids is not None:
-            instance.progra.set(programas_ids)
         return instance
 
 
 class CompetenciaDetalleSerializer(CompetenciaSerializer):
-    progra = serializers.SerializerMethodField()
-
     class Meta(CompetenciaSerializer.Meta):
-        fields = CompetenciaSerializer.Meta.fields + ['cod', 'progra']
-
-    def get_progra(self, obj):
-        return list(obj.progra.values_list('id', flat=True))
-
+        fields = CompetenciaSerializer.Meta.fields + ['cod']
 
 class CompetenciaTablaSerializer(CompetenciaSerializer):
-    progra = serializers.SerializerMethodField()
-
     class Meta(CompetenciaSerializer.Meta):
-        fields = CompetenciaSerializer.Meta.fields + ['cod', 'progra']
-
-    def get_progra(self, obj):
-        return [p.nom for p in obj.progra.all()]
-
+        fields = CompetenciaSerializer.Meta.fields + ['cod']
 
 class FichaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -148,13 +127,13 @@ class RapWriteSerializer(RapSerializer):
     class Meta(CompetenciaSerializer.Meta):
         fields = CompetenciaSerializer.Meta.fields + ['cod', 'compe', 'fase']
 
-    def validate_nom(self, value):
-        qs = T_raps.objects.filter(nom=value)
+    def validate_cod(self, value):
+        qs = T_raps.objects.filter(cod=value)
         if self.instance:
             qs = qs.exclude(id=self.instance.id)
         if qs.exists():
             raise serializers.ValidationError(
-                "Ya existe un RAP con ese nombre")
+                "Ya existe un RAP con ese código")
         return value
 
     def create(self, validated_data):
@@ -179,7 +158,6 @@ class RapWriteSerializer(RapSerializer):
 
 class RapDetalleSerializer(RapSerializer):
     compe = serializers.PrimaryKeyRelatedField(queryset=T_compe.objects.all())
-    programas = serializers.SerializerMethodField()
     fase = serializers.PrimaryKeyRelatedField(
         many=True,
         read_only=True
@@ -188,23 +166,15 @@ class RapDetalleSerializer(RapSerializer):
     class Meta(RapSerializer.Meta):
         model = T_raps
         fields = RapSerializer.Meta.fields + \
-            ['cod', 'compe', 'programas', 'fase']
-
-    def get_programas(self, obj):
-        return list(obj.compe.progra.values_list('id', flat=True))
-
+            ['cod', 'compe', 'progra', 'fase']
 
 class RapTablaSerializer(RapSerializer):
     compe = serializers.CharField(source="compe.nom", read_only=True)
-    programas = serializers.SerializerMethodField()
     fase = serializers.SerializerMethodField()
 
     class Meta(RapSerializer.Meta):
         model = T_raps
-        fields = RapSerializer.Meta.fields + ['cod', 'compe', 'programas', 'fase']
-
-    def get_programas(self, obj):
-        return [p.nom for p in obj.compe.progra.all()]
+        fields = RapSerializer.Meta.fields + ['cod', 'compe', 'progra', 'fase']
       
     def get_fase(self, obj):
       return [f.nom for f in obj.fase.all()]
