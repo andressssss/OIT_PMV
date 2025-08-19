@@ -445,3 +445,41 @@ select.form-select.choices__input {
     transform: rotate(360deg);
   }
 }
+
+/* Contenedor del progreso en el árbol */
+.upload-progress {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background-color 0.2s;
+}
+
+.upload-progress:hover {
+  background-color: #f1f3f5;
+}
+
+/* Nombre del archivo */
+.upload-progress .file-name {
+  font-weight: 500;
+  color: #495057;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Barra de progreso */
+.upload-progress .progress {
+  height: 14px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #e9ecef;
+}
+
+.upload-progress .progress-bar {
+  font-size: 0.75rem;
+  line-height: 14px;
+}

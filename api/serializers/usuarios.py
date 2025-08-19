@@ -71,7 +71,9 @@ class AprendizSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'perfil',
-            'repre_legal'
+            'repre_legal',
+            'ficha',
+            'esta'
         ]
 
     def validate(self, data):

@@ -181,7 +181,6 @@ urlpatterns = [
 
     # Tree aprendiz
     path("api/tree/obtener_carpetas_aprendiz/<int:aprendiz_id>/", formacion_views.obtener_carpetas_aprendiz, name="api_obtener_carpetas_aprendiz"),
-    path("api/tree/cargar_doc_aprendiz/", formacion_views.cargar_documento_aprendiz, name="api_cargar_documento_aprendiz"),
     path('api/tree/eliminar_documento_aprendiz/<int:documento_id>', formacion_views.eliminar_documento_portafolio_aprendiz, name='api_eliminar_documento_portafolio_aprendiz'),
     path('api/tree/obtener_hijos_carpeta_aprendiz/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta_aprendiz, name='api_obtener_hijos_carpeta_aprendiz'),
     path('tree/descargar_portafolio_aprendiz/<int:aprendiz_id>', formacion_views.descargar_portafolio_aprendiz_zip, name='descargar_portafolio_aprendiz_zip'),
@@ -370,6 +369,13 @@ urlpatterns = [
     # Gestion de usuarios
     path('usuarios/', usuarios_views.usuarios, name='usuarios'),
     path('api/usuario/restablecer_contrasena/', usuarios_views.restablecer_contrasena, name='api_restablecer_contrasena'),
+    
+    #Informes
+    path('formacion/informe_usuarios_x_rol/', formacion_views.informe_usuarios_x_rol, name='informe_usuarios_x_rol'),
+    path('formacion/informe_fichas_x_instructor/', formacion_views.informe_fichas_x_instructor, name='informe_fichas_x_instructor'),
+    path('formacion/informe_fichas_x_aprendiz/', formacion_views.informe_fichas_x_aprendiz, name='informe_fichas_x_aprendiz'),
+    path('formacion/informe_documentos_x_instructor_ficha/', formacion_views.informe_documentos_x_instructor_ficha, name='informe_documentos_x_instructor_ficha'),
+    path('formacion/informe_documentos_x_instructor_aprendiz/', formacion_views.informe_documentos_x_instructor_aprendiz, name='informe_documentos_x_instructor_aprendiz'),
 
 ]  
 
