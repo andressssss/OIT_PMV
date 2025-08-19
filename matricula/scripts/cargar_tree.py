@@ -48,11 +48,7 @@ estructura_documental = {
     },
     "7. EVIDENCIAS DE ESTRATEGIA DE INTENSIFICACIÓN": {},
     "8. FORMATO DE HOMOLOGACIÓN": {},
-    "FORMATO PROGRAMACIÓN EVENTOS": {},
-    "REPORTES JUICIOS EVALUATIVOS": {
-        "1. CRONOGRAMA DE JUICIOS EVALUATIVOS": {},
-        "2. REPORTE DE JUICIOS EVALUATIVOS": {},
-    },
+    "LINK DE PORTAFOLIO APRENDICES 2024": {},
 }
 
 def crear_estructura_arbol(ficha, estructura, parent=None):

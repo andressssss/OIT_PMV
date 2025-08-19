@@ -178,11 +178,11 @@
               <div class="d-flex justify-content-end mb-3">
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz"><i class="bi bi-person-plus"></i> Agregar Aprendiz</button>
               </div>
-              <!--           <div class="d-flex justify-content-end mb-3">
+              <!--            <div class="d-flex justify-content-end mb-3">
                             <a href="{% url 'descargar_portafolios_ficha_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-download"></i> Descargar portafolios
                             </a>
-                        </div>           -->
+                        </div>            -->
               <div class="table-responsive">
                 <table id="tabla_aprendices_ficha" class="table table-hover table-bordered align-middle">
                   <thead class="table-secondary text-center">
@@ -299,7 +299,7 @@
             <div class="card-body">
               <div class="row row-cols-1 row-cols-md-2 g-4">
                 <!-- Reporte 2 -->
-                <!--           <div class="col">
+                <!--            <div class="col">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
                                 <h5 class="card-title">Asistencia por aprendiz</h5>
@@ -307,7 +307,7 @@
                                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActaAsistenciaAprendiz">Generar</button>
                             </div>
                         </div>
-                    </div>           -->
+                    </div>            -->
 
                 <!-- Reporte 2 -->
                 <div class="col">
@@ -346,26 +346,12 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <input type="file" id="fileInput" class="form-control" multiple/>
+          <input type="file" id="fileInput" class="form-control" multiple />
           <div class="uploadProgressList"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
           <button type="button" id="uploadButton" class="btn btn-primary">Subir</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-    <!-- Modal carga de documentos portafolio ficha drag n drop -->
-  <div class="modal fade" id="uploadModalDnd" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalDndLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="uploadModalDndLabel">Subir Documentos</h5>
-        </div>
-        <div class="modal-body">
-          <div id="uploadProgressListDnd"></div>
         </div>
       </div>
     </div>
@@ -382,7 +368,7 @@
         <div class="modal-body">
           <div id="folderTreeAprendiz"></div>
           <!-- Sección de Historial -->
-          <!--           <div class="card mt-4">
+          <!--            <div class="card mt-4">
                     <div class="card-header bg-secondary text-white">
                         <h6 class="m-0">Historial de Acciones</h6>
                     </div>
@@ -402,7 +388,7 @@
                             </tbody>
                         </table>
                     </div>
-                </div>           -->
+                </div>            -->
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -420,7 +406,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <input type="file" id="fileInputAprendiz" class="form-control" />
+          <input type="file" id="fileInputAprendiz" class="form-control" multiple/>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -957,7 +943,7 @@
   </div>
 
   <!-- Modal aprendiz Asistencia -->
-  <!--           <div class="modal fade" id="modalActaAsistenciaAprendiz" tabindex="-1" aria-labelledby="modalActaAsistenciaAprendizLabel" aria-hidden="true">
+  <!--            <div class="modal fade" id="modalActaAsistenciaAprendiz" tabindex="-1" aria-labelledby="modalActaAsistenciaAprendizLabel" aria-hidden="true">
     <div class="modal-dialog">
     <div class="modal-content">
         <form method="get" action="{% url 'generar_acta_asistencia_aprendiz' %}">
@@ -981,7 +967,7 @@
         </form>
     </div>
     </div>
-</div>           -->
+</div>            -->
 {% endblock %}
 
 {% block scripts %}

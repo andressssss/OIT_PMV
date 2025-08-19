@@ -199,8 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const path = node.url.substring(0, lastSlashIndex + 1);
         const filename = node.url.substring(lastSlashIndex + 1);
 
-
-        link.href = "/media/" + path + encodeURIComponent(filename)
+        link.href = "/media/" + path + encodeURIComponent(filename);
         link.target = "_blank";
         link.appendChild(icon);
         link.appendChild(span);
@@ -309,7 +308,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!folder) return;
       e.preventDefault();
       folder.classList.remove("dragover-highlight");
-      await handleDropOnFolder(folder, e);
+      await handleDropOnFolder(folder, e, "ficha");
     });
 
     // Dragstart delegado (se propaga)
@@ -325,20 +324,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Botón subir (fuera del árbol)
     const uploadButton = document.getElementById("uploadButton");
-    if (uploadButton) uploadButton.addEventListener("click", uploadFile);
+    if (uploadButton)
+      uploadButton.addEventListener("click", () => uploadFile("ficha"));
 
     treeListenersInitialized = true;
   }
 
-  function handleDragOver(event) {
-    event.preventDefault();
-    event.currentTarget.classList.add("dragover-highlight");
-  }
-
-  function handleDragLeave(event) {
-    event.currentTarget.classList.remove("dragover-highlight");
-  }
-  async function handleDropOnFolder(folderElement, e) {
+  async function handleDropOnFolder(folderElement, e, contexto) {
     const folderId = folderElement.dataset.folderId;
     const type = e.dataTransfer.getData("type");
 
@@ -347,7 +339,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const documentId = e.dataTransfer.getData("documentId");
       const sourceFolderId = e.dataTransfer.getData("sourceFolderId");
       if (!documentId) return;
-      if (String(folderId) === String(sourceFolderId)) return; // mismo lugar: no hacer nada
+      if (String(folderId) === String(sourceFolderId)) return;
 
       const sourceFolderEl = document.querySelector(
         `[data-folder-id="${sourceFolderId}"]`
@@ -367,6 +359,7 @@ document.addEventListener("DOMContentLoaded", function () {
           body: JSON.stringify({
             document_id: documentId,
             target_folder_id: folderId,
+            contexto: contexto,
           }),
         });
 
@@ -378,8 +371,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         toastSuccess(data.message || "Documento movido con éxito.");
         // Recargar carpeta origen y destino
-        await actualizarCarpeta(sourceFolderId);
-        await actualizarCarpeta(folderId);
+        await actualizarCarpeta(sourceFolderId, contexto);
+        await actualizarCarpeta(folderId, contexto);
       } catch (err) {
         console.error("Error moviendo documento:", err);
         toastError("Error al mover el documento.");
@@ -479,43 +472,39 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (validFiles.length === 0) return;
 
-    const modalDndEl = document.getElementById("uploadModalDnd");
-    const modalDnd = new bootstrap.Modal(modalDndEl);
-    modalDnd.show();
+    const subFolderContainer = document.getElementById(
+      contexto === "ficha"
+        ? `folder-${folderId}`
+        : `portafolio-folder-${folderId}`
+    );
 
-    const progressContainer =
-      document.getElementById("uploadProgressListDnd") ||
-      (() => {
-        const div = document.createElement("div");
-        div.id = "uploadProgressListDnd";
-        div.style.marginTop = "10px";
-        document.body.appendChild(div);
-        return div;
-      })();
-    progressContainer.innerHTML = "";
-
-    // efecto visual
-    folderElement.classList.add("loading");
+    if (!subFolderContainer) {
+      console.error("No se encontró el contenedor de la carpeta");
+      return;
+    }
 
     try {
       const uploadTasks = validFiles.map((file) => {
-        const progressItem = document.createElement("div");
-        progressItem.classList.add("mb-2");
-        progressItem.innerHTML = `
-          <strong>${file.name}</strong>
-          <div class="progress" style="height: 20px;">
-            <div class="progress-bar" style="width: 0%">0%</div>
+        const li = document.createElement("li");
+        li.className = "upload-item";
+        li.innerHTML = `
+        <div class="upload-progress">
+          <i class="bi bi-file-earmark-arrow-up"></i>
+          <span class="file-name">${file.name}</span>
+          <div class="progress mt-1">
+            <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
           </div>
+        </div>
         `;
+        subFolderContainer.appendChild(li);
 
-        progressContainer.appendChild(progressItem);
-
-        const progressBar = progressItem.querySelector(".progress-bar");
+        const progressBar = li.querySelector(".progress-bar");
 
         return new Promise((resolve) => {
           const formData = new FormData();
           formData.append("documento", file);
           formData.append("folder_id", folderId);
+          formData.append("contexto", contexto);
 
           const xhr = new XMLHttpRequest();
           xhr.open("POST", `/api/formacion/fichas/cargar_documentos_ficha/`);
@@ -554,13 +543,10 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       await Promise.all(uploadTasks);
-      modalDnd.hide();
-      await actualizarCarpeta(folderId);
+      await actualizarCarpeta(folderId, contexto);
     } catch (err) {
       console.error("Error en la subida por drag & drop:", err);
       toastError("Error al subir los documentos: " + err.message);
-    } finally {
-      folderElement.classList.remove("loading");
     }
   }
 
@@ -601,12 +587,25 @@ document.addEventListener("DOMContentLoaded", function () {
     modal.show();
   }
 
-  async function uploadFile() {
-    const folderId = document.getElementById("uploadButton").dataset.folderId;
-    const fileInputElement = document.getElementById("fileInput");
-    const btnElement = document.getElementById("uploadButton");
-    const uploadModal = document.getElementById("uploadModal");
-    const inputs = uploadModal.querySelectorAll("input, select, button");
+  async function uploadFile(contexto) {
+    const config = {
+      ficha: {
+        uploadButton: "uploadButton",
+        fileInput: "fileInput",
+        modalId: "uploadModal",
+      },
+      aprendiz: {
+        uploadButton: "uploadButtonAprendiz",
+        fileInput: "fileInputAprendiz",
+        modalId: "uploadModalAprendiz",
+      },
+    };
+
+    const { uploadButton, fileInput, modalId } = config[contexto];
+
+    const folderId = document.getElementById(uploadButton).dataset.folderId;
+    const fileInputElement = document.getElementById(fileInput);
+    const uploadModal = document.getElementById(modalId);
 
     const files = Array.from(fileInputElement.files);
     if (!files.length) {
@@ -670,21 +669,19 @@ document.addEventListener("DOMContentLoaded", function () {
       "xps",
     ];
 
-    const progressContainer =
-      document.getElementById("uploadProgressList") ||
-      (() => {
-        const div = document.createElement("div");
-        div.id = "uploadProgressList";
-        div.style.marginTop = "10px";
-        uploadModal.querySelector(".modal-body").appendChild(div);
-        return div;
-      })();
+    const modal = bootstrap.Modal.getInstance(uploadModal);
+    if (modal) modal.hide();
 
-    progressContainer.innerHTML = "";
+    const subFolderContainer = document.getElementById(
+      contexto === "ficha"
+        ? `folder-${folderId}`
+        : `portafolio-folder-${folderId}`
+    );
 
-    inputs.forEach((el) => (el.disabled = true));
-    const originalBtnContent = btnElement.innerHTML;
-    showSpinner(btnElement);
+    if (!subFolderContainer) {
+      console.error("No se encontró el contenedor de la carpeta");
+      return;
+    }
 
     try {
       const uploadTasks = [];
@@ -711,21 +708,26 @@ document.addEventListener("DOMContentLoaded", function () {
           continue;
         }
 
-        const progressItem = document.createElement("div");
-        progressItem.classList.add("mb-2");
-        progressItem.innerHTML = `
-        <strong>${file.name}</strong>
-        <div class="progress" style="height: 20px;">
-          <div class="progress-bar" style="width: 0%">0%</div>
+        const li = document.createElement("li");
+        li.className = "upload-item";
+        li.innerHTML = `
+        <div class="upload-progress">
+          <i class="bi bi-file-earmark-arrow-up"></i>
+          <span class="file-name">${file.name}</span>
+          <div class="progress mt-1">
+            <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+          </div>
         </div>
-      `;
-        progressContainer.appendChild(progressItem);
-        const progressBar = progressItem.querySelector(".progress-bar");
+        `;
+        subFolderContainer.appendChild(li);
+
+        const progressBar = li.querySelector(".progress-bar");
 
         const uploadPromise = new Promise((resolve) => {
           const formData = new FormData();
           formData.append("file", file);
           formData.append("folder_id", folderId);
+          formData.append("contexto", contexto);
 
           const xhr = new XMLHttpRequest();
           xhr.open("POST", "/api/tree/cargar_doc/");
@@ -766,23 +768,11 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       await Promise.all(uploadTasks);
-
-      setTimeout(() => {
-        progressContainer.innerHTML = "";
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById("uploadModal")
-        );
-        modal.hide();
-        fileInputElement.value = "";
-      }, 1500);
-
-      await actualizarCarpeta(folderId);
+      await actualizarCarpeta(folderId, contexto);
+      fileInputElement.value = "";
     } catch (error) {
       console.error("Error al subir el archivo:", error);
       toastError("Ocurrió un error inesperado.");
-    } finally {
-      inputs.forEach((el) => (el.disabled = false));
-      hideSpinner(btnElement, originalBtnContent);
     }
   }
 
@@ -800,7 +790,7 @@ document.addEventListener("DOMContentLoaded", function () {
         toastSuccess("Documento eliminado.");
 
         if (folderId) {
-          await actualizarCarpeta(folderId);
+          await actualizarCarpeta(folderId, "ficha");
         } else {
           verTree();
         }
@@ -812,18 +802,34 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function actualizarCarpeta(folderId) {
+  async function actualizarCarpeta(folderId, contexto) {
     try {
-      const response = await fetch(
-        `/api/tree/obtener_hijos_carpeta/${folderId}`
-      );
+      const config = {
+        ficha: {
+          url: `/api/tree/obtener_hijos_carpeta/${folderId}`,
+          containerId: `folder-${folderId}`,
+          renderFn: renderTree,
+        },
+        aprendiz: {
+          url: `/api/tree/obtener_hijos_carpeta_aprendiz/${folderId}`,
+          containerId: `portafolio-folder-${folderId}`,
+          renderFn: renderPortafolioTree,
+        },
+      };
+
+      if (!config[contexto]) {
+        console.error(`Contexto no válido: ${contexto}`);
+        return;
+      }
+
+      const { url, containerId, renderFn } = config[contexto];
+
+      const response = await fetch(url);
       const data = await response.json();
 
-      const subFolderContainer = document.getElementById(`folder-${folderId}`);
+      const subFolderContainer = document.getElementById(containerId);
       if (!subFolderContainer) {
-        console.error(
-          `No se encontró el contenedor para la carpeta: folder-${folderId}`
-        );
+        console.error(`No se encontró el contenedor ${containerId}`);
         return;
       }
 
@@ -847,7 +853,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Renderizar hijos
       if (data.length > 0) {
-        const hijos = renderTree(data);
+        const hijos = renderFn(data);
         if (hijos) {
           subFolderContainer.appendChild(hijos);
         }
@@ -1036,40 +1042,37 @@ document.addEventListener("DOMContentLoaded", function () {
   tableAprendicesElement.addEventListener("click", async (e) => {
     //== Boton ver portafolio aprendiz
     const target = e.target.closest(".ver-portafolio");
-    // if (target) {
-    //     const aprendizId = target.getAttribute("data-id");
-    //     const aprendizNombre = target.getAttribute("data-nombre");
-
-    //     document.getElementById("portafolioAprendizModalLabel").textContent = `Portafolio de ${aprendizNombre}`;
-
-    //     document.getElementById("folderTreeAprendiz").innerHTML = "";
-    //     //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
-
-    //     cargarPortafolio(aprendizId);
-    //     // cargarTablaHistorial(aprendizId);
-
-    //     const modalEl = document.getElementById("portafolioAprendizModal");
-    //     modalEl.removeAttribute('aria-hidden');
-    //     new bootstrap.Modal(modalEl).show();
-
-    //     modalEl.addEventListener("hidden.bs.modal", function () {
-    //         document.getElementById("folderTreeAprendiz").innerHTML = "";
-    //         modalEl.setAttribute('aria-hidden', 'true');
-
-    //         if (document.activeElement && modalEl.contains(document.activeElement)) {
-    //             document.activeElement.blur();
-    //         }
-
-    //         const btnAbrir = document.querySelector('.ver-portafolio');
-    //         if (btnAbrir) btnAbrir.focus();
-    //     });
-    // }
     if (target) {
-      Swal.fire({
-        icon: "info",
-        title: "Función inhabilitada temporalmente",
-        text: "Esta acción estará inhabilitada temporalmente debido a procesos de mejora.",
-        confirmButtonText: "Ok",
+      const aprendizId = target.getAttribute("data-id");
+      const aprendizNombre = target.getAttribute("data-nombre");
+
+      document.getElementById(
+        "portafolioAprendizModalLabel"
+      ).textContent = `Portafolio de ${aprendizNombre}`;
+
+      document.getElementById("folderTreeAprendiz").innerHTML = "";
+      //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
+
+      cargarPortafolio(aprendizId);
+      // cargarTablaHistorial(aprendizId);
+
+      const modalEl = document.getElementById("portafolioAprendizModal");
+      modalEl.removeAttribute("aria-hidden");
+      new bootstrap.Modal(modalEl).show();
+
+      modalEl.addEventListener("hidden.bs.modal", function () {
+        document.getElementById("folderTreeAprendiz").innerHTML = "";
+        modalEl.setAttribute("aria-hidden", "true");
+
+        if (
+          document.activeElement &&
+          modalEl.contains(document.activeElement)
+        ) {
+          document.activeElement.blur();
+        }
+
+        const btnAbrir = document.querySelector(".ver-portafolio");
+        if (btnAbrir) btnAbrir.focus();
       });
     }
     //== Boton ver perfil aprendiz
@@ -1395,7 +1398,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subFolderContainer.id = `portafolio-folder-${node.id}`;
 
         if (
-          userRole === "instructor" &&
+          (userRole === "instructor" || userRole === "admin") &&
           (!node.children ||
             node.children.length === 0 ||
             node.children.every((child) => child.tipo === "documento"))
@@ -1405,6 +1408,9 @@ document.addEventListener("DOMContentLoaded", function () {
           uploadLi.classList.add("upload-item");
           uploadLi.style.listStyle = "none";
           uploadLi.dataset.folderId = node.id;
+
+          li.dataset.folderId = node.id;
+          li.dataset.droppable = "true";
 
           const uploadIcon = document.createElement("i");
           uploadIcon.classList.add("bi", "bi-plus-circle");
@@ -1428,13 +1434,26 @@ document.addEventListener("DOMContentLoaded", function () {
         const extension = node.documento_nombre.split(".").pop().toLowerCase();
         // Determinar icono según extensión
         const extensionIcons = {
-          jpg: "bi-image",
-          png: "bi-image",
-          jpeg: "bi-image",
           pdf: "bi-file-earmark-pdf",
           xlsx: "bi-file-earmark-spreadsheet",
           csv: "bi-file-earmark-spreadsheet",
+          jpg: "bi-image",
+          jpeg: "bi-image",
+          png: "bi-image",
+          ppt: "bi-file-earmark-easel",
           docx: "bi-file-earmark-richtext",
+          doc: "bi-file-earmark-richtext",
+          dotm: "bi-file-earmark-richtext",
+          dotx: "bi-file-earmark-richtext",
+          docm: "bi-file-earmark-richtext",
+          mp3: "bi-file-earmark-music",
+          mp4: "bi-file-earmark-play",
+          xls: "file-earmark-spreadsheet",
+          psc: "bi-file-earmark-code",
+          sql: "bi-database",
+          zip: "bi-file-earmark-zip-fill",
+          rar: "bi-file-earmark-zip-fill",
+          "7z": "bi-file-earmark-zip-fill",
         };
         icon.classList.add(
           "bi",
@@ -1442,12 +1461,17 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         const link = document.createElement("a");
-        link.href = "/media/" + node.url;
+
+        const lastSlashIndex = node.url.lastIndexOf("/");
+        const path = node.url.substring(0, lastSlashIndex + 1);
+        const filename = node.url.substring(lastSlashIndex + 1);
+
+        link.href = "/media/" + path + encodeURIComponent(filename);
         link.target = "_blank";
         link.append(icon, span);
         li.appendChild(link);
 
-        if (userRole === "instructor") {
+        if (userRole === "instructor" || userRole === "admin") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
@@ -1470,6 +1494,8 @@ document.addEventListener("DOMContentLoaded", function () {
           });
 
           li.dataset.folderId = node.parent_id;
+          li.dataset.documentId = node.id;
+          li.draggable = true;
           li.appendChild(deleteBtn);
         }
       }
@@ -1480,53 +1506,96 @@ document.addEventListener("DOMContentLoaded", function () {
     return ul;
   }
 
-  let portafolioClickListener = null;
+  let treeApreListenersInitialized = false;
 
   // Event listeners específicos para el portafolio
   function agregarEventListenersPortafolio() {
-    const treeContainer = document.getElementById("folderTreeAprendiz");
+    if (treeApreListenersInitialized) return;
 
-    // Eliminar listener anterior si existe
-    if (portafolioClickListener) {
-      treeContainer.removeEventListener("click", portafolioClickListener);
-    }
+    const treeContainer = document.getElementById("folderTreeAprendiz");
+    if (!treeContainer) return;
 
     // Crear nuevo listener
-    portafolioClickListener = async function (e) {
+    treeContainer.addEventListener("click", async (e) => {
       const target = e.target.closest(".folder-item > i, .folder-item > span");
       if (target) {
         const folderId = target.dataset.folderId;
         const icon =
           target.tagName === "I" ? target : target.previousElementSibling;
         togglePortafolioFolder(folderId, icon);
+        return;
       }
 
       const target2 = e.target.closest(".bi-trash");
       if (target2) {
         const li = target2.closest("li");
-        const docId =
-          li.querySelector("[data-document-id]")?.dataset.documentId;
+        const docId = li?.dataset.documentId;
         const folderId = li.dataset.folderId;
         if (!docId) return;
 
         const confirmed = await confirmToast("¿Eliminar este documento?");
         if (confirmed) deleteFileAprendiz(docId, folderId);
+        return;
       }
 
       const target3 = e.target.closest(".upload-item");
       if (target3) {
         const folderId = target3.dataset.folderId;
         openUploadModalAprendiz(folderId);
+        return;
       }
-    };
+    });
 
-    treeContainer.addEventListener("click", portafolioClickListener);
-    document
-      .getElementById("uploadButtonAprendiz")
-      .addEventListener("click", uploadFileAprendiz);
+    treeContainer.addEventListener("dragover", (e) => {
+      const folder = e.target.closest(
+        "[data-folder-id][data-droppable='true']"
+      );
+
+      if (folder) {
+        e.preventDefault();
+        folder.classList.add("dragover-highlight");
+      }
+    });
+
+    treeContainer.addEventListener("dragleave", (e) => {
+      const folder = e.target.closest(
+        "[data-folder-id][data-droppable='true']"
+      );
+
+      if (folder) {
+        e.preventDefault();
+        folder.classList.remove("dragover-highlight");
+      }
+    });
+
+    treeContainer.addEventListener("drop", async (e) => {
+      const folder = e.target.closest(
+        "[data-folder-id][data-droppable='true']"
+      );
+      if (!folder) return;
+      e.preventDefault();
+      folder.classList.remove("dragover-highlight");
+      await handleDropOnFolder(folder, e, "aprendiz");
+    });
+
+    treeContainer.addEventListener("dragstart", (e) => {
+      const docItem = e.target.closest("li[data-document-id");
+      if (!docItem) return;
+      e.dataTransfer.setData("type", "document");
+      e.dataTransfer.setData("documentId", docItem.dataset.documentId);
+      e.dataTransfer.setData("sourceFolderId", docItem.dataset.folderId);
+      // Opcional: indicar el efecto
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    const uploadButton = document.getElementById("uploadButtonAprendiz");
+    if (uploadButton)
+      uploadButton.addEventListener("click", () => uploadFile("aprendiz"));
+
+    treeApreListenersInitialized = true;
   }
 
-  // Toggle adaptado para portafolio
+  // *Toggle portafolio
   function togglePortafolioFolder(folderId, icon) {
     const subfolder = document.getElementById(`portafolio-folder-${folderId}`);
 
@@ -1562,73 +1631,6 @@ document.addEventListener("DOMContentLoaded", function () {
     modal.show();
   }
 
-  async function uploadFileAprendiz() {
-    const folderId = document.getElementById("uploadButtonAprendiz").dataset
-      .folderId;
-    const fileInputElement = document.getElementById("fileInputAprendiz");
-    const btnElement = document.getElementById("uploadButtonAprendiz");
-    const uploadModal = document.getElementById("uploadModalAprendiz");
-    const inputs = uploadModal.querySelectorAll("input, select, button");
-
-    const file = fileInputElement.files[0];
-    if (!file) {
-      toastError("Seleccione un archivo para subir.");
-      return;
-    }
-
-    // Validación de tipo de archivo
-    const allowedExtensions = ["pdf", "xlsx", "csv", "jpg", "jpeg", "png"];
-    const extension = file.name.split(".").pop().toLowerCase();
-    if (!allowedExtensions.includes(extension)) {
-      toastError(
-        "Tipo de archivo no permitido. Solo se permiten PDF, Excel o imágenes."
-      );
-      return;
-    }
-
-    // Validación de tamaño
-    const maxSize = 7 * 1024 * 1024; // 7MB
-    if (file.size > maxSize) {
-      toastError("El archivo supera el tamaño máximo permitido (7 MB).");
-      return;
-    }
-
-    inputs.forEach((el) => (el.disabled = true));
-    const originalBtnContent = btnElement.innerHTML;
-    showSpinner(btnElement);
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder_id", folderId);
-
-    try {
-      const response = await fetch("/api/tree/cargar_doc_aprendiz/", {
-        method: "POST",
-        headers: { "X-CSRFToken": csrfToken },
-        body: formData,
-      });
-
-      if (response.ok) {
-        toastSuccess("Documento subido con éxito.");
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById("uploadModalAprendiz")
-        );
-        modal.hide();
-        fileInputElement.value = "";
-
-        await actualizarCarpetaAprendiz(folderId);
-      } else {
-        toastError("Error al subir el documento.");
-      }
-    } catch (error) {
-      console.error("Error al subir el archivo:", error);
-      toastError("Ocurrió un error inesperado.");
-    } finally {
-      inputs.forEach((el) => (el.disabled = false));
-      hideSpinner(btnElement, originalBtnContent);
-    }
-  }
-
   async function deleteFileAprendiz(fileId, folderId) {
     try {
       const response = await fetch(
@@ -1646,7 +1648,7 @@ document.addEventListener("DOMContentLoaded", function () {
         toastSuccess("Documento eliminado.");
 
         if (folderId) {
-          await actualizarCarpetaAprendiz(folderId);
+          await actualizarCarpeta(folderId, "aprendiz");
         } else {
           verTree();
         }
@@ -1655,53 +1657,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     } catch (error) {
       console.error("Error al borrar el archivo:", error);
-    }
-  }
-
-  async function actualizarCarpetaAprendiz(folderId) {
-    try {
-      const response = await fetch(
-        `/api/tree/obtener_hijos_carpeta_aprendiz/${folderId}`
-      );
-      const data = await response.json();
-
-      const subFolderContainer = document.getElementById(
-        `portafolio-folder-${folderId}`
-      );
-      if (!subFolderContainer) {
-        console.error(
-          `No se encontró el contenedor para la carpeta: folder-${folderId}`
-        );
-        return;
-      }
-
-      subFolderContainer.innerHTML = "";
-
-      // Botón de carga
-      const uploadLi = document.createElement("li");
-      uploadLi.classList.add("upload-item");
-      uploadLi.style.listStyle = "none";
-      uploadLi.dataset.folderId = folderId;
-
-      const uploadIcon = document.createElement("i");
-      uploadIcon.classList.add("bi", "bi-plus-circle");
-
-      const uploadSpan = document.createElement("span");
-      uploadSpan.textContent = "Cargar documento";
-
-      uploadLi.appendChild(uploadIcon);
-      uploadLi.appendChild(uploadSpan);
-      subFolderContainer.appendChild(uploadLi);
-
-      // Renderizar hijos si hay
-      if (data.length > 0) {
-        const hijos = renderPortafolioTree(data);
-        if (hijos) {
-          subFolderContainer.appendChild(hijos);
-        }
-      }
-    } catch (error) {
-      console.error("Error al actualizar la carpeta:", error);
     }
   }
 

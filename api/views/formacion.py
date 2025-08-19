@@ -14,7 +14,7 @@ from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.shortcuts import get_object_or_404
 from api.serializers.formacion import FaseSerializer, RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer
-from commons.models import T_fase, T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor
+from commons.models import T_fase, T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz
 from django.contrib.auth.models import User
 
 from matricula.scripts.cargar_tree import crear_datos_prueba
@@ -60,12 +60,12 @@ class RapsViewSet(ModelViewSet):
 
         if programas:
             qs = qs.filter(compe__progra__nom__in=programas)
-            
+
         if fases:
             qs = qs.filter(fase__nom__in=fases)
-            
+
         if competencias:
-          qs = qs.filter(compe__nom__in=competencias)
+            qs = qs.filter(compe__nom__in=competencias)
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
@@ -430,15 +430,23 @@ class FichasViewSet(ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='cargar_documentos_ficha', parser_classes=[MultiPartParser])
     def cargar_documentos_ficha(self, request):
+        contexto = request.data.get("contexto")
         folder_id = request.data.get("folder_id")
         archivo = request.FILES.get("documento")
 
-        if not folder_id or not archivo:
+        if not folder_id or not archivo or not contexto:
             return Response({"message": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
+        if contexto == "ficha":
             folder = get_object_or_404(T_DocumentFolder, id=folder_id)
+            ruta = f'documentos/fichas/portafolio/{folder.ficha.id}/{archivo.name}'
+        elif contexto == "aprendiz":
+            folder = get_object_or_404(T_DocumentFolderAprendiz, id=folder_id)
+            ruta = f'documentos/fichas/portafolio/aprendices/{folder.aprendiz.id}/{archivo.name}'
+        else:
+            return Response({"detail": "Contexto no válido"}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
             extensiones_permitidas = [
                 "pdf",
                 "jpg",
@@ -513,7 +521,6 @@ class FichasViewSet(ModelViewSet):
                     f"({'200MB' if max_size > 15*1024*1024 else '15MB'})"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            ruta = f'documentos/fichas/portafolio/{folder.ficha.id}/{archivo.name}'
             ruta_guardada = default_storage.save(ruta, archivo)
 
             new_docu = T_docu.objects.create(
@@ -525,13 +532,22 @@ class FichasViewSet(ModelViewSet):
                 esta="Activo"
             )
 
-            document_node = T_DocumentFolder.objects.create(
-                name=archivo.name,
-                parent=folder,
-                tipo="documento",
-                ficha=folder.ficha,
-                documento=new_docu
-            )
+            MODEL_MAP = {
+                "ficha": T_DocumentFolder,
+                "aprendiz": T_DocumentFolderAprendiz
+            }
+            model = MODEL_MAP[contexto]
+            kwargs_extra = {"ficha": folder.ficha} if contexto == "ficha" else {
+                "aprendiz": folder.aprendiz}
+
+            with transaction.atomic():
+              document_node = model.objects.create(
+                  name=archivo.name,
+                  parent=folder,
+                  tipo="documento",
+                  documento=new_docu,
+                  **kwargs_extra
+              )
 
             return Response({
                 "message": "Documento cargado con éxito",
@@ -556,8 +572,8 @@ class ProgramasViewSet(ModelViewSet):
     serializer_class = ProgramaSerializer
     permission_classes = [IsAuthenticated]
 
+
 class FasesViewSet(ModelViewSet):
-  queryset = T_fase.objects.all()
-  serializer_class = FaseSerializer
-  permission_classes = [IsAuthenticated]
-  
+    queryset = T_fase.objects.all()
+    serializer_class = FaseSerializer
+    permission_classes = [IsAuthenticated]
