@@ -393,6 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
       "jpeg",
       "png",
       "ppt",
+      "pptx",
       "mp3",
       "mp4",
       "xls",
@@ -441,6 +442,12 @@ document.addEventListener("DOMContentLoaded", function () {
       "vsd",
       "vsdx",
       "xps",
+      "txt",
+      "gif",
+      "svg",
+      "avi",
+      "wav",
+      "flac",
     ];
 
     const validFiles = [];
@@ -619,6 +626,7 @@ document.addEventListener("DOMContentLoaded", function () {
       "jpeg",
       "png",
       "ppt",
+      "pptx",
       "mp3",
       "mp4",
       "xls",
@@ -667,6 +675,12 @@ document.addEventListener("DOMContentLoaded", function () {
       "vsd",
       "vsdx",
       "xps",
+      "txt",
+      "gif",
+      "svg",
+      "avi",
+      "wav",
+      "flac",
     ];
 
     const modal = bootstrap.Modal.getInstance(uploadModal);

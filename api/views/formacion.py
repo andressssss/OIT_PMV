@@ -434,8 +434,12 @@ class FichasViewSet(ModelViewSet):
         folder_id = request.data.get("folder_id")
         archivo = request.FILES.get("documento")
 
+        logger.warning(f"contexto {contexto}")
+        logger.warning(f"folder_id {folder_id}")
+
+
         if not folder_id or not archivo or not contexto:
-            return Response({"message": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
 
         if contexto == "ficha":
             folder = get_object_or_404(T_DocumentFolder, id=folder_id)
@@ -453,6 +457,7 @@ class FichasViewSet(ModelViewSet):
                 "jpeg",
                 "png",
                 "ppt",
+                "pptx",
                 "mp3",
                 "mp4",
                 "xls",
@@ -501,6 +506,12 @@ class FichasViewSet(ModelViewSet):
                 "vsd",
                 "vsdx",
                 "xps",
+                "txt",
+                "gif",
+                "svg",
+                "avi",
+                "wav",
+                "flac",
             ]
 
             extension = archivo.name.split('.')[-1].lower()
