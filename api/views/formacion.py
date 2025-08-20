@@ -522,14 +522,14 @@ class FichasViewSet(ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             if extension in ['zip', 'rar', '7z']:
-                max_size = 200 * 1024 * 1024  # 200MB
+                max_size = 300 * 1024 * 1024  # 300MB
             else:
                 max_size = 15 * 1024 * 1024  # 15MB
 
             if archivo.size > max_size:
                 return Response({
                     "message": f"{archivo.name}: excede tamaño máximo "
-                    f"({'200MB' if max_size > 15*1024*1024 else '15MB'})"
+                    f"({'300MB' if max_size > 15*1024*1024 else '15MB'})"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             ruta_guardada = default_storage.save(ruta, archivo)
