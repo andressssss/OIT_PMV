@@ -462,13 +462,13 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const maxSize = ["zip", "rar", "7z"].includes(extension)
-        ? 200 * 1024 * 1024
+        ? 300 * 1024 * 1024
         : 15 * 1024 * 1024;
 
       if (file.size > maxSize) {
         toastError(
           `El archivo "${file.name}" supera el tamaño máximo permitido (${
-            maxSize === 200 * 1024 * 1024 ? "200MB" : "15MB"
+            maxSize === 300 * 1024 * 1024 ? "300MB" : "15MB"
           }).`
         );
         continue;
@@ -710,13 +710,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const maxSize = ["zip", "rar"].includes(extension)
-          ? 200 * 1024 * 1024
+          ? 300 * 1024 * 1024
           : 15 * 1024 * 1024;
 
         if (file.size > maxSize) {
           toastError(
             `El archivo "${file.name}" supera el tamaño máximo permitido (${
-              maxSize === 200 * 1024 * 1024 ? "200MB" : "15MB"
+              maxSize === 300 * 1024 * 1024 ? "300MB" : "15MB"
             }).`
           );
           continue;

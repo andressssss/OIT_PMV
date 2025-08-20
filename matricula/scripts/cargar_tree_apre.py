@@ -72,9 +72,9 @@ def crear_estructura_arbol_aprendiz(aprendiz, estructura, parent=None):
                 )
 
                 raps_fase = T_raps.objects.filter(
-                    compe__progra=aprendiz.ficha.progra,
+                    progra=aprendiz.ficha.progra,
                     fase=fase
-                ).select_related('compe')
+                ).select_related('compe', 'progra')
 
                 competencias = {}
                 for rap in raps_fase:
