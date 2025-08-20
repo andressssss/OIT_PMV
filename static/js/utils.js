@@ -412,7 +412,6 @@ export function hidePlaceholder(
   const el = container.querySelector(`#${placeholderId}`);
   if (el) el.remove();
 }
-
 export async function crearSelectForm({
   id,
   nombre,
@@ -440,15 +439,16 @@ export async function crearSelectForm({
     select.name = nombre;
     select.className = "form-select";
 
+    // 👇 Agregar el placeholder como atributo en el <select>
+    select.setAttribute("placeholder", placeholderTexto);
+
     if (multiple) select.multiple = true;
     if (disabled) select.disabled = true;
     if (required) select.required = true;
 
-    // Agregar opción vacía si no es múltiple
     if (!multiple) {
       const defaultOption = document.createElement("option");
       defaultOption.value = "";
-      defaultOption.disabled = true;
       defaultOption.selected = true;
       defaultOption.textContent = placeholderTexto;
       select.appendChild(defaultOption);
@@ -469,15 +469,11 @@ export async function crearSelectForm({
     // Inicializar TomSelect
     new TomSelect(select, {
       placeholder: placeholderTexto,
-      allowEmptyOption: !multiple,
+      allowEmptyOption: true,
       plugins: multiple ? ["remove_button"] : [],
       persist: false,
       create: false,
       closeAfterSelect: true,
-      sortField: {
-        field: "text",
-        direction: "asc",
-      },
     });
   } catch (error) {
     console.error(`Error al cargar las opciones para ${id}`, error);

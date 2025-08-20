@@ -9,6 +9,7 @@ FASES_LABELS = {
     "EVALUACION": "4. EVALUACIÓN"
 }
 
+
 def normalizar(texto):
     """Convierte a mayúsculas y elimina acentos."""
     if not texto:
@@ -18,6 +19,7 @@ def normalizar(texto):
         c for c in unicodedata.normalize('NFD', texto)
         if unicodedata.category(c) != 'Mn'
     )
+
 
 def extraer_nombre_fase(carpeta_name):
     """
@@ -31,6 +33,7 @@ def extraer_nombre_fase(carpeta_name):
         texto = partes[1]
     return texto.lower()  # Coincidirá con T_fase.nom en la BD
 
+
 class Command(BaseCommand):
     help = "Actualiza la carpeta 4. EVIDENCIAS DE APRENDIZAJE"
 
@@ -41,13 +44,15 @@ class Command(BaseCommand):
             help='ID de un aprendiz específico para actualizar su portafolio'
         )
 
+
     def handle(self, *args, **options):
         id_aprendiz = options.get('id_aprendiz')
 
         if id_aprendiz:
             aprendices = T_apre.objects.filter(id=id_aprendiz)
             if not aprendices.exists():
-                self.stdout.write(self.style.ERROR(f"No se encontró el aprendiz con id={id_aprendiz}"))
+                self.stdout.write(self.style.ERROR(
+                    f"No se encontró el aprendiz con id={id_aprendiz}"))
                 return
         else:
             aprendices = T_apre.objects.all()
@@ -59,25 +64,26 @@ class Command(BaseCommand):
             ).first()
 
             if not carpeta_4:
-                self.stdout.write(f"[{aprendiz.id}] No tiene carpeta 4. EVIDENCIAS DE APRENDIZAJE")
+                self.stdout.write(
+                    f"[{aprendiz.id}] No tiene carpeta 4. EVIDENCIAS DE APRENDIZAJE")
                 continue
 
-            fases_carpeta = T_DocumentFolderAprendiz.objects.filter(parent=carpeta_4)
+            fases_carpeta = T_DocumentFolderAprendiz.objects.filter(
+                parent=carpeta_4)
 
             for fase_carpeta in fases_carpeta:
                 nombre_fase_bd = extraer_nombre_fase(fase_carpeta.name)
-                fase_obj = T_fase.objects.filter(
-                    nom=nombre_fase_bd
-                ).first()
+                fase_obj = T_fase.objects.filter(nom=nombre_fase_bd).first()
 
                 if not fase_obj:
-                    self.stdout.write(f"[{aprendiz.id}] No se encontró T_fase para '{fase_carpeta.name}' -> '{nombre_fase_bd}'")
+                    self.stdout.write(
+                        f"[{aprendiz.id}] No se encontró T_fase para '{fase_carpeta.name}' -> '{nombre_fase_bd}'")
                     continue
 
                 raps_fase = T_raps.objects.filter(
-                    compe__progra=aprendiz.ficha.progra,
+                    progra=aprendiz.ficha.progra,
                     fase=fase_obj
-                ).select_related('compe')
+                ).select_related('compe', 'progra')
 
                 competencias = {}
                 for rap in raps_fase:
@@ -106,4 +112,5 @@ class Command(BaseCommand):
                             parent=carpeta_compe
                         )
 
-            self.stdout.write(self.style.SUCCESS(f"[{aprendiz.id}] Actualización completada"))
+            self.stdout.write(self.style.SUCCESS(
+                f"[{aprendiz.id}] Actualización completada"))

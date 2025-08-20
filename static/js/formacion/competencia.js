@@ -43,15 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
   //== Carga inicial a la tabla
   async function cargarDatosTabla() {
     try {
-      await Promise.all([
-        crearSelect({
-          id: "programa",
-          nombre: "programas",
-          url: "/api/competencias/programas/",
-          placeholderTexto: "Seleccione un programa",
-          contenedor: "#contenedor-programa",
-        }),
-      ]);
 
       document.querySelectorAll("#fase, #programa").forEach((el) => {
         el.addEventListener("change", aplicarFiltros);
@@ -70,14 +61,10 @@ document.addEventListener("DOMContentLoaded", () => {
     table.clear();
 
     data.forEach((item) => {
-      const listaProgramas = `<ul class="lista-estilo">${item.progra
-        .map((p) => `<li><i class="bi bi-dot"></i> ${p}</li>`)
-        .join("")}</ul>`;
 
       table.row.add([
         item.nom,
         item.cod,
-        listaProgramas,
         `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${item.id}"
                     title="Editar"
@@ -97,16 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     table.draw();
 
-    crearSelectForm({
-      id: "progra_crear",
-      nombre: "progra",
-      url: "/api/formacion/programas/",
-      placeholderTexto: "Seleccione un programa",
-      contenedor: "#contenedor-programas-crear",
-      multiple: true,
-      required: true,
-    });
-
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
       new bootstrap.Tooltip(el);
     });
@@ -120,7 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
     tr.innerHTML = `
             <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
             <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
             <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span></td>
         `;
     tbody.appendChild(tr);
@@ -129,12 +105,12 @@ document.addEventListener("DOMContentLoaded", () => {
   //== Filtrar tabla
   async function aplicarFiltros() {
     mostrarPlaceholdersTabla();
-    const formData = new FormData(document.getElementById("filtros-form"));
-    const params = new URLSearchParams(formData).toString();
+    // const formData = new FormData(document.getElementById("filtros-form"));
+    // const params = new URLSearchParams(formData).toString();
 
     try {
       const response = await fetch(
-        `/api/formacion/competencias/tabla/?${params}`
+        `/api/formacion/competencias/tabla/?`
       );
       const data = await response.json();
       renderTabla(data);
@@ -188,15 +164,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const originalBtnContent = btn.innerHTML;
       const competenciaId = btn.dataset.id;
       showSpinner(btn);
-      await crearSelectForm({
-        id: "progra_edit",
-        nombre: "progra",
-        url: "/api/formacion/programas/",
-        placeholderTexto: "Seleccione un programa",
-        contenedor: "#contenedor-programas",
-        multiple: true,
-        required: true,
-      });
       const modalEl = document.getElementById("editarCompetenciaModal");
       const modalInstance = new bootstrap.Modal(modalEl);
       document.getElementById("btnEditarCompetencia").disabled = true;
@@ -250,8 +217,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       document.querySelector("#nom_edit").value = data.nom || "";
       document.querySelector("#cod_edit").value = data.cod ?? "";
-      setSelectValue("progra_edit", data.progra);
-      console.log(data);
       formEditarCompetencia.setAttribute(
         "action",
         `/api/formacion/competencias/${competenciaId}/`

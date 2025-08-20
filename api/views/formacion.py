@@ -59,7 +59,7 @@ class RapsViewSet(ModelViewSet):
         qs = self.get_queryset()
 
         if programas:
-            qs = qs.filter(compe__progra__nom__in=programas)
+            qs = qs.filter(progra__nom__in=programas)
 
         if fases:
             qs = qs.filter(fase__nom__in=fases)

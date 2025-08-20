@@ -13,32 +13,18 @@
               <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear competencia" data-bs-toggle="modal" data-bs-target="#crearCompetenciaModal">{% icon 'plus' %}</a>
             </div>
           </div>
-          <div id="contenedor-filtros">
-            <h5>Filtrar y organizar:</h5>
-            <form id="filtros-form" class="row mb-3">
-              <div class="col-md-12" id="contenedor-programa">
-                <div class="placeholder-glow">
-                  <span class="placeholder col-12 rounded"></span>
-                </div>
-              </div>
-            </form>
-          </div>
           <div class="table-responsive">
             <table id="competencias_table" class="table table-hover table-bordered align-middle">
               <thead class="table-secondary text-center">
                 <tr>
                   <th>Nombre</th>
                   <th>Código</th>
-                  <th>Programa asociado</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 <td>
                   <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
                 </td>
                 <td>
                   <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
@@ -70,9 +56,6 @@
             <label for="cod_crear">Código:</label>
             <input type="number" name="cod" id="cod_crear" class="form-control" required/>
 
-            <label for="progra">Programas:</label>
-            <div id="contenedor-programas-crear"></div>
-
             <div id="errorEditarCompetencia" class="text-danger mt-2"></div>
           </form>
         </div>
@@ -98,9 +81,6 @@
 
             <label for="cod_edit">Código:</label>
             <input type="number" name="cod" id="cod_edit" class="form-control" required/>
-
-            <label for="programas_edit">Programas:</label>
-            <div id="contenedor-programas"></div>
 
             <div id="errorEditarCompetencia" class="text-danger mt-2"></div>
           </form>

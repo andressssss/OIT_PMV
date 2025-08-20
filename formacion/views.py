@@ -2570,16 +2570,23 @@ def informe_usuarios_x_rol(request):
     ws = wb.active
     ws.title = "Usuarios"
 
-    ws.append(["Nombre", "Apellido", "Tipo DNI", "DNI", "Rol"])
+    ws.append(["Nombre", "Apellido", "Tipo DNI", "DNI", "Ultimo ingreso", "Rol"])
 
     perfiles = T_perfil.objects.all()
 
-    for perfil in perfiles:
+    for perfil in perfiles:  
+        last_login = perfil.user.last_login
+        if last_login:  
+            last_login = last_login.replace(tzinfo=None)  # quitar timezone
+        else:
+            last_login = ""
+
         ws.append([
             perfil.nom,
             perfil.apelli,
             perfil.tipo_dni,
             perfil.dni,
+            last_login,
             perfil.rol
         ])
 
