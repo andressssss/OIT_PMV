@@ -33,7 +33,6 @@ def extraer_nombre_fase(carpeta_name):
         texto = partes[1]
     return texto.lower()  # Coincidirá con T_fase.nom en la BD
 
-
 class Command(BaseCommand):
     help = "Actualiza la carpeta 4. EVIDENCIAS DE APRENDIZAJE"
 
@@ -43,7 +42,6 @@ class Command(BaseCommand):
             type=int,
             help='ID de un aprendiz específico para actualizar su portafolio'
         )
-
 
     def handle(self, *args, **options):
         id_aprendiz = options.get('id_aprendiz')
@@ -58,6 +56,13 @@ class Command(BaseCommand):
             aprendices = T_apre.objects.all()
 
         for aprendiz in aprendices:
+            # Validar si el aprendiz tiene ficha y programa
+            if not aprendiz.ficha or not aprendiz.ficha.progra:
+                self.stdout.write(
+                    f"[{aprendiz.id}] No tiene ficha o programa asociado, se omite"
+                )
+                continue
+
             carpeta_4 = T_DocumentFolderAprendiz.objects.filter(
                 aprendiz=aprendiz,
                 name="4. EVIDENCIAS DE APRENDIZAJE"
@@ -69,7 +74,8 @@ class Command(BaseCommand):
                 continue
 
             fases_carpeta = T_DocumentFolderAprendiz.objects.filter(
-                parent=carpeta_4)
+                parent=carpeta_4
+            )
 
             for fase_carpeta in fases_carpeta:
                 nombre_fase_bd = extraer_nombre_fase(fase_carpeta.name)
