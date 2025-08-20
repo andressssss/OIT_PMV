@@ -65,6 +65,15 @@ document.addEventListener("DOMContentLoaded", () => {
           contenedor: "#contenedor-programa",
         }),
         crearSelectForm({
+          id: "compe_crear",
+          nombre: "compe",
+          url: "/api/formacion/competencias/",
+          placeholderTexto: "Seleccione una competencia",
+          contenedor: "#contenedor-competencias-crear",
+          multiple: false,
+          required: true,
+        }),
+        crearSelectForm({
           id: "progra_crear",
           nombre: "progra",
           url: "/api/formacion/programas/",
@@ -80,6 +89,15 @@ document.addEventListener("DOMContentLoaded", () => {
           placeholderTexto: "Seleccione una fase",
           contenedor: "#contenedor-fases-crear",
           multiple: true,
+          required: true,
+        }),
+        crearSelectForm({
+          id: "compe_editar",
+          nombre: "compe",
+          url: "/api/formacion/competencias/",
+          placeholderTexto: "Seleccione una competencia",
+          contenedor: "#contenedor-competencias-editar",
+          multiple: false,
           required: true,
         }),
         crearSelectForm({
@@ -108,10 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
           el.addEventListener("change", aplicarFiltros);
         });
 
-      document
-        .getElementById("progra_crear")
-        .addEventListener("change", actualizarCompetencias);
-
       const response = await fetch(`/api/formacion/raps/tabla/`);
       const data = await response.json();
       renderTabla(data);
@@ -124,9 +138,6 @@ document.addEventListener("DOMContentLoaded", () => {
     table.clear();
 
     data.forEach((el) => {
-      const listaProgramas = `<ul class="lista-estilo">${el.programas
-        .map((p) => `<li><i class="bi bi-dot"></i> ${p}</li>`)
-        .join("")}</ul>`;
       const listaFases = `<ul class="lista-estilo">${el.fase
         .map((p) => `<li><i class="bi bi-dot"></i> ${p}</li>`)
         .join("")}</ul>`;
@@ -135,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
         el.nom,
         el.cod,
         el.compe,
-        listaProgramas,
+        el.progra,
         listaFases || "Sin registro",
         `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${el.id}"
@@ -192,34 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  //== Actualizacion del select basado en el programa seleccionado
-  async function actualizarCompetencias() {
-    const programaId = this.value;
-    const compeSelect = document.getElementById("compe_crear");
-
-    compeSelect.disabled = true;
-    compeSelect.innerHTML =
-      '<option value="">Seleccione una competencia   <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span></option>';
-
-    if (programaId) {
-      try {
-        crearSelectForm({
-          id: "compe_crear",
-          nombre: "compe",
-          url: `/api/formacion/competencias/?programa=${programaId}`,
-          placeholderTexto: "Seleccione un programa",
-          contenedor: "#contenedor-competencias-crear",
-          multiple: true,
-          required: true,
-        });
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        compeSelect.disabled = false;
-      }
-    }
-  }
-
   //==Crear RAP
   const formCrearRAP = document.getElementById("formCrearRAP");
 
@@ -258,8 +241,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       hideSpinner(btn, originalBtnContent);
       setFormDisabled(formCrearRAP, false);
-
-      document.getElementById("compe_crear").disabled = true;
     }
   });
 
@@ -317,19 +298,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (validarErrorDRF(response, data)) return;
-      await crearSelectForm({
-        id: "compe_editar",
-        nombre: "compe",
-        url: `/api/formacion/competencias/?programa=${data.programas[0]}`,
-        placeholderTexto: "Seleccione una competencia",
-        contenedor: "#contenedor-competencias-editar",
-        multiple: false,
-        required: true,
-      });
       formEditarRAP.querySelector('input[name="nom"]').value = data.nom;
       formEditarRAP.querySelector('input[name="cod"]').value = data.cod;
       setSelectValue("fase_editar", data.fase);
-      setSelectValue("progra_editar", data.programas);
+      setSelectValue("progra_editar", data.progra);
       setSelectValue("compe_editar", data.compe);
 
       formEditarRAP.setAttribute("action", `/api/formacion/raps/${rapId}/`);
@@ -339,30 +311,6 @@ document.addEventListener("DOMContentLoaded", () => {
       setFormDisabled(formEditarRAP, false);
     }
   }
-
-  //Cargar competencias completas en el modal de edicion
-  async function cargarCompetenciasPorPrograma(programaId) {
-    try {
-      crearSelectForm({
-        id: "compe_editar",
-        nombre: "compe",
-        url: `/api/formacion/competencias/?programa=${programaId}`,
-        placeholderTexto: "Seleccione una competencia",
-        contenedor: "#contenedor-competencias-editar",
-        multiple: false,
-        required: true,
-      });
-    } catch (error) {
-      toastError("Error al cargar competencias");
-    }
-  }
-
-  formEditarRAP.addEventListener("change", async (e) => {
-    if (e.target.id === "progra_editar") {
-      const programaId = e.target.value;
-      await cargarCompetenciasPorPrograma(programaId);
-    }
-  });
 
   formEditarRAP.addEventListener("submit", async (e) => {
     e.preventDefault();

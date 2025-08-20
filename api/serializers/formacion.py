@@ -124,8 +124,8 @@ class RapWriteSerializer(RapSerializer):
         queryset=T_fase.objects.all(), many=True
     )
 
-    class Meta(CompetenciaSerializer.Meta):
-        fields = CompetenciaSerializer.Meta.fields + ['cod', 'compe', 'fase']
+    class Meta(RapSerializer.Meta):
+        fields = RapSerializer.Meta.fields + ['cod', 'compe', 'progra', 'fase']
 
     def validate_cod(self, value):
         qs = T_raps.objects.filter(cod=value)
@@ -170,6 +170,7 @@ class RapDetalleSerializer(RapSerializer):
 
 class RapTablaSerializer(RapSerializer):
     compe = serializers.CharField(source="compe.nom", read_only=True)
+    progra = serializers.CharField(source="progra.nom", read_only=True)
     fase = serializers.SerializerMethodField()
 
     class Meta(RapSerializer.Meta):
