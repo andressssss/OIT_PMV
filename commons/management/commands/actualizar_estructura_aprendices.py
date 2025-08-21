@@ -96,7 +96,7 @@ class Command(BaseCommand):
                     competencias.setdefault(rap.compe, []).append(rap)
 
                 for compe, raps in competencias.items():
-                    nombre_competencia = f"{compe.cod} - {compe.nom}"
+                    nombre_competencia = f"COMPETENCIA {compe.cod} - {compe.nom}"
                     if T_DocumentFolderAprendiz.objects.filter(
                         parent=fase_carpeta,
                         name=nombre_competencia

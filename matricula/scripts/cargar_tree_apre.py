@@ -82,7 +82,7 @@ def crear_estructura_arbol_aprendiz(aprendiz, estructura, parent=None):
 
                 for compe, raps in competencias.items():
                     carpeta_compe = T_DocumentFolderAprendiz.objects.create(
-                        name=f"{compe.cod} - {compe.nom}",
+                        name=f"COMPETENCIA {compe.cod} - {compe.nom}",
                         tipo="carpeta",
                         aprendiz=aprendiz,
                         parent=carpeta_fase
