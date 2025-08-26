@@ -53,6 +53,8 @@ document.addEventListener("DOMContentLoaded", function () {
     new bootstrap.Tooltip(el);
   });
 
+  verTree();
+
   async function verTree() {
     const container = document.getElementById("folderTree");
 
@@ -77,13 +79,64 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Agregar listeners después de renderizar el árbol
       addEventListeners();
+      cargarHistorial('fichaG', fichaId);
+      cargarHistorial('ficha', fichaId);
     } catch (error) {
       console.error("Error al cargar la estructura del árbol:", error);
       container.innerHTML = "<p>Error al cargar el árbol</p>";
     }
   }
 
-  verTree();
+  async function cargarHistorial(contexto, id) {
+    let containerId = contexto === 'ficha' ? 'historialFicha' 
+                    : contexto === 'aprendiz' ? 'historialAprendiz'
+                    : 'historialGeneralFicha';
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+
+    // Mensaje de carga
+    const loadingMessage = document.createElement("li");
+    loadingMessage.classList.add("list-group-item", "text-center");
+    loadingMessage.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center">
+            <div class="spinner-border text-dark me-2" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    `;
+    container.appendChild(loadingMessage);
+
+    try {
+      const response = await fetch(
+        `/api/formacion/fichas/historial/?contexto=${encodeURIComponent(contexto)}&id=${encodeURIComponent(id)}`
+      );
+      if (!response.ok) throw new Error("Error en la respuesta del servidor");
+      const data = await response.json();
+
+      container.innerHTML = "";
+
+      if (data.length === 0) {
+        container.innerHTML =
+          '<li class="list-group-item">No hay historial disponible</li>';
+        return;
+      }
+
+      data.forEach((log) => {
+        const li = document.createElement("li");
+        li.classList.add("list-group-item");
+        li.innerHTML = `
+                <strong>${log.usuario}</strong> 
+                <span class="text-muted">[${log.fecha}]</span>: 
+                ${log.detalle} <em>(${log.accion})</em>
+            `;
+        container.appendChild(li);
+      });
+    } catch (error) {
+      console.error("Error al cargar el historial:", error);
+      container.innerHTML =
+        '<li class="list-group-item text-danger">Error al cargar el historial</li>';
+    }
+  }
 
   function renderTree(nodes) {
     if (!nodes || nodes.length === 0) return null;
@@ -222,7 +275,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       ul.appendChild(li);
     });
-
     return ul;
   }
 
@@ -273,7 +325,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "[data-folder-id][data-droppable='true']"
       );
       if (folder) {
-        e.preventDefault(); // necesario para permitir drop
+        e.preventDefault();
         folder.classList.add("dragover-highlight");
       }
     });
@@ -803,17 +855,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function actualizarCarpeta(folderId, contexto) {
+
+    let aprendizId = null;
+
+    if ( contexto === "aprendiz") aprendizId = document.getElementById("portafolioAprendizModal").dataset.aprendizId;
+
     try {
       const config = {
         ficha: {
           url: `/api/tree/obtener_hijos_carpeta/${folderId}`,
           containerId: `folder-${folderId}`,
           renderFn: renderTree,
+          renderHistorial: () => cargarHistorial('ficha', fichaId),
         },
         aprendiz: {
           url: `/api/tree/obtener_hijos_carpeta_aprendiz/${folderId}`,
           containerId: `portafolio-folder-${folderId}`,
           renderFn: renderPortafolioTree,
+          renderHistorial: () => cargarHistorial('aprendiz', aprendizId),
         },
       };
 
@@ -822,7 +881,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const { url, containerId, renderFn } = config[contexto];
+      const { url, containerId, renderFn, renderHistorial } = config[contexto];
 
       const response = await fetch(url);
       const data = await response.json();
@@ -858,6 +917,7 @@ document.addEventListener("DOMContentLoaded", function () {
           subFolderContainer.appendChild(hijos);
         }
       }
+      renderHistorial();
     } catch (error) {
       console.error("Error al actualizar la carpeta:", error);
     }
@@ -1051,12 +1111,11 @@ document.addEventListener("DOMContentLoaded", function () {
       ).textContent = `Portafolio de ${aprendizNombre}`;
 
       document.getElementById("folderTreeAprendiz").innerHTML = "";
-      //document.getElementById("historial-body").innerHTML = "Pendiente desarrollo!";
 
       cargarPortafolio(aprendizId);
-      // cargarTablaHistorial(aprendizId);
 
       const modalEl = document.getElementById("portafolioAprendizModal");
+      modalEl.dataset.aprendizId = aprendizId;
       modalEl.removeAttribute("aria-hidden");
       new bootstrap.Modal(modalEl).show();
 
@@ -1162,6 +1221,26 @@ document.addEventListener("DOMContentLoaded", function () {
         await fillDataAprendiz(aprendizId);
       } finally {
         hideSpinner(target4, originalBtnContent);
+      }
+    }
+
+    const target5 = e.target.closest(".activar-aprendiz");
+    if(target5) {
+      const confirm = await confirmAction({
+        message:
+          "¿Esta seguro que desea activar al aprendiz?, quedara activo en la actual ficha",
+        title: "Activar aprendiz",
+        icon: "warning",
+      });
+      if (!confirm) return;
+      const originalBtnContent = target5.innerHTML;
+      showSpinner(target5);
+      const aprendizId = target5.getAttribute("data-id");
+
+      try {
+        await activarAprendiz(aprendizId);
+      } finally {
+        hideSpinner(target5, originalBtnContent);
       }
     }
   });
@@ -1322,6 +1401,28 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  async function activarAprendiz(aprendizId) {
+    try {
+      const response = await fetch(`/api/usuarios/aprendices/${aprendizId}/`, {
+        method: "PATCH",
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ esta : "activo"}),
+      });
+
+      const data = await response.json();
+      if (validarErrorDRF(response, data)) return;
+
+      toastSuccess(data.message);
+      location.reload();
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
   async function desertarAprendiz(aprendizId) {
     try {
       const response = await fetch(`/api/usuarios/aprendices/${aprendizId}/`, {
@@ -1360,6 +1461,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       agregarEventListenersPortafolio();
+      cargarHistorial('aprendiz', aprendizId);
     } catch (error) {
       console.error("Error cargando los nodos:", error);
       document.getElementById("folderTreeAprendiz").innerHTML =

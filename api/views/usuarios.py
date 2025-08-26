@@ -1,4 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,12 +16,26 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.contrib.auth.models import User
-from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal
+from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal, AuditLog
 from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, DateField
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from commons.permisos import DenegarConsulta
+
+def comparar_diccionarios(before, after, prefix=""):
+    cambios = []
+    for key in set(before.keys()).union(set(after.keys())):
+        valor_antes = before.get(key)
+        valor_despues = after.get(key)
+
+        if isinstance(valor_antes, dict) and isinstance(valor_despues, dict):
+            cambios.extend(comparar_diccionarios(valor_antes, valor_despues, prefix=f"{prefix}{key}."))
+        else:
+            if valor_antes != valor_despues:
+                cambios.append(f"{prefix}{key}: {valor_antes} → {valor_despues}")
+    return cambios
+
 
 class DataTablesPagination(PageNumberPagination):
     page_size_query_param = 'length'
@@ -76,14 +91,13 @@ class PerfilViewSet(ModelViewSet):
             )
 
         paginated = self.paginate_queryset(perfiles)
-        
+
         if paginated is not None:
-          serializer = PerfilSerializer(paginated, many=True)
-          return self.get_paginated_response(serializer.data)
-        
+            serializer = PerfilSerializer(paginated, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = PerfilSerializer(perfiles, many=True)
         return Response(serializer.data)
-
 
 
 class CentroFormacionViewSet(ModelViewSet):
@@ -141,30 +155,32 @@ class AprendizViewSet(ModelViewSet):
         aprendices = T_apre.objects.all()
 
         if usuarios:
-          filtros = Q()
+            filtros = Q()
 
-          for usuario in usuarios:
-              nombre, *apellido = usuario.split(" ")
-              apellido = " ".join(apellido)
+            for usuario in usuarios:
+                nombre, *apellido = usuario.split(" ")
+                apellido = " ".join(apellido)
 
-              filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre, usu_crea__t_perfil__apelli__icontains=apellido)
-          
-          aprendices = aprendices.filter(filtros)
+                filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre,
+                             usu_crea__t_perfil__apelli__icontains=apellido)
+
+            aprendices = aprendices.filter(filtros)
         if fecha:
-          fecha_creacion = datetime.strptime(fecha, '%Y-%m-%d').date()
+            fecha_creacion = datetime.strptime(fecha, '%Y-%m-%d').date()
 
-          aprendices = aprendices.annotate(fecha_sin_hora=Cast('perfil__user__date_joined', output_field=DateField()))
+            aprendices = aprendices.annotate(fecha_sin_hora=Cast(
+                'perfil__user__date_joined', output_field=DateField()))
 
-          aprendices = aprendices.filter(fecha_sin_hora=fecha_creacion)
+            aprendices = aprendices.filter(fecha_sin_hora=fecha_creacion)
 
         if estado:
-          aprendices = aprendices.filter(esta__in=estado)
+            aprendices = aprendices.filter(esta__in=estado)
 
         if ordenar:
-          if ordenar == 'fecha_desc':
-              aprendices = aprendices.order_by('-perfil__user__date_joined')
-          elif ordenar == 'fecha_asc':
-              aprendices = aprendices.order_by('perfil__user__date_joined')
+            if ordenar == 'fecha_desc':
+                aprendices = aprendices.order_by('-perfil__user__date_joined')
+            elif ordenar == 'fecha_asc':
+                aprendices = aprendices.order_by('perfil__user__date_joined')
 
         if search:
             aprendices = aprendices.filter(
@@ -174,12 +190,12 @@ class AprendizViewSet(ModelViewSet):
                 Q(perfil__mail__icontains=search) |
                 Q(perfil__dni__icontains=search)
             )
-            
+
         total = T_apre.objects.count()
         filtrados = aprendices.count()
 
         paginated = self.paginate_queryset(aprendices)
-    
+
         if paginated is not None:
             serializer = AprendizSerializer(paginated, many=True)
             return Response({
@@ -196,7 +212,79 @@ class AprendizViewSet(ModelViewSet):
         })
 
     def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        ficha = instance.ficha
+
+        # estado ANTES
+        data_before = {
+            "ficha": instance.ficha_id,
+            "esta": instance.esta,
+            "perfil": {
+                "nom": instance.perfil.nom,
+                "apelli": instance.perfil.apelli,
+                "tipo_dni": instance.perfil.tipo_dni,
+                "dni": instance.perfil.dni,
+                "tele": instance.perfil.tele,
+                "dire": instance.perfil.dire,
+                "gene": instance.perfil.gene,
+                "mail": instance.perfil.mail,
+                "fecha_naci": str(instance.perfil.fecha_naci) if instance.perfil.fecha_naci else None,
+            },
+            "repre_legal": {
+                "nom": instance.repre_legal.nom if instance.repre_legal else None,
+                "dni": instance.repre_legal.dni if instance.repre_legal else None,
+                "tele": instance.repre_legal.tele if instance.repre_legal else None,
+                "dire": instance.repre_legal.dire if instance.repre_legal else None,
+                "mail": instance.repre_legal.mail if instance.repre_legal else None,
+                "paren": instance.repre_legal.paren if instance.repre_legal else None,
+            } if instance.repre_legal else None
+        }
+
+        # actualización real
         response = super().partial_update(request, *args, **kwargs)
+
+        # estado DESPUÉS
+        instance.refresh_from_db()
+        data_after = {
+            "ficha": instance.ficha_id if instance.ficha else "Sin ficha",
+            "esta": instance.esta,
+            "perfil": {
+                "nom": instance.perfil.nom,
+                "apelli": instance.perfil.apelli,
+                "tipo_dni": instance.perfil.tipo_dni,
+                "dni": instance.perfil.dni,
+                "tele": instance.perfil.tele,
+                "dire": instance.perfil.dire,
+                "gene": instance.perfil.gene,
+                "mail": instance.perfil.mail,
+                "fecha_naci": str(instance.perfil.fecha_naci) if instance.perfil.fecha_naci else None,
+            },
+            "repre_legal": {
+                "nom": instance.repre_legal.nom if instance.repre_legal else None,
+                "dni": instance.repre_legal.dni if instance.repre_legal else None,
+                "tele": instance.repre_legal.tele if instance.repre_legal else None,
+                "dire": instance.repre_legal.dire if instance.repre_legal else None,
+                "mail": instance.repre_legal.mail if instance.repre_legal else None,
+                "paren": instance.repre_legal.paren if instance.repre_legal else None,
+            } if instance.repre_legal else None
+        }
+
+        # comparar recursivamente
+        cambios = comparar_diccionarios(data_before, data_after)
+        extra_data = f"Aprendiz con DNI {instance.perfil.dni}: " + " | ".join(cambios) if cambios else "Sin cambios detectados"
+
+        # insertar en AuditLog
+        AuditLog.objects.create(
+            user=request.user,
+            action="update",
+            content_type=ContentType.objects.get_for_model(ficha),
+            object_id=ficha.id,
+            related_id=ficha.id if ficha.id else None,
+            related_type="fichaG",
+            extra_data=extra_data
+        )
+
         return Response({
             "message": "Aprendiz actualizado correctamente",
         }, status=status.HTTP_200_OK)
@@ -239,6 +327,21 @@ class AprendizViewSet(ModelViewSet):
             ficha = T_ficha.objects.get(pk=ficha_id)
             aprendiz.ficha = ficha
             aprendiz.save()
+            extra_data = (
+                f"Se asocio el aprendiz con DNI'{aprendiz.perfil.dni}' "
+                f"en la ficha {ficha.num}"
+            )
+
+            AuditLog.objects.create(
+                user=request.user,
+                action="create",
+                content_type=ContentType.objects.get_for_model(
+                    aprendiz.ficha),
+                object_id=aprendiz.id,
+                related_id=ficha.id,
+                related_type="fichaG",
+                extra_data=extra_data
+            )
             return Response({'message': 'ficha asociada correctamente'}, status=status.HTTP_200_OK)
         except T_ficha.DoesNotExist:
             return Response({'detail': 'Ficha no encontrada'}, status=status.HTTP_404_NOT_FOUND)
@@ -379,6 +482,22 @@ class AprendizViewSet(ModelViewSet):
                     ficha=ficha).count()
                 ficha.num_apre_proce = ficha.num_apre_pendi_regi
                 ficha.save()
+
+                extra_data = (
+                    f"Se cargó el aprendiz con DNI'{aprendiz.perfil.dni}' "
+                    f"en la ficha {ficha.num}"
+                )
+
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="create",
+                    content_type=ContentType.objects.get_for_model(
+                        aprendiz.ficha),
+                    object_id=aprendiz.id,
+                    related_id=ficha.id,
+                    related_type="fichaG",
+                    extra_data=extra_data
+                )
 
             return Response({'message': 'Aprendiz creado correctamente.', 'resumen': resumen}, status=201)
 
