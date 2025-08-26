@@ -4,6 +4,7 @@ from matricula.scripts.cargar_tree import crear_datos_prueba
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.db import transaction
 from django.contrib.staticfiles import finders
+from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_str
 import io
 import zipfile
@@ -27,7 +28,7 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from .forms import CascadaMunicipioInstitucionForm, GuiaForm, CargarFichasMasivoForm, CargarDocuPortafolioFichaForm, ActividadForm, RapsFichaForm, EncuApreForm, EncuentroForm, DocumentosForm, CronogramaForm, ProgramaForm, CompetenciaForm, RapsForm, FichaForm
-from commons.models import T_encu, T_departa, T_raps_fase, T_munici, T_compe_progra, T_gestor_depa, T_fase, T_centro_forma, T_guia, T_cali, T_prematri_docu, T_docu, T_munici, T_insti_edu, T_acti_apre, T_raps_acti, T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha, T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
+from commons.models import T_encu, AuditLog, T_departa, T_raps_fase, T_munici, T_compe_progra, T_gestor_depa, T_fase, T_centro_forma, T_guia, T_cali, T_prematri_docu, T_docu, T_munici, T_insti_edu, T_acti_apre, T_raps_acti, T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha, T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
 from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
@@ -506,6 +507,17 @@ def descargar_portafolio_zip(request, ficha_id):
             agregar_a_zip(zip_file, nodo, "")
 
     buffer.seek(0)
+    
+    AuditLog.objects.create(
+        user=request.user,
+        action="download",
+        content_type=ContentType.objects.get_for_model(T_DocumentFolder),
+        object_id=None,
+        related_id=ficha_id,
+        related_type="ficha",
+        extra_data=f"Descargó el portafolio completo de la ficha {ficha_id} "
+                   f"con {nodos.count()} nodos (documentos y carpetas)."
+    )
 
     response = HttpResponse(buffer, content_type="application/zip")
     response["Content-Disposition"] = f'attachment; filename=portafolio_ficha_{ficha_id}.zip'
@@ -566,6 +578,29 @@ def cargar_documento(request):
                 documento=new_docu,
                 **extra_kwargs
             )
+            
+            if contexto == "ficha":
+                related_id = document_node.ficha_id
+            elif contexto == "aprendiz":
+                related_id = document_node.aprendiz_id
+            else:
+                related_id = None
+                
+            extra_data = (
+                f"Se cargó el documento '{document_node.name}' "
+                f"en la carpeta {folder.id} "
+            )
+            
+            AuditLog.objects.create(
+              user= request.user,
+              action="create",
+              content_type= ContentType.objects.get_for_model(document_node),
+              object_id= document_node.id,
+              related_id = related_id,
+              related_type = contexto,
+              extra_data=extra_data
+            )
+
 
         return JsonResponse({
             'status': 'success',
@@ -621,9 +656,31 @@ def mover_documento(request):
                     'message': 'No se puede mover un documento dentro de sí mismo.'
                 }, status=400)
 
+            carpeta_origen = documento_node.parent  
+
             # Actualizar la carpeta padre
             documento_node.parent = carpeta_destino
             documento_node.save()
+
+            # Registrar en el log
+            if contexto == "ficha":
+                related_id = documento_node.ficha_id
+            elif contexto == "aprendiz":
+                related_id = documento_node.aprendiz_id
+            else:
+                related_id = None
+
+            AuditLog.objects.create(
+                user=request.user,
+                action="update",
+                content_object=documento_node,
+                related_id = related_id,
+                related_type = contexto,
+                extra_data=(
+                    f"Se movió el documento '{documento_node.name}' "
+                    f"de la carpeta {carpeta_origen.id} a la carpeta {carpeta_destino.id} "
+                )
+            )
 
             return JsonResponse({
                 'status': 'success',
@@ -648,6 +705,12 @@ def eliminar_documento_portafolio_ficha(request, documento_id):
 
     documento = get_object_or_404(T_DocumentFolder, id=documento_id)
 
+    nombre_doc = documento.name if (documento.name) else "Documento sin archivo"
+    extra_data = (
+        f"Se elimino el documento '{nombre_doc}' "
+        f"en la carpeta {documento.parent_id} "
+    )
+    
     # Si hay un archivo relacionado, eliminarlo manualmente
     if documento.documento and documento.documento.archi:
         archivo_a_eliminar = documento.documento.archi.name
@@ -656,6 +719,16 @@ def eliminar_documento_portafolio_ficha(request, documento_id):
         documento.documento.delete()
 
     documento.delete()
+    
+    AuditLog.objects.create(
+        user=request.user,
+        content_type=ContentType.objects.get_for_model(documento),
+        object_id=documento.id,
+        action="delete",
+        related_id = documento.ficha_id,
+        related_type = "ficha",
+        extra_data=extra_data
+    )
 
     return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status=200)
 
@@ -792,6 +865,28 @@ def descargar_portafolio_aprendiz_zip(request, aprendiz_id):
 
     buffer.seek(0)
 
+    AuditLog.objects.create(
+        user=request.user,
+        action="download",
+        content_type=ContentType.objects.get_for_model(T_DocumentFolderAprendiz),
+        object_id=None,
+        related_id=aprendiz_id,
+        related_type="aprendiz",
+        extra_data=f"Descargó el portafolio completo del aprendiz {aprendiz_id} "
+                   f"con {nodos.count()} nodos (documentos y carpetas)."
+    )
+    
+    AuditLog.objects.create(
+        user=request.user,
+        action="download",
+        content_type=ContentType.objects.get_for_model(T_DocumentFolderAprendiz),
+        object_id=None,
+        related_id=nodos[0].aprendiz.ficha_id,
+        related_type="ficha",
+        extra_data=f"Descargó el portafolio completo del aprendiz {aprendiz_id} "
+                   f"con {nodos.count()} nodos (documentos y carpetas)."
+    )
+
     response = HttpResponse(buffer, content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename=portafolio_aprendiz_{aprendiz_id}.zip'
     return response
@@ -854,6 +949,17 @@ def descargar_portafolios_ficha_zip(request, ficha_id):
                 agregar_a_zip(zip_file, nodo, carpeta_aprendiz)
 
     buffer.seek(0)
+    
+    AuditLog.objects.create(
+        user=request.user,
+        action="download",
+        content_type=ContentType.objects.get_for_model(T_DocumentFolderAprendiz),
+        object_id=None,
+        related_id=ficha_id,
+        related_type="ficha",
+        extra_data=f"Descargó el portafolio completo de todos los aprendices para la ficha {ficha_id} "
+                   f"con {nodos.count()} nodos (documentos y carpetas)."
+    )
 
     response = HttpResponse(buffer, content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename=portafolios_ficha_{ficha_id}.zip'
@@ -867,6 +973,12 @@ def eliminar_documento_portafolio_aprendiz(request, documento_id):
 
     documento = get_object_or_404(T_DocumentFolderAprendiz, id=documento_id)
 
+    nombre_doc = documento.name if (documento.name) else "Documento sin archivo"
+    extra_data = (
+        f"Se elimino el documento '{nombre_doc}' "
+        f"en la carpeta {documento.parent_id} "
+    )
+
     if documento.documento and documento.documento.archi:
         archivo_a_eliminar = documento.documento.archi.name
         if archivo_a_eliminar:
@@ -874,6 +986,17 @@ def eliminar_documento_portafolio_aprendiz(request, documento_id):
         documento.documento.delete()
 
     documento.delete()
+    
+    AuditLog.objects.create(
+        user=request.user,
+        content_type=ContentType.objects.get_for_model(documento),
+        object_id=documento.id,
+        action="delete",
+        related_id = documento.aprendiz_id,
+        related_type = "aprendiz",
+        extra_data=extra_data
+    )
+
 
     return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status=200)
 

@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
 from django.core.files.storage import default_storage
+from django.contrib.contenttypes.models import ContentType
 from datetime import datetime
 from io import TextIOWrapper
 from django.db import transaction
@@ -14,9 +15,9 @@ from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.shortcuts import get_object_or_404
 from api.serializers.formacion import FaseSerializer, RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer
-from commons.models import T_fase, T_raps, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz
+from commons.models import T_fase, T_raps, AuditLog, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz
 from django.contrib.auth.models import User
-
+from django.utils.timezone import localtime
 from matricula.scripts.cargar_tree import crear_datos_prueba
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from commons.permisos import DenegarConsulta
@@ -437,7 +438,6 @@ class FichasViewSet(ModelViewSet):
         logger.warning(f"contexto {contexto}")
         logger.warning(f"folder_id {folder_id}")
 
-
         if not folder_id or not archivo or not contexto:
             return Response({"detail": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -552,13 +552,36 @@ class FichasViewSet(ModelViewSet):
                 "aprendiz": folder.aprendiz}
 
             with transaction.atomic():
-              document_node = model.objects.create(
-                  name=archivo.name,
-                  parent=folder,
-                  tipo="documento",
-                  documento=new_docu,
-                  **kwargs_extra
-              )
+                document_node = model.objects.create(
+                    name=archivo.name,
+                    parent=folder,
+                    tipo="documento",
+                    documento=new_docu,
+                    **kwargs_extra
+                )
+
+                if contexto == "ficha":
+                    related_id = document_node.ficha_id
+                elif contexto == "aprendiz":
+                    related_id = document_node.aprendiz_id
+                else:
+                    related_id = None
+
+                extra_data = (
+                    f"Se cargó el documento '{archivo.name}' "
+                    f"en la carpeta {folder.id} "
+                )
+
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="create",
+                    content_type=ContentType.objects.get_for_model(
+                        document_node),
+                    object_id=document_node.id,
+                    related_id = related_id,
+                    related_type = contexto,
+                    extra_data=extra_data
+                )
 
             return Response({
                 "message": "Documento cargado con éxito",
@@ -576,6 +599,47 @@ class FichasViewSet(ModelViewSet):
                 "message": "Error inesperado al cargar el documento",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='historial')
+    def historial(self, request):
+        contexto = request.query_params.get("contexto")
+        obj_id = request.query_params.get("id")
+        
+        if not contexto or not obj_id:
+            return Response({"error": "Se requiere contexto e id"}, status=400)
+
+        try:
+            obj_id = int(obj_id)
+        except ValueError:
+            return Response({"error": "ID invalido"}, status=400)
+          
+        if contexto == "ficha":
+            modelo = T_DocumentFolder
+        elif contexto == "aprendiz":
+            modelo = T_DocumentFolderAprendiz
+        elif contexto == "fichaG":
+            modelo = T_ficha
+        else:
+            return Response({"error": "Contexto inválido"}, status=400)
+
+        content_type = ContentType.objects.get_for_model(modelo)
+
+        historial = AuditLog.objects.filter(
+            content_type=content_type,
+            related_id=obj_id
+        ).order_by("-timestamp")
+
+        data = [
+            {
+                "usuario": log.user.username if log.user else "Sistema",
+                "accion": log.action,
+                "detalle": log.extra_data,
+                "fecha": localtime(log.timestamp).strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            for log in historial
+        ]
+        return Response(data)
+
 
 
 class ProgramasViewSet(ModelViewSet):

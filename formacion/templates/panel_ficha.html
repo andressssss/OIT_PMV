@@ -37,6 +37,9 @@
         <li class="nav-item" role="presentation">
           <a class="nav-link" id="cronograma-tab" data-bs-toggle="pill" href="#cronograma" role="tab" aria-controls="cronograma" aria-selected="false">Evaluar RAPS</a>
         </li>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false">Historial</a>
+        </li>
       </ul>
 
       <!-- Contenido de las Pills -->
@@ -53,6 +56,7 @@
                 <h5 class="mb-3">Estructura del Portafolio</h5>
                 <div id="folderTree"></div>
               </div>
+              <hr/>
               <!-- Sección del acordeón -->
               <div class="accordion mt-4" id="formatosPlantillasAccordion">
                 <h5 class="mb-3">Documentos del proceso</h5>
@@ -160,6 +164,11 @@
                   </div>
                 </div>
               </div>
+              <hr />
+              <div class="mt-4">
+                <h5>Historial de Acciones</h5>
+                <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -172,11 +181,11 @@
               <div class="d-flex justify-content-end mb-3">
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz"><i class="bi bi-person-plus"></i> Agregar Aprendiz</button>
               </div>
-              <!--              <div class="d-flex justify-content-end mb-3">
+              <!--                  <div class="d-flex justify-content-end mb-3">
                             <a href="{% url 'descargar_portafolios_ficha_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-download"></i> Descargar portafolios
                             </a>
-                        </div>              -->
+                        </div>                  -->
               <div class="table-responsive">
                 <table id="tabla_aprendices_ficha" class="table table-hover table-bordered align-middle">
                   <thead class="table-secondary text-center">
@@ -223,6 +232,9 @@
 
                               <button class="btn btn-outline-primary editar-aprendiz" data-id="{{ aprendiz.id }}" title="Editar" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-pencil"></i></button>
                             {% endif %}
+                            {% if aprendiz.esta == 'desertado' %}
+                              <button class="btn btn-outline-success activar-aprendiz" data-id="{{ aprendiz.id }}" title="Activar" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-person-check"></i></button>
+                            {% endif %}
                           </div>
                         </td>
                       </tr>
@@ -244,6 +256,19 @@
               </p>
               <p class="mb-0">Muy pronto podrá acceder a una versión optimizada pensada especialmente para facilitar su gestión de actividades.</p>
               <p class="text-muted mt-3" style="font-size: 0.9rem;">Agradecemos su comprensión y lo invitamos a volver a consultar este espacio próximamente.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historial -->
+        <div class="tab-pane fade" id="historial" role="tabpanel" aria-labelledby="historial-tab">
+          <div class="card shadow-sm">
+            <div class="card-body text-center">
+              <h5 class="text-dark fw-bold mb-3">Historial de Acciones</h5>
+              <hr/>
+              <div class="mt-4">
+                <ul id="historialGeneralFicha" class="list-group list-group-flush text-start"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -272,38 +297,30 @@
   </div>
 
   <!-- Modal portafolio aprendiz -->
-  <div class="modal fade" id="portafolioAprendizModal" tabindex="-1" aria-labelledby="portafolioAprendizModalLabel">
+  <div class="modal fade" id="portafolioAprendizModal" tabindex="-1" aria-labelledby="portafolioAprendizModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header d-flex justify-content-between align-items-center">
-          <h5 class="modal-title m-0" id="portafolioAprendizModalLabel"></h5>
+        <!-- Header -->
+        <div class="modal-header">
+          <h5 class="modal-title" id="portafolioAprendizModalLabel">Portafolio del Aprendiz</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
+
+        <!-- Body -->
         <div class="modal-body">
+          <!-- Árbol de carpetas -->
           <div id="folderTreeAprendiz"></div>
-          <!-- Sección de Historial -->
-          <!--              <div class="card mt-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h6 class="m-0">Historial de Acciones</h6>
-                    </div>
-                    <div class="card-body">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Usuario</th>
-                                    <th>Acción</th>
-                                    <th>Documento</th>
-                                    <th>Comentario</th>
-                                    <th>Fecha</th>
-                                </tr>
-                            </thead>
-                            <tbody id="historial-body">
-                                <tr><td colspan="5" class="text-center">Cargando historial...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>              -->
+
+          <hr />
+
+          <!-- Historial -->
+          <div class="mt-4">
+            <h5>Historial de Acciones</h5>
+            <ul id="historialAprendiz" class="list-group list-group-flush text-start"></ul>
+          </div>
         </div>
+
+        <!-- Footer -->
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
         </div>
