@@ -7,6 +7,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     last_login = serializers.DateTimeField(
         source='user.last_login', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', required=False)
 
     class Meta:
         model = T_perfil
@@ -23,8 +24,21 @@ class PerfilSerializer(serializers.ModelSerializer):
             'mail',
             'gene',
             'fecha_naci',
-            'rol'
+            'rol',
+            'is_active'
         ]
+        
+    def update(self, instance, validated_data):
+      user_data = validated_data.pop('user', None)
+      
+      instance = super().update(instance, validated_data)
+      
+      if user_data:
+        for attr, value in user_data.items():
+          setattr(instance.user, attr, value)
+        instance.user.save()
+      
+      return instance
 
 
 class DepartamentoSerializer(serializers.ModelSerializer):
@@ -84,10 +98,12 @@ class AprendizSerializer(serializers.ModelSerializer):
         instance = getattr(self, 'instance', None)
 
         if mail and T_perfil.objects.exclude(id=instance.perfil.id).filter(mail=mail).exists():
-            raise serializers.ValidationError({'email': 'Ya existe un perfil con este correo electrónico.'})
+            raise serializers.ValidationError(
+                {'email': 'Ya existe un perfil con este correo electrónico.'})
 
         if dni and T_perfil.objects.exclude(id=instance.perfil.id).filter(dni=dni).exists():
-            raise serializers.ValidationError({'dni': 'Ya existe un perfil con este número de documento.'})
+            raise serializers.ValidationError(
+                {'dni': 'Ya existe un perfil con este número de documento.'})
 
         return data
 
@@ -106,7 +122,8 @@ class AprendizSerializer(serializers.ModelSerializer):
 
         elif repre_data is not serializers.empty:
             campos_obligatorios = ['nom', 'dni', 'paren']
-            tiene_datos = any(repre_data.get(campo) for campo in campos_obligatorios)
+            tiene_datos = any(repre_data.get(campo)
+                              for campo in campos_obligatorios)
 
             if tiene_datos:
                 if instance.repre_legal:
@@ -127,4 +144,3 @@ class AprendizSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
-      
