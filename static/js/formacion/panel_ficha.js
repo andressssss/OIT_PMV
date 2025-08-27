@@ -145,6 +145,9 @@ document.addEventListener("DOMContentLoaded", function () {
     ul.classList.add("folder-list");
 
     nodes.forEach((node) => {
+
+      if(userRole === "instructor" && node.name === "LINK DE PORTAFOLIO APRENDICES 2024") return null;
+
       const li = document.createElement("li");
       li.classList.add("folder-item");
 
@@ -501,12 +504,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const maxSize = ["zip", "rar", "7z"].includes(extension)
         ? 1000 * 1024 * 1024
-        : 15 * 1024 * 1024;
+        : 50 * 1024 * 1024;
 
       if (file.size > maxSize) {
         toastError(
           `El archivo "${file.name}" supera el tamaño máximo permitido (${
-            maxSize === 1000 * 1024 * 1024 ? "1GB" : "15MB"
+            maxSize === 1000 * 1024 * 1024 ? "1GB" : "50MB"
           }).`
         );
         continue;
@@ -749,12 +752,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const maxSize = ["zip", "rar"].includes(extension)
           ? 1000 * 1024 * 1024
-          : 15 * 1024 * 1024;
+          : 50 * 1024 * 1024;
 
         if (file.size > maxSize) {
           toastError(
             `El archivo "${file.name}" supera el tamaño máximo permitido (${
-              maxSize === 1000 * 1024 * 1024 ? "1GB" : "15MB"
+              maxSize === 1000 * 1024 * 1024 ? "1GB" : "50MB"
             }).`
           );
           continue;

@@ -524,12 +524,12 @@ class FichasViewSet(ModelViewSet):
             if extension in ['zip', 'rar', '7z']:
                 max_size = 1000 * 1024 * 1024  # 1000MB
             else:
-                max_size = 15 * 1024 * 1024  # 15MB
+                max_size = 50 * 1024 * 1024  # 50MB
 
             if archivo.size > max_size:
                 return Response({
                     "message": f"{archivo.name}: excede tamaño máximo "
-                    f"({'1GB' if max_size > 15*1024*1024 else '15MB'})"
+                    f"({'1GB' if max_size > 50*1024*1024 else '50MB'})"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             ruta_guardada = default_storage.save(ruta, archivo)

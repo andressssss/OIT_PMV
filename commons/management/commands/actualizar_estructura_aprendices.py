@@ -85,6 +85,20 @@ class Command(BaseCommand):
                     self.stdout.write(
                         f"[{aprendiz.id}] No se encontró T_fase para '{fase_carpeta.name}' -> '{nombre_fase_bd}'")
                     continue
+                  
+                if nombre_fase_bd == "analisis":
+                    if not T_DocumentFolderAprendiz.objects.filter(
+                        parent=fase_carpeta,
+                        name="COMPETENCIA DE LA INDUCCIÓN"
+                    ).exists():
+                        T_DocumentFolderAprendiz.objects.create(
+                            name="COMPETENCIA DE LA INDUCCIÓN",
+                            tipo="carpeta",
+                            aprendiz=aprendiz,
+                            parent=fase_carpeta
+                        )
+                        self.stdout.write(f"[{aprendiz.id}] 📂 Carpeta 'COMPETENCIA DE LA INDUCCIÓN' creada en {fase_carpeta.name}")
+
 
                 raps_fase = T_raps.objects.filter(
                     progra=aprendiz.ficha.progra,

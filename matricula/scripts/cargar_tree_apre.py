@@ -70,6 +70,14 @@ def crear_estructura_arbol_aprendiz(aprendiz, estructura, parent=None):
                     aprendiz=aprendiz,
                     parent=carpeta
                 )
+                
+                if carpeta_fase.name == "1. ANÁLISIS":
+                    T_DocumentFolderAprendiz.objects.create(
+                        name="COMPETENCIA DE LA INDUCCION",
+                        tipo="carpeta",
+                        aprendiz=aprendiz,
+                        parent=carpeta_fase
+                    )
 
                 raps_fase = T_raps.objects.filter(
                     progra=aprendiz.ficha.progra,
