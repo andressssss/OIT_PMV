@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha, T_insti_edu, T_centro_forma
+from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha, T_insti_edu, T_centro_forma, T_jui_eva_actu, T_jui_eva_diff
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,9 +45,11 @@ class CompetenciaDetalleSerializer(CompetenciaSerializer):
     class Meta(CompetenciaSerializer.Meta):
         fields = CompetenciaSerializer.Meta.fields + ['cod']
 
+
 class CompetenciaTablaSerializer(CompetenciaSerializer):
     class Meta(CompetenciaSerializer.Meta):
         fields = CompetenciaSerializer.Meta.fields + ['cod']
+
 
 class FichaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -148,7 +150,7 @@ class RapWriteSerializer(RapSerializer):
         fases_ids = validated_data.pop('fase', [])
 
         for attr, value in validated_data.items():
-          setattr(instance, attr, value)
+            setattr(instance, attr, value)
         instance.save()
 
         if fases_ids is not None:
@@ -168,6 +170,7 @@ class RapDetalleSerializer(RapSerializer):
         fields = RapSerializer.Meta.fields + \
             ['cod', 'compe', 'progra', 'fase']
 
+
 class RapTablaSerializer(RapSerializer):
     compe = serializers.CharField(source="compe.nom", read_only=True)
     progra = serializers.CharField(source="progra.nom", read_only=True)
@@ -176,9 +179,9 @@ class RapTablaSerializer(RapSerializer):
     class Meta(RapSerializer.Meta):
         model = T_raps
         fields = RapSerializer.Meta.fields + ['cod', 'compe', 'progra', 'fase']
-      
+
     def get_fase(self, obj):
-      return [f.nom for f in obj.fase.all()]
+        return [f.nom for f in obj.fase.all()]
 
 
 class ProgramaSerializer(serializers.ModelSerializer):
@@ -191,3 +194,47 @@ class FaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = T_fase
         fields = ['id', 'nom']
+
+
+class JuicioSerializer(serializers.ModelSerializer):
+    apre_nom = serializers.SerializerMethodField()
+    ficha_num = serializers.CharField(source="ficha.num", read_only="true")
+    instru_nom = serializers.SerializerMethodField()
+    rap_nom = serializers.CharField(source="rap.nom", read_only="true")
+    fecha = serializers.SerializerMethodField()
+
+    class Meta:
+        model = T_jui_eva_actu
+        fields = ['fecha_repor', 'eva', 'fecha', 'apre_nom',
+                  'ficha_num', 'instru_nom', 'rap_nom']
+
+    def get_apre_nom(self, obj):
+        return f"{obj.apre.perfil.nom} {obj.apre.perfil.apelli}"
+
+    def get_instru_nom(self, obj):
+        return "Sin registro" if obj.instru is None else f"{obj.instru.perfil.nom} {obj.instru.perfil.apelli}"
+
+    def get_fecha(self, obj):
+        return "Sin registro" if obj.fecha_eva is None else obj.fecha_eva
+
+class JuicioHistoSerializer(serializers.ModelSerializer):
+    apre_nom = serializers.SerializerMethodField()
+    instru_nom = serializers.SerializerMethodField()
+    jui_desc = serializers.SerializerMethodField()
+    tipo_cambi = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = T_jui_eva_diff
+        fields = ['tipo_cambi', 'descri', 'fecha_diff', 'apre_nom', 'instru_nom', 'jui_desc']
+        
+    def get_apre_nom(self, obj):
+        return f"{obj.apre.perfil.nom} {obj.apre.perfil.apelli}"
+      
+    def get_instru_nom(self, obj):
+        return "Sin registro" if obj.instru is None else f"{obj.instru.perfil.nom} {obj.instru.perfil.apelli}"
+    
+    def get_jui_desc(self, obj):
+        return "N/A" if obj.jui is None else f"Juicio:{obj.jui.rap.cod}. Aprendiz:{obj.jui.apre.perfil.dni}"
+      
+    def get_tipo_cambi(self, obj):
+        return obj.tipo_cambi.capitalize()

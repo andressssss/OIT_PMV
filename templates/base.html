@@ -120,39 +120,13 @@
                                         <li><a class="dropdown-item" href="{% url 'informe_documentos_x_instructor_aprendiz' %}">Documentos x instructor(aprendices)</a></li>
                                     </ul>
                                 </li>
-                                <!--
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/">Administración</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'novedades' %}">Novedades</a>
-                                </li> -->
                             {% elif perfil.rol == 'instructor' %}
                                 <!-- Contenido específico de instructor -->
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'fichas' %}">Formación</a>
                                 </li>
-                                <!-- <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Administración
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" aria-disabled="true" href="{% url 'ofertas_show' %}">Ofertas</a></li>
-                                        <li><a class="dropdown-item" aria-disabled="true" href="#">Contratos</a></li>
-                                        <li><a class="dropdown-item" aria-disabled="true" href="#">Pagos</a></li>
-                                    </ul>
-                                </li> -->
-                                <!-- <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'novedades' %}">Novedades</a>
-                                </li> -->
                             {% elif perfil.rol == 'aprendiz' %}
                                 <!-- Contenido específico de aprendiz -->
-                                <!-- <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'panel_aprendiz' %}">Portafolio</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'novedades' %}">Novedades</a> -->
-                                </li>
                             {% elif perfil.rol == 'gestor' %}
                                 <!-- Contenido específico de aprendiz -->
                                 <li class="nav-item">
@@ -164,9 +138,6 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'fichas' %}">Fichas</a>
                                 </li>
-                                <!-- <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'novedades' %}">Novedades</a>
-                                </li> -->
                             {% elif perfil.rol == 'lider' %}
                                 <!-- Contenido específico de líder -->
                                 <li class="nav-item">
@@ -177,10 +148,7 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'fichas' %}">Fichas</a>
-                                </li><!--
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'novedades' %}">Novedades</a>
-                                </li> -->
+                                </li>
                             {% elif perfil.rol == 'cuentas' %}
                                 <!-- Contenido específico de líder -->
                                 <li class="nav-item">
@@ -214,22 +182,9 @@
                 
                         
                     {% else %}
-                        <!-- <li class="nav-item">
-                            <a class="nav-link" href="/signup">Registrarse</a>
-                        </li> -->
                         <li class="nav-item">
                             <a class="nav-link" href="/signin">Login</a>
                         </li>
-                        <!-- 
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'tasks' %}">Tareas pendientes</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'tasks_completed' %}">Tareas completadas</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/tasks/create">Crear tarea</a>
-                        </li> -->
                     {% endif %}
                 </ul>
             </div>

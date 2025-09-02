@@ -15,9 +15,9 @@ from django.urls import reverse
 from django.utils import timezone
 from commons.permisos import bloquear_si_consulta
 from commons.models import (
-    T_instru, 
-    T_ficha, 
-    T_cuentas, 
+    T_instru,
+    T_ficha,
+    T_cuentas,
     T_gestor_insti_edu,
     T_apre,
     T_docu_labo,
@@ -27,15 +27,14 @@ from commons.models import (
     T_perfil,
     T_admin,
     T_lider,
-    T_nove,
     T_repre_legal,
     T_munici,
     T_departa,
     T_insti_edu,
     T_centro_forma,
     T_progra
-    )
-from .forms import InstructorForm, PerfilEForm,CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, NovedadForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
+)
+from .forms import InstructorForm, PerfilEForm, CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
 from .serializers import T_insti_edu_Serializer
@@ -48,7 +47,8 @@ from django.db.models.functions import TruncDate
 from io import TextIOWrapper
 from django.core.validators import validate_email
 from django.core.mail import send_mail
-from django.db.models import Q, F, Func, DateField  # Para realizar búsquedas dinámicas
+# Para realizar búsquedas dinámicas
+from django.db.models import Q, F, Func, DateField
 from django.conf import settings
 from datetime import datetime
 from django.db.models import Prefetch
@@ -65,11 +65,12 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-from django.conf import settings
 print("TEMPLATES_DIR:", settings.TEMPLATES[0]['DIRS'])
+
 
 def home(request):
     return render(request, 'home.html')
+
 
 @never_cache
 def signin(request):
@@ -109,20 +110,6 @@ def signin(request):
 
             return redirect('novedades')
 
-@require_GET
-def consultar_usuario_por_cedula(request):
-    cedula = request.GET.get('cedula')
-
-    if not cedula:
-        return JsonResponse({'error': 'Cédula no proporcionada'}, status=400)
-
-    perfil = T_perfil.objects.filter(dni=cedula).first()
-
-    if perfil is None:
-        return JsonResponse({'error': 'No se encontró un usuario con esa cédula'}, status=404)
-
-    return JsonResponse({'username': perfil.user.username})
-
 
 def signup(request):
     if request.method == 'GET':
@@ -136,31 +123,31 @@ def signup(request):
                         'error': "El correo ya existe"
                     })
                 new_user = User(
-                    username=request.POST['username'], 
-                    email = request.POST['correo'],
-                    first_name = request.POST['nombre'],
-                    last_name = request.POST['apellido']
+                    username=request.POST['username'],
+                    email=request.POST['correo'],
+                    first_name=request.POST['nombre'],
+                    last_name=request.POST['apellido']
                 )
                 new_user.set_password(request.POST['password1'])
                 new_user.save()
                 new_perfil = T_perfil(
-                    nom = request.POST['nombre'],
-                    apelli= request.POST['apellido'],
-                    tipo_dni= request.POST['tipoi'],
-                    dni= request.POST['dni'],
-                    tele= request.POST['tele'],
-                    dire= request.POST['dire'],
-                    mail = request.POST['correo'],
-                    gene= request.POST['gene'],
-                    fecha_naci= request.POST['fechanaci'],
-                    rol = 'instructor',
-                    user = new_user
+                    nom=request.POST['nombre'],
+                    apelli=request.POST['apellido'],
+                    tipo_dni=request.POST['tipoi'],
+                    dni=request.POST['dni'],
+                    tele=request.POST['tele'],
+                    dire=request.POST['dire'],
+                    mail=request.POST['correo'],
+                    gene=request.POST['gene'],
+                    fecha_naci=request.POST['fechanaci'],
+                    rol='instructor',
+                    user=new_user
                 )
                 new_perfil.save()
                 new_instru = T_instru(
-                    esta = 'inscrito',
-                    perfil = new_perfil,
-                    tipo_vincu = 'web'
+                    esta='inscrito',
+                    perfil=new_perfil,
+                    tipo_vincu='web'
                 )
                 new_instru.save()
                 return redirect('signin')
@@ -172,9 +159,11 @@ def signup(request):
         'error': "Las contraseñas no coinciden"
     })
 
+
 def check_authentication(request):
     is_authenticated = request.user.is_authenticated
     return JsonResponse({'isAuthenticated': is_authenticated})
+
 
 @login_required
 def perfil(request):
@@ -196,7 +185,8 @@ def perfil(request):
 
     documentos = T_docu_labo.objects.filter(usu=request.user, tipo='laboral')
 
-    documentos_aca = T_docu_labo.objects.filter(usu=request.user, tipo='academico')
+    documentos_aca = T_docu_labo.objects.filter(
+        usu=request.user, tipo='academico')
 
     hoja_vida = T_docu_labo.objects.filter(usu=request.user, tipo='hv').first()
 
@@ -206,11 +196,12 @@ def perfil(request):
 
     if request.method == 'POST':
         if 'old_password' in request.POST:
-            form_contraseña = CustomPasswordChangeForm(user=request.user, data=request.POST)
+            form_contraseña = CustomPasswordChangeForm(
+                user=request.user, data=request.POST)
             if form_contraseña.is_valid():
                 form_contraseña.save()
                 update_session_auth_hash(request, form_contraseña.user)
-                logout(request)  
+                logout(request)
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'status': 'success', 'message': 'Cambio satisfactorio, inicie sesión nuevamente.'})
@@ -220,7 +211,8 @@ def perfil(request):
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'status': 'error', 'errors': form_contraseña.errors})
                 else:
-                    messages.error(request, 'Por favor corrige los errores a continuación.')
+                    messages.error(
+                        request, 'Por favor corrige los errores a continuación.')
         elif request.POST.get('form_id') == 'documento_form':
             form_documento = DocumentoLaboralForm(request.POST, request.FILES)
             if form_documento.is_valid():
@@ -234,22 +226,24 @@ def perfil(request):
                     tipo=archivo.name.split('.')[-1],
                     tama=str(archivo.size // 1024) + " KB",
                     archi=ruta_guardada,
-                    priva='No', 
+                    priva='No',
                     esta='Activo'
                 )
 
                 documento = form_documento.save(commit=False)
-                documento.usu = request.user 
-                documento.esta = 'Cargado' 
-                documento.docu = t_docu  
-                documento.tipo = 'laboral' 
-                documento.save() 
-                messages.success(request, "Documento guardado satisfactoriamente.")
+                documento.usu = request.user
+                documento.esta = 'Cargado'
+                documento.docu = t_docu
+                documento.tipo = 'laboral'
+                documento.save()
+                messages.success(
+                    request, "Documento guardado satisfactoriamente.")
 
                 return redirect(request.META.get('HTTP_REFERER', '/'))
             else:
-                print(form_documento.errors) 
-                messages.error(request, 'Por favor, corrige los errores en el formulario.')
+                print(form_documento.errors)
+                messages.error(
+                    request, 'Por favor, corrige los errores en el formulario.')
 
         elif request.POST.get('form_id') == 'documento_aca_form':
             form_documento = DocumentoLaboralForm(request.POST, request.FILES)
@@ -265,22 +259,24 @@ def perfil(request):
                     tipo=archivo.name.split('.')[-1],
                     tama=str(archivo.size // 1024) + " KB",
                     archi=ruta_guardada,
-                    priva='No', 
+                    priva='No',
                     esta='Activo'
                 )
 
                 documento = form_documento.save(commit=False)
                 documento.usu = request.user
-                documento.esta = 'Cargado' 
-                documento.docu = t_docu  
-                documento.tipo = 'academico' 
-                documento.save() 
-                messages.success(request, "Documento guardado satisfactoriamente.")
+                documento.esta = 'Cargado'
+                documento.docu = t_docu
+                documento.tipo = 'academico'
+                documento.save()
+                messages.success(
+                    request, "Documento guardado satisfactoriamente.")
 
                 return redirect(request.META.get('HTTP_REFERER', '/'))
             else:
-                print(form_documento.errors) 
-                messages.error(request, 'Por favor, corrige los errores en el formulario.')
+                print(form_documento.errors)
+                messages.error(
+                    request, 'Por favor, corrige los errores en el formulario.')
         elif 'cv_file' in request.FILES:
             archivo = request.FILES['cv_file']
 
@@ -292,25 +288,26 @@ def perfil(request):
                 tipo=archivo.name.split('.')[-1],
                 tama=str(archivo.size // 1024) + " KB",
                 archi=ruta_guardada,
-                priva='No', 
+                priva='No',
                 esta='Activo'
             )
 
             documento = form_documento.save(commit=False)
-            documento.usu = request.user  
+            documento.usu = request.user
             documento.esta = 'Cargado'
-            documento.docu = t_docu  
-            documento.tipo = 'hv'  
-            documento.nom = 'Hoja de Vida'  
-            documento.cate = 'hv'  
-            documento.save() 
+            documento.docu = t_docu
+            documento.tipo = 'hv'
+            documento.nom = 'Hoja de Vida'
+            documento.cate = 'hv'
+            documento.save()
             messages.success(request, "Documento guardado satisfactoriamente.")
 
             return redirect(request.META.get('HTTP_REFERER', '/'))
-        
+
         elif request.POST.get('form_id') == 'perfil_form':
             logger.warning("llega?")
-            form_perfil = PerfilForm(request.POST, instance=request.user.t_perfil)
+            form_perfil = PerfilForm(
+                request.POST, instance=request.user.t_perfil)
 
             if form_perfil.is_valid():
                 datos_actualizados = form_perfil.cleaned_data
@@ -318,11 +315,12 @@ def perfil(request):
 
                 if 'fecha_naci' not in datos_actualizados or datos_actualizados['fecha_naci'] is None:
                     logger.warning("No viene fecha")
-                    perfil_fe = T_perfil.objects.get(id = request.user.t_perfil.id)
+                    perfil_fe = T_perfil.objects.get(
+                        id=request.user.t_perfil.id)
                     form_perfil.instance.fecha_naci = perfil_fe.fecha_naci
                     logger.warning(form_perfil.instance.fecha_naci)
                 form_perfil.save()
-                
+
             nuevo_email = form_perfil.cleaned_data.get('mail')
             if nuevo_email:
                 usuario_act = User.objects.get(id=request.user.id)
@@ -330,14 +328,14 @@ def perfil(request):
                 usuario_act.save()
 
                 request.user.refresh_from_db()
-                #request.user.save()
+                # request.user.save()
                 messages.success(request, "Perfil actualizado correctamente.")
             return redirect('perfil')
         else:
             print(form_documento.errors)
-            messages.error(request, 'Por favor, corrige los errores en el formulario.')
-            
-        
+            messages.error(
+                request, 'Por favor, corrige los errores en el formulario.')
+
     form_perfil = PerfilForm(instance=request.user.t_perfil)
     form_documento = DocumentoLaboralForm()
     form_contraseña = CustomPasswordChangeForm(user=request.user)
@@ -352,19 +350,6 @@ def perfil(request):
     })
 
 @login_required
-def editar_perfil(request):
-    perfil = getattr(request.user, 't_perfil', None)
-    if request.method == 'POST':
-        print("Si llega!")
-        form = PerfilEForm(request.POST, instance=perfil)
-        if form.is_valid():
-            form.save()
-            return redirect(request.META.get('HTTP_REFERER', '/'))
-    else:
-        form = PerfilEForm(instance=perfil)  # Pre-poblar el formulario con los datos actuales del perfil
-    return redirect(request.META.get('HTTP_REFERER', '/'))
-
-@login_required
 def eliminar_documentoinstru(request, hv_id):
     archivo = get_object_or_404(T_docu_labo, id=hv_id)
     documento = get_object_or_404(T_docu, id=archivo.docu.id)
@@ -375,24 +360,27 @@ def eliminar_documentoinstru(request, hv_id):
         mensaje = "Documento eliminado"
     elif mensaje == 'hv':
         mensaje = "Hoja de vida eliminada"
-    
+
     archivo.delete()
     documento.delete()
     messages.success(request, mensaje)
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
 
 @login_required
 def signout(request):
     logout(request)
     return redirect('home')
 
+
 @login_required
 def dashboard_admin(request):
     perfil = getattr(request.user, 't_perfil', None)
     rol = perfil.rol
-    return render(request, 'admin_dashboard.html', {'rol':rol})
+    return render(request, 'admin_dashboard.html', {'rol': rol})
 
 ### INSTRUCTORES ###
+
 
 @login_required
 def instructores(request):
@@ -408,7 +396,8 @@ def instructores(request):
         'fichas': fichas,
         'programas': programas
     })
-        
+
+
 @login_required
 @bloquear_si_consulta
 def crear_instructor(request):
@@ -421,12 +410,12 @@ def crear_instructor(request):
         if perfil_form.is_valid() and instructor_form.is_valid():
             dni = perfil_form.cleaned_data.get('dni')
             email = perfil_form.cleaned_data.get('mail')
-            
-            if T_perfil.objects.filter(dni__iexact = dni).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
-            
-            if T_perfil.objects.filter(mail__iexact = email).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
+
+            if T_perfil.objects.filter(dni__iexact=dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status=400)
+
+            if T_perfil.objects.filter(mail__iexact=email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status=400)
 
             nombre = perfil_form.cleaned_data['nom']
             apellido = perfil_form.cleaned_data['apelli']
@@ -450,21 +439,20 @@ def crear_instructor(request):
             new_perfil.rol = 'instructor'
             new_perfil.mail = new_user.email
             new_perfil.save()
-                    
-                    
+
             new_instructor = instructor_form.save(commit=False)
             new_instructor.perfil = new_perfil
             new_instructor.esta = "Activo"
             new_instructor.save()
-            
+
             for ficha_id in ficha_ids:
                 try:
-                    ficha = T_ficha.objects.get(id = ficha_id)
+                    ficha = T_ficha.objects.get(id=ficha_id)
                     if ficha.instru is not None:
                         return JsonResponse({
                             'status': 'error',
                             'message': f'La ficha {ficha.num} ya tiene un instructor asignado: {ficha.instru.perfil.nom} {ficha.instru.perfil.apelli}'
-                        }, status = 409)
+                        }, status=409)
                     ficha.instru = new_instructor
                     ficha.save()
                 except T_ficha.DoesNotExist:
@@ -483,9 +471,11 @@ def crear_instructor(request):
 
             for field, errors_list in errores_dict.items():
                 if field in perfil_form.fields:
-                    nombre_campo = perfil_form.fields[field].label or field.capitalize()
+                    nombre_campo = perfil_form.fields[field].label or field.capitalize(
+                    )
                 elif field in instructor_form.fields:
-                    nombre_campo = instructor_form.fields[field].label or field.capitalize()
+                    nombre_campo = instructor_form.fields[field].label or field.capitalize(
+                    )
                 else:
                     nombre_campo = field.capitalize()
 
@@ -493,14 +483,15 @@ def crear_instructor(request):
                     mensaje = f"{nombre_campo}: {err['message']}"
                     errores_custom.append(mensaje)
 
-
-            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
+            return JsonResponse({'status': 'error', 'message': 'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
+
 @login_required
 def obtener_instructor(request, instructor_id):
-    instructor = T_instru.objects.filter(id=instructor_id).select_related('perfil').first()
+    instructor = T_instru.objects.filter(
+        id=instructor_id).select_related('perfil').first()
 
     if instructor:
         fichas = T_ficha.objects.filter(instru=instructor)
@@ -524,8 +515,9 @@ def obtener_instructor(request, instructor_id):
             'tipo_vincu': instructor.tipo_vincu,
             'fichas': [{'id': f.id, 'num': f.num} for f in fichas],
         }
-        return JsonResponse (data)
+        return JsonResponse(data)
     return JsonResponse({'status': 'error', 'message': 'Instructor no encontrado'}, status=404)
+
 
 @login_required
 @bloquear_si_consulta
@@ -579,6 +571,8 @@ def editar_instructor(request, instructor_id):
     }, status=405)
 
 # Función auxiliar para formatear errores por fila
+
+
 def formatear_error_csv(fila, errores_campos):
     fila_str = '\n  '.join([f"{k}: '{v}'" for k, v in fila.items()])
     return (
@@ -589,6 +583,7 @@ def formatear_error_csv(fila, errores_campos):
         "----------------------------------------"
     )
 
+
 def validar_formato_csv_basico(contenido_csv, campos_esperados):
     errores = []
     reader = csv.reader(StringIO(contenido_csv), delimiter=';')
@@ -598,6 +593,7 @@ def validar_formato_csv_basico(contenido_csv, campos_esperados):
                 f"Línea {i}: se esperaban {len(campos_esperados)} columnas, pero se encontraron {len(row)}. Contenido: {row}"
             )
     return errores
+
 
 @login_required
 @bloquear_si_consulta
@@ -615,7 +611,8 @@ def cargar_instructores_masivo(request):
         if form.is_valid():
             archivo = request.FILES['archivo']
             if not (archivo.name.lower().endswith('.csv') and archivo.content_type in ['text/csv', 'application/csv', 'text/plain']):
-                errores.append(formatear_error_csv({}, ["Tipo de archivo no válido. Solo se permiten archivos CSV (.csv)"]))
+                errores.append(formatear_error_csv(
+                    {}, ["Tipo de archivo no válido. Solo se permiten archivos CSV (.csv)"]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
@@ -623,7 +620,8 @@ def cargar_instructores_masivo(request):
             contenido_csv = datos_csv.read()
 
             if not contenido_csv.strip():
-                errores.append(formatear_error_csv({}, ["El archivo está vacío."]))
+                errores.append(formatear_error_csv(
+                    {}, ["El archivo está vacío."]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
@@ -633,18 +631,22 @@ def cargar_instructores_masivo(request):
                 'fecha_ini', 'fecha_fin', 'profe', 'tipo_vincu'
             ]
 
-            errores_formato = validar_formato_csv_basico(contenido_csv, CAMPOS_ESPERADOS)
+            errores_formato = validar_formato_csv_basico(
+                contenido_csv, CAMPOS_ESPERADOS)
             if errores_formato:
                 for e in errores_formato:
                     errores.append(formatear_error_csv({}, [e]))
                     resumen["errores"] += 1
-                messages.warning(request, "El archivo tiene filas mal formateadas. No se insertó ningún registro.")
+                messages.warning(
+                    request, "El archivo tiene filas mal formateadas. No se insertó ningún registro.")
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
             try:
-                filas_crudas = list(csv.DictReader(StringIO(contenido_csv), delimiter=';'))
+                filas_crudas = list(csv.DictReader(
+                    StringIO(contenido_csv), delimiter=';'))
             except Exception as e:
-                errores.append(formatear_error_csv({}, [f"Error al leer el archivo CSV: {e}"]))
+                errores.append(formatear_error_csv(
+                    {}, [f"Error al leer el archivo CSV: {e}"]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
@@ -656,7 +658,8 @@ def cargar_instructores_masivo(request):
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
-            campos_csv = [campo.strip().lower() for campo in filas_crudas[0].keys()]
+            campos_csv = [campo.strip().lower()
+                          for campo in filas_crudas[0].keys()]
             esperados = [campo.strip().lower() for campo in CAMPOS_ESPERADOS]
 
             if set(campos_csv) != set(esperados):
@@ -666,13 +669,16 @@ def cargar_instructores_masivo(request):
                     f"Encabezado esperado: {esperados}"
                 ]))
                 resumen["errores"] += 1
-                messages.warning(request, "El archivo no tiene un encabezado válido.")
+                messages.warning(
+                    request, "El archivo no tiene un encabezado válido.")
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
-            filas = [f for f in filas_crudas if any(valor.strip() for valor in f.values())]
+            filas = [f for f in filas_crudas if any(
+                valor.strip() for valor in f.values())]
 
             if len(filas) > MAX_FILAS:
-                errores.append(formatear_error_csv({}, [f"El archivo tiene {len(filas)} filas, pero el máximo permitido es {MAX_FILAS}."]))
+                errores.append(formatear_error_csv(
+                    {}, [f"El archivo tiene {len(filas)} filas, pero el máximo permitido es {MAX_FILAS}."]))
                 resumen["errores"] += 1
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
@@ -690,7 +696,8 @@ def cargar_instructores_masivo(request):
                     dnis_vistos.add(dni)
 
                 if email in emails_vistos:
-                    fila_errores.append(f"Email duplicado en el archivo: {email}")
+                    fila_errores.append(
+                        f"Email duplicado en el archivo: {email}")
                 else:
                     emails_vistos.add(email)
 
@@ -702,47 +709,58 @@ def cargar_instructores_masivo(request):
                 try:
                     for campo in ['email', 'nom', 'apelli', 'tipo_dni', 'dni', 'tele', 'dire', 'gene', 'fecha_naci', 'profe', 'tipo_vincu']:
                         if not fila.get(campo, '').strip():
-                            raise ValidationError(f"Campo requerido faltante: '{campo}'")
+                            raise ValidationError(
+                                f"Campo requerido faltante: '{campo}'")
 
                     dni = fila['dni']
                     if T_perfil.objects.filter(dni=dni).exists():
                         resumen["duplicados_dni"].append(dni)
-                        raise ValidationError(f"DNI duplicado en el sistema: {dni}")
+                        raise ValidationError(
+                            f"DNI duplicado en el sistema: {dni}")
 
                     validate_email(fila['email'].strip())
                     if T_perfil.objects.filter(mail=fila['email']).exists():
-                        raise ValidationError(f"Email ya existe en el sistema: {fila['email']}")
+                        raise ValidationError(
+                            f"Email ya existe en el sistema: {fila['email']}")
 
                     datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y')
                     if fila.get('fecha_ini', '').strip():
-                        datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y')
+                        datetime.strptime(
+                            fila['fecha_ini'].strip(), '%d/%m/%Y')
                     if fila.get('fecha_fin', '').strip():
-                        datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y')
+                        datetime.strptime(
+                            fila['fecha_fin'].strip(), '%d/%m/%Y')
 
                 except Exception as e:
                     resumen["errores"] += 1
                     errores.append(formatear_error_csv(fila, [force_str(e)]))
 
             if resumen["errores"] > 0:
-                messages.warning(request, f"{resumen['errores']} errores encontrados. No se insertó ningún registro.")
+                messages.warning(
+                    request, f"{resumen['errores']} errores encontrados. No se insertó ningún registro.")
                 return render(request, 'instructor_masivo_crear.html', {'form': form, 'errores': errores, 'resumen': resumen})
 
             try:
                 with transaction.atomic():
                     for fila in filas:
                         dni = fila['dni']
-                        fecha_naci = datetime.strptime(fila['fecha_naci'].strip(), '%d/%m/%Y').date()
-                        fecha_ini = datetime.strptime(fila['fecha_ini'].strip(), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
-                        fecha_fin = datetime.strptime(fila['fecha_fin'].strip(), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
+                        fecha_naci = datetime.strptime(
+                            fila['fecha_naci'].strip(), '%d/%m/%Y').date()
+                        fecha_ini = datetime.strptime(fila['fecha_ini'].strip(
+                        ), '%d/%m/%Y').date() if fila.get('fecha_ini', '').strip() else None
+                        fecha_fin = datetime.strptime(fila['fecha_fin'].strip(
+                        ), '%d/%m/%Y').date() if fila.get('fecha_fin', '').strip() else None
 
-                        base_username = ''.join(c for c in unicodedata.normalize('NFKD', fila['nom'][:3] + fila['apelli'][:3]) if c.isalnum()).lower()
+                        base_username = ''.join(c for c in unicodedata.normalize(
+                            'NFKD', fila['nom'][:3] + fila['apelli'][:3]) if c.isalnum()).lower()
                         username = base_username
                         i = 1
                         while User.objects.filter(username=username).exists():
                             username = f"{base_username}{i}"
                             i += 1
 
-                        user = User.objects.create_user(username=username, password=str(dni), email=fila['email'])
+                        user = User.objects.create_user(
+                            username=username, password=str(dni), email=fila['email'])
 
                         perfil = T_perfil(
                             user=user,
@@ -774,7 +792,8 @@ def cargar_instructores_masivo(request):
 
                         resumen["insertados"] += 1
 
-                messages.success(request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
+                messages.success(
+                    request, f"Se insertaron correctamente {resumen['insertados']} instructores.")
 
             except ValidationError as e:
                 resumen["errores"] += 1
@@ -794,12 +813,14 @@ def cargar_instructores_masivo(request):
 
 ### CUENTAS ###
 
+
 @login_required
 def cuentas(request):
     cuentas = T_cuentas.objects.all()
     return render(request, 'cuentas.html', {
         'cuentas': cuentas
     })
+
 
 @login_required
 @bloquear_si_consulta
@@ -840,8 +861,8 @@ def crear_pcuentas(request):
 
                 # Creación del gestor
                 new_cuentas = T_cuentas(
-                    perfil = new_perfil,
-                    esta = 'activo'
+                    perfil=new_perfil,
+                    esta='activo'
                 )
                 new_cuentas.save()
 
@@ -861,6 +882,7 @@ def crear_pcuentas(request):
                 'error': f'Error: {str(e)}'
             })
 
+
 @login_required
 @bloquear_si_consulta
 def cuentas_detalle(request, cuentas_id):
@@ -874,7 +896,7 @@ def cuentas_detalle(request, cuentas_id):
         })
     elif request.method == 'POST':
         perfil_form = PerfilEditForm(request.POST, instance=perfil)
-        if perfil_form.is_valid() :
+        if perfil_form.is_valid():
             perfil_form.save()
             return redirect('cuentas')
         return render(request, 'cuentas_detalle.html', {
@@ -884,6 +906,7 @@ def cuentas_detalle(request, cuentas_id):
 
 ### APRENDICES ###
 
+
 @login_required
 def aprendices(request):
     perfil = getattr(request.user, 't_perfil', None)
@@ -891,11 +914,13 @@ def aprendices(request):
     aprendices = T_apre.objects.select_related('perfil__user').all()
 
     perfil_form_data = request.session.pop('perfil_form_data', None)
-    representante_form_data = request.session.pop('representante_form_data', None)
+    representante_form_data = request.session.pop(
+        'representante_form_data', None)
 
-    perfil_form = PerfilForm(perfil_form_data, prefix='perfil') if perfil_form_data else PerfilForm(prefix='perfil')
-    representante_form = RepresanteLegalForm(representante_form_data, prefix='representante') if representante_form_data else RepresanteLegalForm(prefix='representante')
-
+    perfil_form = PerfilForm(
+        perfil_form_data, prefix='perfil') if perfil_form_data else PerfilForm(prefix='perfil')
+    representante_form = RepresanteLegalForm(
+        representante_form_data, prefix='representante') if representante_form_data else RepresanteLegalForm(prefix='representante')
 
     return render(request, 'aprendiz.html', {
         'aprendices': aprendices,
@@ -905,11 +930,14 @@ def aprendices(request):
     })
 
 ## Endpoint para editar aprendiz ##
+
+
 @login_required
 def obtener_aprendiz(request, aprendiz_id):
     aprendiz = T_apre.objects.filter(id=aprendiz_id).first()
     perfil = T_perfil.objects.filter(id=aprendiz.perfil_id).first()
-    representante = T_repre_legal.objects.filter(id=aprendiz.repre_legal_id).first()
+    representante = T_repre_legal.objects.filter(
+        id=aprendiz.repre_legal_id).first()
     if aprendiz and perfil:
         data = {
             'perfil-nom': perfil.nom,
@@ -934,17 +962,22 @@ def obtener_aprendiz(request, aprendiz_id):
 # Enviar datos a los filtros de aprendices:
 
 ## Filtro de usuario creacion ##
+
+
 @login_required
 def obtener_usuarios_creacion(request):
-    usuarios_ids = T_apre.objects.values_list('usu_crea', flat=True,).distinct()
+    usuarios_ids = T_apre.objects.values_list(
+        'usu_crea', flat=True,).distinct()
 
     # Obtener los perfiles relacionados a esos usuarios
-    perfiles = T_perfil.objects.filter(user__id__in=usuarios_ids).values('nom', 'apelli').distinct()
+    perfiles = T_perfil.objects.filter(
+        user__id__in=usuarios_ids).values('nom', 'apelli').distinct()
 
     # Formatear como "Nombre Apellido"
     usuarios = [f"{perfil['nom']} {perfil['apelli']}" for perfil in perfiles]
 
     return JsonResponse(usuarios, safe=False)
+
 
 @login_required
 def obtener_opciones_estados(request):
@@ -952,6 +985,7 @@ def obtener_opciones_estados(request):
     return JsonResponse(list(estados), safe=False)
 
 ## Endpoint para filtrar aprendices en la tabla ##
+
 
 @login_required
 def filtrar_aprendices(request):
@@ -973,10 +1007,11 @@ def filtrar_aprendices(request):
             nombre, *apellido = usuario.split(" ")
             apellido = " ".join(apellido)
 
-            filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre, usu_crea__t_perfil__apelli__icontains=apellido)
-        
+            filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre,
+                         usu_crea__t_perfil__apelli__icontains=apellido)
+
         aprendices = aprendices.filter(filtros)
-        
+
     if estado:
         aprendices = aprendices.filter(esta__in=estado)
 
@@ -985,7 +1020,8 @@ def filtrar_aprendices(request):
         fecha_creacion = datetime.strptime(fecha, '%Y-%m-%d').date()
 
         # Convertir la fecha de 'date_joined' a solo la fecha sin la hora
-        aprendices = aprendices.annotate(fecha_sin_hora=Cast('perfil__user__date_joined', output_field=DateField()))
+        aprendices = aprendices.annotate(fecha_sin_hora=Cast(
+            'perfil__user__date_joined', output_field=DateField()))
 
         # Filtrar por la fecha truncada
         aprendices = aprendices.filter(fecha_sin_hora=fecha_creacion)
@@ -1012,6 +1048,7 @@ def filtrar_aprendices(request):
     ]
     return JsonResponse(resultados, safe=False)
 
+
 @login_required
 def ver_perfil_aprendiz(request, aprendiz_id):
     aprendiz = get_object_or_404(T_apre, id=aprendiz_id)
@@ -1028,7 +1065,7 @@ def ver_perfil_aprendiz(request, aprendiz_id):
         try:
             gestor = T_perfil.objects.get(user=aprendiz.grupo.autor)
         except T_perfil.DoesNotExist:
-            gestor = None 
+            gestor = None
 
     return render(request, 'aprendiz_perfil_modal.html', {
         'aprendiz': aprendiz,
@@ -1036,24 +1073,29 @@ def ver_perfil_aprendiz(request, aprendiz_id):
         'gestor': gestor
     })
 
+
 @login_required
 @bloquear_si_consulta
 def crear_aprendices(request):
     if request.method == 'POST':
         perfil_form = PerfilForm(request.POST, prefix='perfil')
-        representante_form = RepresanteLegalForm(request.POST, prefix='representante')
+        representante_form = RepresanteLegalForm(
+            request.POST, prefix='representante')
 
         if perfil_form.is_valid() and representante_form.is_valid():
             try:
                 dni = perfil_form.cleaned_data['dni']
                 if T_perfil.objects.filter(dni=dni).exists():
-                    raise ValueError("El número de documento ya está registrado en el sistema.")
+                    raise ValueError(
+                        "El número de documento ya está registrado en el sistema.")
 
                 fecha_nacimiento = perfil_form.cleaned_data['fecha_naci']
                 if fecha_nacimiento:
-                    edad = (timezone.now().date() - fecha_nacimiento).days // 365
+                    edad = (timezone.now().date() -
+                            fecha_nacimiento).days // 365
                     if edad < 14:
-                        raise ValueError("El aprendiz debe tener al menos 14 años para registrarse.")
+                        raise ValueError(
+                            "El aprendiz debe tener al menos 14 años para registrarse.")
                 else:
                     raise ValueError("La fecha de nacimiento es obligatoria.")
 
@@ -1089,7 +1131,7 @@ def crear_aprendices(request):
 
                 if not new_repre_legal:
                     new_repre_legal = representante_form.save()
-                
+
                 perfil = getattr(request.user, 't_perfil', None)
 
                 T_apre.objects.create(
@@ -1097,7 +1139,7 @@ def crear_aprendices(request):
                     esta="Activo",
                     perfil=new_perfil,
                     repre_legal=new_repre_legal,
-                    usu_crea = perfil.user
+                    usu_crea=perfil.user
                 )
 
                 return redirect('aprendices')
@@ -1105,7 +1147,8 @@ def crear_aprendices(request):
             except ValueError as e:
                 messages.error(request, f'Ocurrió un error: {str(e)}')
         else:
-            messages.error(request, 'Por favor, corrige los errores en el formulario.')
+            messages.error(
+                request, 'Por favor, corrige los errores en el formulario.')
 
         # Redirigir de nuevo a la vista principal con los errores y formularios
         aprendices_url = reverse('aprendices')
@@ -1117,17 +1160,21 @@ def crear_aprendices(request):
 
     return redirect('aprendices')
 
+
 @login_required
 @bloquear_si_consulta
 def editar_aprendiz(request, id):
     aprendiz = get_object_or_404(T_apre, pk=id)
     perfil = get_object_or_404(T_perfil, pk=aprendiz.perfil_id)
-    representante = get_object_or_404(T_repre_legal, pk=aprendiz.repre_legal_id)
-    
+    representante = get_object_or_404(
+        T_repre_legal, pk=aprendiz.repre_legal_id)
+
     if request.method == 'POST':
-        form_perfil = PerfilForm(request.POST, instance=perfil, prefix='perfil')
-        form_repre = RepresanteLegalForm(request.POST, instance=representante, prefix='representante')
-        
+        form_perfil = PerfilForm(
+            request.POST, instance=perfil, prefix='perfil')
+        form_repre = RepresanteLegalForm(
+            request.POST, instance=representante, prefix='representante')
+
         if form_perfil.is_valid() and form_repre.is_valid():
             form_perfil.save()
             form_repre.save()
@@ -1137,9 +1184,10 @@ def editar_aprendiz(request, id):
                 'perfil': form_perfil.errors,
                 'representante': RepresanteLegalForm.errors
             }
-            return JsonResponse({'success': False, 'message': 'Error al actualizar el aprendiz', 'errors': errores}, status=400) 
-    
+            return JsonResponse({'success': False, 'message': 'Error al actualizar el aprendiz', 'errors': errores}, status=400)
+
     return JsonResponse({'success': False, 'message': 'Método no permitido.'}, status=405)
+
 
 @login_required
 @bloquear_si_consulta
@@ -1154,6 +1202,7 @@ def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
 
 ### LIDERES ###
 
+
 @login_required
 def lideres(request):
     lideres = T_lider.objects.select_related('perfil__user').all()
@@ -1162,6 +1211,7 @@ def lideres(request):
         'lideres': lideres,
         'perfil_form': perfil_form,
     })
+
 
 @login_required  # Funcion para crear lider
 @bloquear_si_consulta
@@ -1172,12 +1222,12 @@ def crear_lider(request):
         if perfil_form.is_valid():
             dni = perfil_form.cleaned_data.get('dni')
             email = perfil_form.cleaned_data.get('mail')
-            if T_perfil.objects.filter(dni__iexact = dni).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
-            
-            if T_perfil.objects.filter(mail__iexact = email).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
-        
+            if T_perfil.objects.filter(dni__iexact=dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status=400)
+
+            if T_perfil.objects.filter(mail__iexact=email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status=400)
+
             nombre = perfil_form.cleaned_data['nom']
             apellido = perfil_form.cleaned_data['apelli']
             base_username = (nombre[:3] + apellido[:3]).lower()
@@ -1200,11 +1250,11 @@ def crear_lider(request):
             new_perfil.rol = 'lider'
             new_perfil.mail = new_user.email
             new_perfil.save()
-                    
+
             new_lider = T_lider.objects.create(
-                area = "Equipo Nacional",
-                esta = "Activo",
-                perfil = new_perfil
+                area="Equipo Nacional",
+                esta="Activo",
+                perfil=new_perfil
             )
             return JsonResponse({'status': 'success', 'message': 'Lider creado con exito.'})
         else:
@@ -1213,15 +1263,17 @@ def crear_lider(request):
 
             for field, errors_list in errores_dict.items():
                 # Obtiene el label personalizado del campo
-                nombre_campo = perfil_form.fields[field].label or field.capitalize()
-                
+                nombre_campo = perfil_form.fields[field].label or field.capitalize(
+                )
+
                 for err in errors_list:
                     mensaje = f"{nombre_campo}: {err['message']}"
                     errores_custom.append(mensaje)
 
-            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
+            return JsonResponse({'status': 'error', 'message': 'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
 
 @login_required  # Funcion para actualizar informacion de lider
 def obtener_lider(request, lider_id):
@@ -1239,14 +1291,15 @@ def obtener_lider(request, lider_id):
             'lider-gene': lider.perfil.gene,
             'lider-fecha_naci': lider.perfil.fecha_naci,
         }
-        return JsonResponse (data)
+        return JsonResponse(data)
     return JsonResponse({'status': 'error', 'message': 'Lider no encontrado'}, status=404)
+
 
 @login_required
 @bloquear_si_consulta
 def editar_lider(request, lider_id):
     lider = get_object_or_404(T_lider, pk=lider_id)
-    perfil = get_object_or_404(T_perfil, pk = lider.perfil.id)
+    perfil = get_object_or_404(T_perfil, pk=lider.perfil.id)
 
     if request.method == 'POST':
         form_perfil = PerfilForm(request.POST, instance=perfil)
@@ -1258,8 +1311,9 @@ def editar_lider(request, lider_id):
             errors = {
                 'perfil': form_perfil.errors,
             }
-            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el lider', 'errors': errors}, status = 400)
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status = 405)
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el lider', 'errors': errors}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status=405)
+
 
 @login_required
 @bloquear_si_consulta
@@ -1268,7 +1322,7 @@ def eliminar_lider(request, lider_id):
     if request.method == 'POST':
         perfil = lider.perfil
         usuario = perfil.user
-        
+
         lider.delete()
         perfil.delete()
         usuario.delete()
@@ -1292,6 +1346,7 @@ def administradores(request):
         'admin_form': admin_form
     })
 
+
 @login_required
 @bloquear_si_consulta
 def crear_administrador(request):
@@ -1302,12 +1357,12 @@ def crear_administrador(request):
         if perfil_form.is_valid() and admin_form.is_valid():
             dni = perfil_form.cleaned_data.get('dni')
             email = perfil_form.cleaned_data.get('mail')
-            if T_perfil.objects.filter(dni__iexact = dni).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
-            
-            if T_perfil.objects.filter(mail__iexact = email).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
-        
+            if T_perfil.objects.filter(dni__iexact=dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status=400)
+
+            if T_perfil.objects.filter(mail__iexact=email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status=400)
+
             nombre = perfil_form.cleaned_data['nom']
             apellido = perfil_form.cleaned_data['apelli']
             base_username = (nombre[:3] + apellido[:3]).lower()
@@ -1330,21 +1385,23 @@ def crear_administrador(request):
             new_perfil.rol = 'admin'
             new_perfil.mail = new_user.email
             new_perfil.save()
-            
+
             perfil = getattr(request.user, 't_perfil', None)
-        
+
             new_admin = admin_form.save(commit=False)
             new_admin.perfil = new_perfil
             new_admin.esta = "Activo"
             new_admin.save()
             return JsonResponse({'status': 'success', 'message': 'Administrador creado con exito.'})
         else:
-            errores_dict = {**perfil_form.errors.get_json_data(), **admin_form.errors.get_json_data()}
+            errores_dict = {
+                **perfil_form.errors.get_json_data(), **admin_form.errors.get_json_data()}
             errores_custom = []
 
             for field, errors_list in errores_dict.items():
-                nombre_campo = (perfil_form.fields.get(field) or admin_form.fields.get(field)).label or field.capitalize()
-                
+                nombre_campo = (perfil_form.fields.get(
+                    field) or admin_form.fields.get(field)).label or field.capitalize()
+
                 for err in errors_list:
                     mensaje = f"{nombre_campo}: {err['message']}"
                     errores_custom.append(mensaje)
@@ -1375,8 +1432,9 @@ def obtener_administrador(request, admin_id):
             'admin-fecha_naci': administrador.perfil.fecha_naci,
             'admin-area': administrador.area
         }
-        return JsonResponse (data)
+        return JsonResponse(data)
     return JsonResponse({'status': 'error', 'message': 'Admin no encontrado'}, status=404)
+
 
 @login_required
 @bloquear_si_consulta
@@ -1395,15 +1453,17 @@ def eliminar_administrador(request, admin_id):
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
+
 @login_required
 @bloquear_si_consulta
 def editar_administrador(request, admin_id):
     administrador = get_object_or_404(T_admin, pk=admin_id)
-    perfil = get_object_or_404(T_perfil, pk = administrador.perfil.id)
+    perfil = get_object_or_404(T_perfil, pk=administrador.perfil.id)
 
     if request.method == 'POST':
         form_perfil = PerfilForm(request.POST, instance=perfil)
-        form_administrador  = AdministradoresForm(request.POST, instance = administrador)
+        form_administrador = AdministradoresForm(
+            request.POST, instance=administrador)
 
         if form_perfil.is_valid() and form_administrador.is_valid():
             form_perfil.save()
@@ -1414,43 +1474,9 @@ def editar_administrador(request, admin_id):
                 'perfil': form_perfil.errors,
                 'admin': form_administrador.errors
             }
-            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el aprendiz', 'errors': errors}, status = 400)
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status = 405)
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el aprendiz', 'errors': errors}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status=405)
 
-### NOVEDADES ###
-
-@login_required
-def novedades(request):
-    novedades = T_nove.objects.all()
-    return render(request, 'novedades.html', {
-        'novedades': novedades
-    })
-
-@login_required
-def crear_novedad(request):
-
-    if request.method == 'GET':
-
-        novedad_form = NovedadForm()
-
-        return render(request, 'novedad_crear.html', {
-            'novedad_form': novedad_form
-        })
-    else:
-        try:
-            novedad_form = NovedadForm(request.POST)
-            if novedad_form.is_valid():
-                # Creacion de la novedad
-                new_novedad = novedad_form.save(commit=False)
-                new_novedad.estado = 'creado'
-                new_novedad.save()
-                return redirect('novedades')
-
-        except ValueError as e:
-            return render(request, 'novedad_crear.html', {
-                'novedad_form': novedad_form,
-                'error': f'Ocurrió un error: {str(e)}'
-            })
 
 ## DEPARTAMENTOS ##
 
@@ -1460,6 +1486,7 @@ def departamentos(request):
     return render(request, 'departamentos.html', {
         'departamentos': departamentos
     })
+
 
 @login_required
 @bloquear_si_consulta
@@ -1483,6 +1510,8 @@ def creardepartamentos(request):  # funcion para crear departamento
             })
 
 # funcion para actualizar info departamento
+
+
 @login_required
 @bloquear_si_consulta
 def detalle_departamentos(request, departamento_id):
@@ -1506,6 +1535,7 @@ def detalle_departamentos(request, departamento_id):
                 'error': '"Error al actualizar departamento. Verifique los datos.'
             })
 
+
 @login_required
 @bloquear_si_consulta
 def eliminar_departamentos(request, departamento_id):
@@ -1519,12 +1549,14 @@ def eliminar_departamentos(request, departamento_id):
 
 ## MUNICIPIOS ##
 
+
 @login_required
 def municipios(request):
     municipios = T_munici.objects.all()
     return render(request, 'municipios.html', {
         'municipios': municipios
     })
+
 
 @login_required
 @bloquear_si_consulta
@@ -1571,6 +1603,7 @@ def detalle_municipios(request, municipio_id):  # funcion para editar municipio
                 'error': 'Error al actualizar. Verifique los datos.'
             })
 
+
 @login_required
 @bloquear_si_consulta
 def eliminar_municipios(request, municipio_id):  # funcion para eliminar municipio
@@ -1585,6 +1618,7 @@ def eliminar_municipios(request, municipio_id):  # funcion para eliminar municip
 
 ## Instituciones ##
 
+
 @login_required
 def instituciones(request):
     instituciones = T_insti_edu.objects.all()
@@ -1596,6 +1630,8 @@ def instituciones(request):
     })
 
 ## Endpoint para editar institucion ##
+
+
 @login_required
 def obtener_institucion(request, institucion_id):
     institucion = T_insti_edu.objects.filter(id=institucion_id).first()
@@ -1624,11 +1660,13 @@ def obtener_institucion(request, institucion_id):
         return JsonResponse(data)
     return JsonResponse({'error': 'Institución no encontrada'}, status=404)
 
+
 @login_required
 def api_municipios(request):
     municipios = T_munici.objects.all().values('id', 'nom_munici')
     data = list(municipios)
     return JsonResponse(data, safe=False)
+
 
 @login_required
 @bloquear_si_consulta
@@ -1641,12 +1679,13 @@ def crear_instituciones(request):
                 departamento_id = institucionForm.cleaned_data.get('depa')
 
                 if departamento_id:
-                    institucionForm.fields['muni'].queryset = T_munici.objects.filter(nom_departa=departamento_id)
+                    institucionForm.fields['muni'].queryset = T_munici.objects.filter(
+                        nom_departa=departamento_id)
 
                 nombre = institucionForm.cleaned_data.get('nom')
                 municipio = institucionForm.cleaned_data.get('muni')
 
-                if T_insti_edu.objects.filter(nom = nombre, muni = municipio).exists():
+                if T_insti_edu.objects.filter(nom=nombre, muni=municipio).exists():
                     errors = "<ul><li>Ya existe una institución con ese nombre asociada al municipio seleccionado.</li></ul>"
                     return JsonResponse({'status': 'error', 'message': 'Institución duplicada.', 'errors': errors}, status=400)
 
@@ -1654,22 +1693,23 @@ def crear_instituciones(request):
                 new_institucion.vigen = timezone.now().year
                 new_institucion.save()
 
-                return JsonResponse({'status':'success', 'message': 'Institución creada correctamente.'}, status=200)
+                return JsonResponse({'status': 'success', 'message': 'Institución creada correctamente.'}, status=200)
 
             errors = institucionForm.errors.as_ul()
-            return JsonResponse({'status': 'error','message': 'Valide el formulario nuevamente', 'errors': errors}, status=400)
+            return JsonResponse({'status': 'error', 'message': 'Valide el formulario nuevamente', 'errors': errors}, status=400)
 
         except ValueError as e:
             errors = "<ul><li>Error interno: {}</li></ul>".format(str(e))
-            return JsonResponse({'status':'error','errors': errors}, status=500)
+            return JsonResponse({'status': 'error', 'errors': errors}, status=500)
 
     else:
         return JsonResponse({"errors": "<ul><li>Método no permitido.</li></ul>"}, status=405)
 
+
 @login_required
 @bloquear_si_consulta
 def editar_institucion(request, institucion_id):
-    institucion = get_object_or_404(T_insti_edu, id = institucion_id)
+    institucion = get_object_or_404(T_insti_edu, id=institucion_id)
 
     try:
         institucion.nom = request.POST.get('nom', '').strip()
@@ -1695,9 +1735,10 @@ def editar_institucion(request, institucion_id):
             institucion.muni_id = municipio_id
 
         institucion.save()
-        return JsonResponse({'status': 'success', 'message': 'Institucion actualizada.'}, status = 200)
+        return JsonResponse({'status': 'success', 'message': 'Institucion actualizada.'}, status=200)
     except Exception as e:
-        return JsonResponse({'status': 'false', 'message':'Error en la operacion', 'errors': str(e)}, status = 400)
+        return JsonResponse({'status': 'false', 'message': 'Error en la operacion', 'errors': str(e)}, status=400)
+
 
 @login_required  # funcion para eliminar institucion
 @bloquear_si_consulta
@@ -1710,6 +1751,7 @@ def eliminar_instituciones(request, institucion_id):
     return render(request, 'confirmar_eliminacion_instituciones.html', {
         'institucion': institucion,
     })
+
 
 @login_required
 def obtener_institucion_modal(request, institucion_id):
@@ -1730,9 +1772,11 @@ def centrosformacion(request):
     else:
         return render(request, 'centro_formacion.html', {
             'centroformacionForm': centroformacionForm,
-            })
+        })
 
 # Funcion para crear centros de formacion
+
+
 @login_required
 @bloquear_si_consulta
 def crear_centro(request):
@@ -1742,30 +1786,33 @@ def crear_centro(request):
             nom = centroForm.cleaned_data.get('nom')
             cod = centroForm.cleaned_data.get('cod')
 
-            if T_centro_forma.objects.filter(nom__iexact = nom).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un centro con ese nombre'}, status = 400)
+            if T_centro_forma.objects.filter(nom__iexact=nom).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un centro con ese nombre'}, status=400)
 
-            if T_centro_forma.objects.filter(cod__iexact = cod).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un centro con ese codigo'}, status = 400)
+            if T_centro_forma.objects.filter(cod__iexact=cod).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un centro con ese codigo'}, status=400)
 
             centroForm.save()
-            return JsonResponse({'status': 'success', 'message': 'Centro creado con exito.'}, status = 200)
+            return JsonResponse({'status': 'success', 'message': 'Centro creado con exito.'}, status=200)
         else:
             errores_dict = centroForm.errors.get_json_data()
             errores_custom = []
 
             for field, errors_list in errores_dict.items():
                 # Obtiene el label personalizado del campo
-                nombre_campo = centroForm.fields[field].label or field.capitalize()
-                
+                nombre_campo = centroForm.fields[field].label or field.capitalize(
+                )
+
                 for err in errors_list:
                     mensaje = f"{nombre_campo}: {err['message']}"
                     errores_custom.append(mensaje)
 
-            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
+            return JsonResponse({'status': 'error', 'message': 'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status=405)
 
-## Endpoint para listar centro
+# Endpoint para listar centro
+
+
 @login_required
 def listar_centros_formacion_json(request):
     centros = T_centro_forma.objects.all()
@@ -1780,10 +1827,12 @@ def listar_centros_formacion_json(request):
     return JsonResponse({'data': data})
 
 ## Endpoint para editar centro ##
+
+
 @login_required
 def obtener_centro(request, centro_id):
     centro = T_centro_forma.objects.filter(id=centro_id).first()
-    
+
     if centro:
         data = {
             'centro-nom': centro.nom,
@@ -1793,11 +1842,12 @@ def obtener_centro(request, centro_id):
         return JsonResponse(data)
     return JsonResponse({'error': 'Centro no encontrado'}, status=404)
 
+
 @login_required
 @bloquear_si_consulta
 def editar_centro(request, centro_id):
     centro = get_object_or_404(T_centro_forma, pk=centro_id)
-    
+
     if request.method == 'POST':
         form_centro = CentroFormacionForm(request.POST, instance=centro)
         nom = request.POST.get('nom', '').strip()
@@ -1809,17 +1859,18 @@ def editar_centro(request, centro_id):
         if T_centro_forma.objects.filter(cod__iexact=cod).exclude(pk=centro_id).exists():
             return JsonResponse({'status': 'error', 'message': 'Ya existe otro centro con este código.'}, status=400)
 
-
         if form_centro.is_valid():
             form_centro.save()
             return JsonResponse({'status': 'success', 'message': 'Centro de Formacion actualizado con exito.'})
         else:
             errores = form_centro.errors
-            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el centro de formacion', 'errors': {'centro': errores}}, status=400) 
-    
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el centro de formacion', 'errors': {'centro': errores}}, status=400)
+
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
 
 # Endpoiont para eliminar centro de formacion
+
+
 @login_required
 @bloquear_si_consulta
 def eliminar_centro(request, centro_id):
@@ -1827,28 +1878,34 @@ def eliminar_centro(request, centro_id):
         try:
             centro = get_object_or_404(T_centro_forma, id=centro_id)
             centro.delete()
-            return JsonResponse({'status': 'success', 'message': 'Centro eliminado con exito.'}, status = 200)
+            return JsonResponse({'status': 'success', 'message': 'Centro eliminado con exito.'}, status=200)
         except centro.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'No encontrado.'}, status = 404)       
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido.'}, status = 405)
+            return JsonResponse({'status': 'error', 'message': 'No encontrado.'}, status=404)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido.'}, status=405)
+
 
 @login_required
 def obtener_municipios(request):
     departamento_id = request.GET.get('departamento_id')
     if departamento_id:
-        municipios = T_munici.objects.filter(nom_departa_id=departamento_id).values('id', 'nom_munici')
+        municipios = T_munici.objects.filter(
+            nom_departa_id=departamento_id).values('id', 'nom_munici')
         return JsonResponse(list(municipios), safe=False)
     return JsonResponse({'error': 'No se proporcionó el ID del departamento'}, status=400)
 
+
 @login_required
 def obtener_departamentos(request):
-    departamentos = T_departa.objects.all().values('id', 'nom_departa') 
+    departamentos = T_departa.objects.all().values('id', 'nom_departa')
     return JsonResponse(list(departamentos), safe=False)
 
 # Función para generar contraseña aleatoria
+
+
 def generar_contraseña(length=8):
     caracteres = string.ascii_letters + string.digits
     return ''.join(random.choice(caracteres) for _ in range(length))
+
 
 @login_required
 @bloquear_si_consulta
@@ -1867,23 +1924,29 @@ def cargar_aprendices_masivo(request):
                 # Iniciar una transacción
                 with transaction.atomic():
                     archivo = request.FILES['archivo']
-                    datos_csv = TextIOWrapper(archivo.file, encoding='utf-8-sig')
+                    datos_csv = TextIOWrapper(
+                        archivo.file, encoding='utf-8-sig')
 
                     # Validar extensión del archivo
                     if not archivo.name.lower().endswith('.csv'):
-                        messages.error(request, "Solo se permiten archivos CSV (.csv).")
+                        messages.error(
+                            request, "Solo se permiten archivos CSV (.csv).")
                         resumen["errores"] += 1
                         errores.append(f"Solo se permiten archivos CSV (.csv)")
-                        raise ValidationError(f"Solo se permiten archivos CSV (.csv).")
-                    
+                        raise ValidationError(
+                            f"Solo se permiten archivos CSV (.csv).")
+
                     # Validar tipo MIME (opcional pero recomendado)
-                    allowed_mime_types = ['text/csv', 'application/csv', 'text/plain']
+                    allowed_mime_types = ['text/csv',
+                                          'application/csv', 'text/plain']
                     if archivo.content_type not in allowed_mime_types:
-                        messages.error(request, "Tipo de archivo no válido (solo CSV).")
+                        messages.error(
+                            request, "Tipo de archivo no válido (solo CSV).")
                         resumen["errores"] += 1
                         errores.append(f"Solo se permiten archivos CSV (.csv)")
-                        raise ValidationError(f"Solo se permiten archivos CSV (.csv).")
-                                
+                        raise ValidationError(
+                            f"Solo se permiten archivos CSV (.csv).")
+
                     # Convertir punto y coma a coma en caso de que el CSV use el delimitador ";"
                     contenido_csv = datos_csv.read().replace(';', ',')
 
@@ -1898,12 +1961,12 @@ def cargar_aprendices_masivo(request):
 
                             # Validar campos obligatorios
                             campos_requeridos = ['email', 'nom', 'dni', 'apelli', 'tipo_dni', 'tele', 'dire', 'gene',
-                            'nom_repre', 'dni_repre', 'tele_repre', 'dire_repre', 'mail_repre', 'parentezco', 'ciu', 'depa']
+                                                 'nom_repre', 'dni_repre', 'tele_repre', 'dire_repre', 'mail_repre', 'parentezco', 'ciu', 'depa']
                             for campo in campos_requeridos:
                                 if campo not in fila or not fila[campo].strip():
-                                    raise ValidationError(f"Campo requerido faltante: '{campo}' en fila: {fila}")
+                                    raise ValidationError(
+                                        f"Campo requerido faltante: '{campo}' en fila: {fila}")
 
-                            
                             # Verificar si el DNI ya existe
                             dni = fila['dni']
                             if T_perfil.objects.filter(dni=dni).exists():
@@ -1917,14 +1980,19 @@ def cargar_aprendices_masivo(request):
                             fecha_naci_str = fila.get('fecha_naci', '').strip()
                             if fecha_naci_str:
                                 try:
-                                    fecha_naci = datetime.strptime(fecha_naci_str, '%d/%m/%Y').date()
+                                    fecha_naci = datetime.strptime(
+                                        fecha_naci_str, '%d/%m/%Y').date()
                                 except ValueError as e:
-                                    raise ValidationError(f"Formato de fecha inválido en fila {fila}: {str(e)}")  # Cambiar esto
+                                    raise ValidationError(
+                                        # Cambiar esto
+                                        f"Formato de fecha inválido en fila {fila}: {str(e)}")
                             else:
                                 fecha_naci = None
 
                             # Generar un username único basado en el nombre y apellido
-                            base_username = (fila['nom'][:3] + fila['apelli'][:3]).lower()  # Tomamos los primeros 3 caracteres del nombre y apellido
+                            # Tomamos los primeros 3 caracteres del nombre y apellido
+                            base_username = (
+                                fila['nom'][:3] + fila['apelli'][:3]).lower()
                             username = base_username
                             i = 1
 
@@ -1942,7 +2010,7 @@ def cargar_aprendices_masivo(request):
                                 password=str(dni),
                                 email=fila['email']
                             )
-                            
+
                             # Crear el perfil
                             perfil = T_perfil.objects.create(
                                 user=user,
@@ -1961,7 +2029,8 @@ def cargar_aprendices_masivo(request):
                             # Verificar si el representante legal ya existe
                             nombre_repre = fila['nom_repre']
                             telefono_repre = fila['tele_repre']
-                            repre_legal = representantes.get((nombre_repre, telefono_repre))
+                            repre_legal = representantes.get(
+                                (nombre_repre, telefono_repre))
 
                             if not repre_legal:
                                 # Si no existe, buscar en la base de datos
@@ -1980,9 +2049,10 @@ def cargar_aprendices_masivo(request):
                                         mail=fila['mail_repre'],
                                         paren=fila['parentezco']
                                     )
-                                    
+
                                 # Registrar el representante en el diccionario para evitar duplicados
-                                representantes[(nombre_repre, telefono_repre)] = repre_legal
+                                representantes[(
+                                    nombre_repre, telefono_repre)] = repre_legal
 
                             # Crear el aprendiz
                             aprendiz = T_apre.objects.create(
@@ -1990,7 +2060,7 @@ def cargar_aprendices_masivo(request):
                                 esta="Activo",
                                 perfil=perfil,
                                 repre_legal=repre_legal,
-                                usu_crea = perfil_crea.user
+                                usu_crea=perfil_crea.user
                             )
 
                             # # Enviar el correo con la contraseña
@@ -2005,16 +2075,19 @@ def cargar_aprendices_masivo(request):
                             # )
 
                             resumen["insertados"] += 1
-                            messages.success(request, "Filas insertadas correctamente.")
+                            messages.success(
+                                request, "Filas insertadas correctamente.")
 
                         except Exception as e:
-                            errores.append(f"Error: {str(e)} en la fila {fila}")
+                            errores.append(
+                                f"Error: {str(e)} en la fila {fila}")
                             resumen["errores"] += 1
                             resumen["insertados"] = 0
                             raise  # Fuerza el rollback
 
             except Exception as e:
-                messages.error(request, "No se ha cargado informacion, corrija los errores e intentelo de nuevo.")
+                messages.error(
+                    request, "No se ha cargado informacion, corrija los errores e intentelo de nuevo.")
 
             # Resumen de los datos procesados
             return render(request, 'aprendiz_masivo_crear.html', {
@@ -2027,6 +2100,7 @@ def cargar_aprendices_masivo(request):
         form = CargarAprendicesMasivoForm()
 
     return render(request, 'aprendiz_masivo_crear.html', {'form': form})
+
 
 @login_required
 def listar_instituciones(request):
@@ -2065,7 +2139,8 @@ def listar_instituciones(request):
         order_column = f'-{order_column}'
 
     # Query inicial sin slicing
-    queryset = T_insti_edu.objects.select_related('muni__nom_departa').order_by(order_column)
+    queryset = T_insti_edu.objects.select_related(
+        'muni__nom_departa').order_by(order_column)
     total_records = queryset.count()
 
     # Filtros especiales (👈 mover arriba)
@@ -2122,35 +2197,40 @@ def listar_instituciones(request):
         'data': data,
     })
 
+
 @login_required
 def obtener_departamentos_filtro_insti(request):
     departamentos = (
         T_insti_edu.objects
-        .select_related('muni__nom_departa') 
-        .values('muni__nom_departa_id', 'muni__nom_departa__nom_departa') 
+        .select_related('muni__nom_departa')
+        .values('muni__nom_departa_id', 'muni__nom_departa__nom_departa')
         .distinct()
         .order_by(Lower('muni__nom_departa__nom_departa'))
     )
 
     data = [
-        {'value': depto['muni__nom_departa_id'], 'label': depto['muni__nom_departa__nom_departa']}
+        {'value': depto['muni__nom_departa_id'],
+            'label': depto['muni__nom_departa__nom_departa']}
         for depto in departamentos if depto['muni__nom_departa__nom_departa']
     ]
     return JsonResponse(data, safe=False)
+
 
 @login_required
 def obtener_municipio_filtro_insti(request):
     departamento_id = request.GET.get('departamento_id')
 
-    municipios_qs = T_insti_edu.objects.select_related('muni', 'muni__nom_departa')
+    municipios_qs = T_insti_edu.objects.select_related(
+        'muni', 'muni__nom_departa')
 
     if departamento_id:
-        municipios_qs = municipios_qs.filter(muni__nom_departa__id=departamento_id)
+        municipios_qs = municipios_qs.filter(
+            muni__nom_departa__id=departamento_id)
 
     municipios = (municipios_qs
-                .values('muni_id', 'muni__nom_munici')
-                .distinct()
-                .order_by(Lower('muni__nom_munici')))
+                  .values('muni_id', 'muni__nom_munici')
+                  .distinct()
+                  .order_by(Lower('muni__nom_munici')))
 
     data = [
         {'value': mun['muni_id'], 'label': mun['muni__nom_munici']}
@@ -2159,32 +2239,37 @@ def obtener_municipio_filtro_insti(request):
 
     return JsonResponse(data, safe=False)
 
+
 @login_required
 def obtener_estado_filtro_insti(request):
     estados = (T_insti_edu.objects
-                .values_list('esta', flat=True)
-                .distinct()
-                .order_by(Lower('esta')))
+               .values_list('esta', flat=True)
+               .distinct()
+               .order_by(Lower('esta')))
 
-    data = [{'value': est, 'label': est.capitalize()} for est in estados if est]
+    data = [{'value': est, 'label': est.capitalize()}
+            for est in estados if est]
     return JsonResponse(data, safe=False)
+
 
 @login_required
 def obtener_zona_filtro_insti(request):
     zonas = (T_insti_edu.objects
-            .values_list('zona', flat=True)
-            .distinct())
+             .values_list('zona', flat=True)
+             .distinct())
 
     zona_map = {'u': 'Urbana', 'r': 'Rural'}
-    data = [{'value': zona, 'label': zona_map.get(zona, 'Desconocida')} for zona in zonas if zona]
+    data = [{'value': zona, 'label': zona_map.get(
+        zona, 'Desconocida')} for zona in zonas if zona]
     return JsonResponse(data, safe=False)
+
 
 @login_required
 def gestores(request):
     perfil_form = PerfilForm()
     gestores = T_gestor.objects.prefetch_related(
         Prefetch(
-            't_gestor_depa_set', 
+            't_gestor_depa_set',
             queryset=T_gestor_depa.objects.select_related('depa')
         )
     )
@@ -2199,6 +2284,7 @@ def gestores(request):
         'perfil_form': perfil_form
     })
 
+
 @login_required
 @bloquear_si_consulta
 def crear_gestor(request):
@@ -2209,14 +2295,14 @@ def crear_gestor(request):
         if perfil_form.is_valid():
             dni = perfil_form.cleaned_data.get('dni')
             email = perfil_form.cleaned_data.get('mail')
-            if T_perfil.objects.filter(dni__iexact = dni).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status = 400)
-            
-            if T_perfil.objects.filter(mail__iexact = email).exists():
-                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status = 400)
-        
+            if T_perfil.objects.filter(dni__iexact=dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status=400)
+
+            if T_perfil.objects.filter(mail__iexact=email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status=400)
+
             if len(departamentos) == 0:
-                return JsonResponse({'status': 'error', 'message': 'Debe seleccionar un departamento'}, status = 400)
+                return JsonResponse({'status': 'error', 'message': 'Debe seleccionar un departamento'}, status=400)
 
             nombre = perfil_form.cleaned_data['nom']
             apellido = perfil_form.cleaned_data['apelli']
@@ -2230,7 +2316,8 @@ def crear_gestor(request):
             # contraseña = generar_contraseña()
 
             # Crear el usuario con los datos generados
-            new_user = User.objects.create_user(username=username, password=str(dni), email=perfil_form.cleaned_data['mail'])
+            new_user = User.objects.create_user(username=username, password=str(
+                dni), email=perfil_form.cleaned_data['mail'])
 
             # Asignar usuario al perfil y guardarlo
             new_perfil = perfil_form.save(commit=False)
@@ -2241,8 +2328,8 @@ def crear_gestor(request):
 
             # Crear el gestor
             new_gestor = T_gestor.objects.create(
-                perfil = new_perfil,
-                esta = "Activo"
+                perfil=new_perfil,
+                esta="Activo"
             )
 
             for departamento in departamentos:
@@ -2278,22 +2365,25 @@ def crear_gestor(request):
             errores_custom = []
 
             for field, errors_list in errores_dict.items():
-                nombre_campo = perfil_form.fields[field].label or field.capitalize()
-                
+                nombre_campo = perfil_form.fields[field].label or field.capitalize(
+                )
+
                 for err in errors_list:
                     mensaje = f"{nombre_campo}: {err['message']}"
                     errores_custom.append(mensaje)
 
-            return JsonResponse({'status': 'error', 'message':'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status = 400)
+            return JsonResponse({'status': 'error', 'message': 'Errores en el formulario', 'errors': '<br>'.join(errores_custom)}, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
-@login_required 
+
+@login_required
 def obtener_gestor(request, gestor_id):
     gestor = T_gestor.objects.filter(id=gestor_id).first()
 
     if gestor:
-        departamentos = list(T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__id', 'depa__nom_departa'))
+        departamentos = list(T_gestor_depa.objects.filter(
+            gestor=gestor).values_list('depa__id', 'depa__nom_departa'))
 
         data = {
             'gestor-nom': gestor.perfil.nom,
@@ -2311,11 +2401,12 @@ def obtener_gestor(request, gestor_id):
 
     return JsonResponse({'status': 'error', 'message': 'Gestor no encontrado'}, status=404)
 
+
 @login_required
 @bloquear_si_consulta
 def editar_gestor(request, gestor_id):
     gestor = get_object_or_404(T_gestor, pk=gestor_id)
-    perfil = get_object_or_404(T_perfil, pk = gestor.perfil.id)
+    perfil = get_object_or_404(T_perfil, pk=gestor.perfil.id)
 
     if request.method == 'POST':
         form_perfil = PerfilForm(request.POST, instance=perfil)
@@ -2323,9 +2414,10 @@ def editar_gestor(request, gestor_id):
         if form_perfil.is_valid():
             nuevos_departamentos = set(request.POST.getlist('departamentos'))
             if len(nuevos_departamentos) == 0:
-                return JsonResponse({'status': 'error', 'message': 'El gestor debe tener almenos un departamento asociado.'}, status = 400)
+                return JsonResponse({'status': 'error', 'message': 'El gestor debe tener almenos un departamento asociado.'}, status=400)
             actuales_departamentos = set(
-                T_gestor_depa.objects.filter(gestor=gestor).values_list('depa__id', flat=True)
+                T_gestor_depa.objects.filter(
+                    gestor=gestor).values_list('depa__id', flat=True)
             )
 
             # Identificar departamentos que se intentan eliminar
@@ -2333,32 +2425,34 @@ def editar_gestor(request, gestor_id):
 
             # verificar si alguno de los deparatmentos a eliminar tiene instituciones asignadas
             departamentos_con_instituciones = T_gestor_insti_edu.objects.filter(
-                gestor = gestor,
-                insti__muni__nom_departa__id__in= departamentos_a_eliminar
+                gestor=gestor,
+                insti__muni__nom_departa__id__in=departamentos_a_eliminar
             ).exists()
 
             if departamentos_con_instituciones:
                 return JsonResponse({'status': 'error', 'message': 'No se puede actualizar. Uno o más departamentos tienen instituciones asignadas.'}, status=400)
 
-            T_gestor_depa.objects.filter(gestor=gestor).delete()  # Elimina los existentes
+            T_gestor_depa.objects.filter(
+                gestor=gestor).delete()  # Elimina los existentes
             for depa in nuevos_departamentos:
                 departamento = T_departa.objects.get(id=depa)
                 T_gestor_depa.objects.create(
-                    gestor=gestor, 
-                    depa=departamento, 
-                    fecha_crea = timezone.now(),
-                    usuario_crea = request.user
+                    gestor=gestor,
+                    depa=departamento,
+                    fecha_crea=timezone.now(),
+                    usuario_crea=request.user
                 )
 
             form_perfil.save()
 
-            return JsonResponse({'status': 'success', 'message': 'Gestor actualizado correctamente '}, status = 200)
+            return JsonResponse({'status': 'success', 'message': 'Gestor actualizado correctamente '}, status=200)
         else:
             errors = {
                 'perfil': form_perfil.errors,
             }
-            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el lider', 'errors': errors}, status = 400)
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status = 405)
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar el lider', 'errors': errors}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido', 'errors': errors}, status=405)
+
 
 def reset_password_view(request):
     return render(request, 'res_con.html')
@@ -2366,12 +2460,15 @@ def reset_password_view(request):
 ###############################################################################################################
 #        VISTAS USUARIO
 ###############################################################################################################
+
+
 @login_required
 def usuarios(request):
     usuarios = T_perfil.objects.all()
     return render(request, 'usuarios.html', {
         'usuarios': usuarios,
     })
+
 
 @login_required
 @bloquear_si_consulta
@@ -2398,10 +2495,11 @@ def restablecer_contrasena(request):
 
             usuario.password = make_password(nueva_contrasena)
             usuario.save()
-            return JsonResponse({'status': 'success', 'message': 'Contraseña actualizada correctamente'}, status = 200)
+            return JsonResponse({'status': 'success', 'message': 'Contraseña actualizada correctamente'}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status = 405)
+    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status=405)
+
 
 def validar_contrasena_segura(password):
     if len(password) < 8:

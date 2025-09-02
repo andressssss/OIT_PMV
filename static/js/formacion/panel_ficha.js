@@ -79,8 +79,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Agregar listeners después de renderizar el árbol
       addEventListeners();
-      cargarHistorial('fichaG', fichaId);
-      cargarHistorial('ficha', fichaId);
+      cargarHistorial("fichaG", fichaId);
+      cargarHistorial("ficha", fichaId);
     } catch (error) {
       console.error("Error al cargar la estructura del árbol:", error);
       container.innerHTML = "<p>Error al cargar el árbol</p>";
@@ -88,9 +88,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function cargarHistorial(contexto, id) {
-    let containerId = contexto === 'ficha' ? 'historialFicha' 
-                    : contexto === 'aprendiz' ? 'historialAprendiz'
-                    : 'historialGeneralFicha';
+    let containerId =
+      contexto === "ficha"
+        ? "historialFicha"
+        : contexto === "aprendiz"
+        ? "historialAprendiz"
+        : "historialGeneralFicha";
     const container = document.getElementById(containerId);
     container.innerHTML = "";
 
@@ -108,7 +111,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       const response = await fetch(
-        `/api/formacion/fichas/historial/?contexto=${encodeURIComponent(contexto)}&id=${encodeURIComponent(id)}`
+        `/api/formacion/fichas/historial/?contexto=${encodeURIComponent(
+          contexto
+        )}&id=${encodeURIComponent(id)}`
       );
       if (!response.ok) throw new Error("Error en la respuesta del servidor");
       const data = await response.json();
@@ -145,8 +150,11 @@ document.addEventListener("DOMContentLoaded", function () {
     ul.classList.add("folder-list");
 
     nodes.forEach((node) => {
-
-      if(userRole === "instructor" && node.name === "LINK DE PORTAFOLIO APRENDICES 2024") return null;
+      if (
+        userRole === "instructor" &&
+        node.name === "LINK DE PORTAFOLIO APRENDICES 2024"
+      )
+        return null;
 
       const li = document.createElement("li");
       li.classList.add("folder-item");
@@ -858,10 +866,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function actualizarCarpeta(folderId, contexto) {
-
     let aprendizId = null;
 
-    if ( contexto === "aprendiz") aprendizId = document.getElementById("portafolioAprendizModal").dataset.aprendizId;
+    if (contexto === "aprendiz")
+      aprendizId = document.getElementById("portafolioAprendizModal").dataset
+        .aprendizId;
 
     try {
       const config = {
@@ -869,13 +878,13 @@ document.addEventListener("DOMContentLoaded", function () {
           url: `/api/tree/obtener_hijos_carpeta/${folderId}`,
           containerId: `folder-${folderId}`,
           renderFn: renderTree,
-          renderHistorial: () => cargarHistorial('ficha', fichaId),
+          renderHistorial: () => cargarHistorial("ficha", fichaId),
         },
         aprendiz: {
           url: `/api/tree/obtener_hijos_carpeta_aprendiz/${folderId}`,
           containerId: `portafolio-folder-${folderId}`,
           renderFn: renderPortafolioTree,
-          renderHistorial: () => cargarHistorial('aprendiz', aprendizId),
+          renderHistorial: () => cargarHistorial("aprendiz", aprendizId),
         },
       };
 
@@ -1228,7 +1237,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const target5 = e.target.closest(".activar-aprendiz");
-    if(target5) {
+    if (target5) {
       const confirm = await confirmAction({
         message:
           "¿Esta seguro que desea activar al aprendiz?, quedara activo en la actual ficha",
@@ -1413,7 +1422,7 @@ document.addEventListener("DOMContentLoaded", function () {
           "X-Requested-With": "XMLHttpRequest",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ esta : "activo"}),
+        body: JSON.stringify({ esta: "activo" }),
       });
 
       const data = await response.json();
@@ -1422,7 +1431,7 @@ document.addEventListener("DOMContentLoaded", function () {
       toastSuccess(data.message);
       location.reload();
     } catch (e) {
-      toastError(e)
+      toastError(e);
     }
   }
 
@@ -1464,7 +1473,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       agregarEventListenersPortafolio();
-      cargarHistorial('aprendiz', aprendizId);
+      cargarHistorial("aprendiz", aprendizId);
     } catch (error) {
       console.error("Error cargando los nodos:", error);
       document.getElementById("folderTreeAprendiz").innerHTML =
@@ -1764,4 +1773,73 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Error al borrar el archivo:", error);
     }
   }
+
+  // *******************************************************************
+  // *                                                                 *
+  // *        ¡ADVERTENCIA! ZONA DE CÓDIGO JUICIOS EVALUATIVOS         *
+  // *                                                                 *
+  // *******************************************************************
+
+  const tablaJuiciosActuEl = document.getElementById("tabla-juicios-actuales");
+
+  const tablaJuiciosActu = new DataTable(tablaJuiciosActuEl, {
+    serverSide: true,
+    processing: false,
+    ajax: {
+      url: "/api/formacion/juicios/filtrar/",
+      type: "GET",
+      data: function (d) {
+        d.id_ficha = fichaId;
+      },
+    },
+    columns: [
+      { data: "fecha_repor" },
+      { data: "apre_nom" },
+      { data: "rap_nom" },
+      { data: "eva" },
+      { data: "fecha" },
+      { data: "instru_nom" },
+    ],
+    language: {
+      url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+      emptyTable: "Sin historial",
+    },
+  });
+
+  const tablaJuiciosHistoEl = document.getElementById(
+    "tabla-juicios-historial"
+  );
+
+  const tablaJuiciosHisto = new DataTable(tablaJuiciosHistoEl, {
+    serverSide: true,
+    processing: false,
+    ajax: {
+      url: "/api/formacion/juiciosHistorial/filtrar/",
+      type: "GET",
+      data: function (d) {
+        d.ficha_id = fichaId;
+      },
+    },
+    columns: [
+      { data: "fecha_diff", 
+        render: function(data, type, row) {
+          if (!data) return "Sin registro";
+          const date = new Date(data);
+          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const year = date.getFullYear();
+          return `${year}-${month}-${day}`
+        }
+      },
+      { data: "apre_nom"},
+      { data: "descri" },
+      { data: "tipo_cambi" },
+      { data: "jui_desc"},
+      { data: "instru_nom" }
+    ],
+    language: {
+      url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+      emptyTable: "Sin historial"
+    },
+  });
 });

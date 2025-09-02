@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from tasks import views as tasks_views
 from usuarios import views as usuarios_views
 from formacion import views as formacion_views
 from matricula import views as matricula_views
@@ -46,11 +45,9 @@ urlpatterns = [
 
     # Log In
     path('signin/', usuarios_views.signin, name='signin'),
-    path('api/consultar_usuario_por_cedula/', usuarios_views.consultar_usuario_por_cedula, name='consultar_usuario_por_cedula'),
     
     # Perfil
     path('perfil/', usuarios_views.perfil, name='perfil'),
-    path('editar_perfil/', usuarios_views.editar_perfil, name='editar_perfil'),
 
     # Eliminar documento
     path('eliminar_documentoinstru/<int:hv_id>/', usuarios_views.eliminar_documentoinstru, name='eliminar_documentoinstru'),
@@ -62,20 +59,11 @@ urlpatterns = [
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
 
-    # CRUD base TASKS:
-    path('tasks/', tasks_views.tasksView, name='tasks'),
-    path('tasks_completed/', tasks_views.tasks_completed, name='tasks_completed'),
-    path('tasks/create/', tasks_views.create_task, name='create_task'),
-    path('tasks/<int:task_id>/', tasks_views.task_detail, name='task_detail'),
-    path('tasks/<int:task_id>/complete/',tasks_views.complete_task, name='complete_task'),
-    path('tasks/<int:task_id>/delete/',tasks_views.delete_task, name='delete_task'),
-
     # ROL Admin
     # Aprendices
     path('admin_dashboard/', usuarios_views.dashboard_admin, name='admin_dashboard'),
     path('aprendices/', usuarios_views.aprendices, name='aprendices'),
     path('aprendices/crear/', usuarios_views.crear_aprendices,name='crear_aprendices'),  # ----> Crear aprendiz
-    # path('aprendices/<int:aprendiz_id>/', usuarios_views.detalle_aprendices,name='obtener_detalles_aprendiz'),  # ----> actualizar informacion de aprendiz
     path('aprendices/<int:aprendiz_id>/eliminar', usuarios_views.eliminar_aprendiz,name='eliminar_aprendiz'),  # ----> Eliminar informacion de aprendiz
     path('aprendices/editar/<int:id>/', usuarios_views.editar_aprendiz, name='editar_aprendiz'),
 
@@ -188,18 +176,7 @@ urlpatterns = [
 
     #Fichas Panel
     path('ficha/<int:ficha_id>/', formacion_views.panel_ficha, name='panel_ficha'),
-    path('api/ficha/crear_actividad/<int:ficha_id>/', formacion_views.crear_actividad, name='api_crear_actividad'),
-    path('api/ficha/calificar_actividad/', formacion_views.calificarActividad, name='api_calificar_actividad_ficha'),
-    path('api/ficha/ver_cronograma/<int:ficha_id>/', formacion_views.listar_actividades_ficha, name='api_listar_actividades_ficha'),
-    path('api/ficha/obtener_aprendices_calificacion/<int:ficha_id>/<int:actividad_id>/', formacion_views.obtener_aprendices_calificacion, name='api_obtener_aprendices_calificacion'),
-    path('api/ficha/detalle_actividad/<int:actividad_id>', formacion_views.detalle_actividad, name='api_detalle_actividad'),
     path('api/ficha/encuentro_detalle/<int:encuentro_id>/', formacion_views.detalle_encuentro, name='api_detalle_encuentro'),
-    path('api/ficha/cerrar_fase/<int:ficha_id>/', formacion_views.cerrar_fase_ficha, name='api_cerrar_fase_ficha'),
-    path('api/ficha/devolver_fase/<int:ficha_id>/', formacion_views.devolver_fase_ficha, name='api_devolver_fase_ficha'),
-    path('api/ficha/actividad/<int:actividad_id>/', formacion_views.obtener_actividad, name='api_obtener_actividad'),
-    path('api/ficha/actividad/editar/<int:actividad_id>/', formacion_views.editar_actividad, name='api_editar_actividad'),
-    path('api/ficha/actividades/<int:ficha_id>/', formacion_views.obtener_actividades, name='api_obtener_actividades'),
-    path('api/ficha/obtener_estado_fase/<int:ficha_id>/', formacion_views.obtener_estado_fase, name='api_obtener_estado_fase'),
     path('api/ficha/crear_encuentro/<int:ficha_id>/', formacion_views.crear_encuentro, name='api_crear_encuentro'),
     path('api/ficha/encuentros/<int:ficha_id>/', formacion_views.obtener_encuentros, name='api_obtener_encuentros'),
     path('api/ficha/encuentro/<int:encuentro_id>/', formacion_views.obtener_encuentro, name='api_obtener_encuentro'),
@@ -208,14 +185,9 @@ urlpatterns = [
     # Reportes ficha
     path('api/reporte/ficha/generar_acta_asistencia/', formacion_views.generar_acta_asistencia, name='generar_acta_asistencia'),
     path('api/reporte/ficha/generar_acta_asistencia_aprendiz/', formacion_views.generar_acta_asistencia_aprendiz, name='generar_acta_asistencia_aprendiz'),
-    path('api/reporte/ficha/generar_informe_calificaciones/', formacion_views.generar_informe_calificaciones, name='generar_informe_calificaciones'),
 
     # ROL Aprendices
     path('panel_aprendiz/', formacion_views.panel_aprendiz, name='panel_aprendiz'),
-
-    # Novedades
-    path('novedades/', usuarios_views.novedades, name='novedades'),
-    path('novedades/crear/', usuarios_views.crear_novedad , name='crear_novedad'),
 
     # Fichas
     path('fichas/', formacion_views.fichas, name='fichas'), 
@@ -242,11 +214,9 @@ urlpatterns = [
 
     # Competencias
     path('competencias/', formacion_views.competencias, name='competencias'),
-    path('api/competencias/programas/', formacion_views.obtener_opciones_programas, name="api_opciones_programas"),
 
     # RAPS
     path('raps/', formacion_views.listar_raps, name = 'raps'),
-    path('api/raps/filtrar/', formacion_views.filtrar_raps, name="api_filtrar_raps"),
     path('api/raps/fases/', formacion_views.obtener_opciones_fases_raps, name="api_opciones_fases_raps"),
     path('api/raps/programas/', formacion_views.obtener_opciones_programas_raps, name="api_opciones_programas_raps"),
     path('api/raps/competencias/', formacion_views.obtener_opciones_competencias_raps, name="api_opciones_competencias_raps"),
@@ -255,15 +225,6 @@ urlpatterns = [
     path('api/competencias/', formacion_views.obtener_opciones_competencias, name="api_opciones_competencias"),
     path('api/rap/editar/<int:rap_id>/', formacion_views.editar_rap, name="api_editar_rap"),
 
-
-    path('api/competencias_progra/<int:id_progra>/', formacion_views.obtener_competencias_programa, name = 'api_obtener_competencias_programa'),
-    
-
-    # Guias
-    path('guias/', formacion_views.listar_guias, name = 'guias'),
-    path('api/guia/crear/', formacion_views.crear_guia, name='api_crear_guia'),
-    path('api/guia/<int:guia_id>/', formacion_views.obtener_guia, name='api_obtener_guia'),
-    path('api/guia/editar/<int:guia_id>/', formacion_views.editar_guia, name='api_editar_guia'),
 
     # Tree
     path('api/carpetas/<int:ficha_id>/', formacion_views.obtener_carpetas, name='obtener_carpetas'),
