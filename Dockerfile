@@ -26,4 +26,4 @@ COPY . .
 EXPOSE 8000
 
 # Comando para ejecutar la aplicación con gunicorn
-CMD ["gunicorn", "IOTPMV.asgi:application", "-c", "gunicorn.conf.py"]
+CMD ["gunicorn", "IOTPMV.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "-c", "gunicorn.conf.py"]

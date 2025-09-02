@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
+from rest_framework.pagination import PageNumberPagination
 from django.core.files.storage import default_storage
 from django.contrib.contenttypes.models import ContentType
 from datetime import datetime
@@ -11,11 +12,11 @@ from io import TextIOWrapper
 from django.db import transaction
 from django.forms import ValidationError
 from django.utils import timezone
-from django.db.models import Subquery, OuterRef, Exists
+from django.db.models import Q
 import csv
 from django.shortcuts import get_object_or_404
-from api.serializers.formacion import FaseSerializer, RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer
-from commons.models import T_fase, T_raps, AuditLog, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_compe_progra, T_raps_ficha, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz
+from api.serializers.formacion import FaseSerializer, JuicioHistoSerializer, JuicioSerializer,  RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer, JuicioHistoSerializer
+from commons.models import T_jui_eva_actu, T_fase, T_raps, AuditLog, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz, T_jui_eva_diff
 from django.contrib.auth.models import User
 from django.utils.timezone import localtime
 from matricula.scripts.cargar_tree import crear_datos_prueba
@@ -25,6 +26,29 @@ from commons.permisos import DenegarConsulta
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class DataTablesPagination(PageNumberPagination):
+    page_size_query_param = 'length'
+    page_query_param = 'start'
+
+    def paginate_queryset(self, queryset, request, view=None):
+        try:
+            self.offset = int(request.query_params.get('start', 0))
+            self.limit = int(request.query_params.get(
+                'length', self.page_size))
+            self.count = queryset.count()
+            self.request = request
+            return list(queryset[self.offset:self.offset + self.limit])
+        except (ValueError, TypeError):
+            return None
+
+    def get_paginated_response(self, data):
+        return Response({
+            'recordsTotal': self.count,
+            'recordsFiltered': self.count,
+            'data': data
+        })
 
 
 class RapsViewSet(ModelViewSet):
@@ -275,18 +299,6 @@ class FichasViewSet(ModelViewSet):
                     T_fase_ficha.objects.create(
                         fase_id=fase_actual, ficha=ficha, fecha_ini=timezone.now(), instru=instructor, vige=1)
 
-                    compe_ids = T_compe_progra.objects.filter(
-                        progra=ficha.progra).values('compe_id')
-                    raps = T_raps.objects.filter(compe__in=Subquery(compe_ids))
-
-                    raps_ficha_objs = [
-                        T_raps_ficha(ficha=ficha, rap=rap, fase=rap_fase.fase)
-                        for rap in raps
-                        for rap_fase in rap.t_raps_fase_set.all()
-                    ]
-
-                    T_raps_ficha.objects.bulk_create(raps_ficha_objs)
-
                     crear_datos_prueba(ficha.id)
                     resumen['insertados'] += 1
 
@@ -435,11 +447,11 @@ class FichasViewSet(ModelViewSet):
         folder_id = request.data.get("folder_id")
         archivo = request.FILES.get("documento")
 
-        logger.warning(f"contexto {contexto}")
-        logger.warning(f"folder_id {folder_id}")
-
         if not folder_id or not archivo or not contexto:
             return Response({"detail": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if archivo.size == 0:
+            return Response({"detail": "El archivo está vacío o la carga falló"}, status=status.HTTP_400_BAD_REQUEST)
 
         if contexto == "ficha":
             folder = get_object_or_404(T_DocumentFolder, id=folder_id)
@@ -534,10 +546,15 @@ class FichasViewSet(ModelViewSet):
 
             ruta_guardada = default_storage.save(ruta, archivo)
 
+            size = (
+                f"{archivo.size} B" if archivo.size < 1024 else
+                f"{archivo.size // 1024} KB"
+            )
+
             new_docu = T_docu.objects.create(
                 nom=archivo.name,
                 tipo=extension,
-                tama=f"{archivo.size // 1020} KB",
+                tama=size,
                 archi=ruta_guardada,
                 priva="No",
                 esta="Activo"
@@ -578,8 +595,8 @@ class FichasViewSet(ModelViewSet):
                     content_type=ContentType.objects.get_for_model(
                         document_node),
                     object_id=document_node.id,
-                    related_id = related_id,
-                    related_type = contexto,
+                    related_id=related_id,
+                    related_type=contexto,
                     extra_data=extra_data
                 )
 
@@ -604,7 +621,7 @@ class FichasViewSet(ModelViewSet):
     def historial(self, request):
         contexto = request.query_params.get("contexto")
         obj_id = request.query_params.get("id")
-        
+
         if not contexto or not obj_id:
             return Response({"error": "Se requiere contexto e id"}, status=400)
 
@@ -612,7 +629,7 @@ class FichasViewSet(ModelViewSet):
             obj_id = int(obj_id)
         except ValueError:
             return Response({"error": "ID invalido"}, status=400)
-          
+
         if contexto == "ficha":
             modelo = T_DocumentFolder
         elif contexto == "aprendiz":
@@ -641,7 +658,6 @@ class FichasViewSet(ModelViewSet):
         return Response(data)
 
 
-
 class ProgramasViewSet(ModelViewSet):
     queryset = T_progra.objects.all()
     serializer_class = ProgramaSerializer
@@ -652,3 +668,111 @@ class FasesViewSet(ModelViewSet):
     queryset = T_fase.objects.all()
     serializer_class = FaseSerializer
     permission_classes = [IsAuthenticated]
+
+
+class JuiciosViewSet(ModelViewSet):
+    queryset = T_jui_eva_actu.objects.all()
+    serializer_class = JuicioSerializer
+    pagination_class = DataTablesPagination
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='filtrar')
+    def filtrar(self, request):
+        ficha_id = request.GET.get("id_ficha")
+        search = request.GET.get("search[value]", "").strip()
+        order_col_index = request.GET.get("order[0][column]")
+        order_dir = request.GET.get("order[0][dir]")
+
+        juicios = T_jui_eva_actu.objects.all()
+
+        if ficha_id:
+            juicios = juicios.filter(ficha__id=ficha_id)
+
+        if search:
+            juicios = juicios.filter(
+                Q(eva__icontains=search) |
+                Q(fecha_eva__icontains=search) |
+                Q(apre__perfil__nom__icontains=search) |
+                Q(apre__perfil__apelli__icontains=search) |
+                Q(apre__perfil__dni__icontains=search) |
+                Q(rap__cod__icontains=search) |
+                Q(rap__nom__icontains=search)
+            )
+
+        column_map = {
+            "0": "fecha_repor",
+            "1": "apre__perfil__nom",
+            "2": "rap__nom",
+            "3": "eva",
+            "4": "fecha_eva",
+            "5": "instru__perfil__nom",
+        }
+
+        if order_col_index in column_map:
+            field_name = column_map[order_col_index]
+            if order_dir == "desc":
+                field_name = f"-{field_name}"
+            juicios = juicios.order_by(field_name)
+
+        paginated = self.paginate_queryset(juicios)
+
+        if paginated is not None:
+            serializer = JuicioSerializer(paginated, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = JuicioSerializer(juicios, many=True)
+        return Response(serializer.data)
+
+
+class JuiciosHistoViewSet(ModelViewSet):
+    queryset = T_jui_eva_diff
+    serializer_class = JuicioHistoSerializer
+    pagination_class = DataTablesPagination
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['GET'], url_path="filtrar")
+    def filtrar(self, request):
+        ficha_id = request.GET.get("ficha_id")
+        search = request.GET.get("search[value]", "").strip()
+        order_col_index = request.GET.get("order[0][column]")
+        order_dir = request.GET.get("order[0][dir]")
+
+        historial = T_jui_eva_diff.objects.all()
+
+        if ficha_id:
+            historial = historial.filter(ficha_id=ficha_id)
+
+        if search:
+            historial = historial.filter(
+                Q(descri__icontains=search) |
+                Q(fecha_diff__icontains=search) |
+                Q(apre__perfil__dni__icontains=search) |
+                Q(apre__perfil__nom__icontains=search) |
+                Q(apre__perfil__apelli__icontains=search) |
+                Q(tipo_cambi__icontains=search) |
+                Q(jui__rap__cod__icontains=search)
+            )
+
+        column_map = {
+            "0": "fecha_diff",
+            "1": "apre__perfil__nom",
+            "2": "descri",
+            "3": "tipo_cambi",
+            "4": "jui__rap__cod",
+            "5": "instru__perfil__nom"
+        }
+
+        if order_col_index in column_map:
+            field_name = column_map[order_col_index]
+            if order_dir == "desc":
+                field_name = f"-{field_name}"
+            historial = historial.order_by(field_name)
+
+        paginated = self.paginate_queryset(historial)
+
+        if paginated is not None:
+            serializer = JuicioHistoSerializer(paginated, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = JuicioHistoSerializer(historial, many=True)
+        return Response(serializer.data)

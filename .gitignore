@@ -38,6 +38,8 @@ staticfiles/
 *.log
 *.sqlite3
 
+logs/
+
 /static/admin/
 /static/rest_framework/
 /static/vendor/

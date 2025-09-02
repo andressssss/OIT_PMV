@@ -1,11 +1,8 @@
 from django import forms
-from django.contrib.auth.models import User
-from commons.models import T_acti,T_fase, T_guia,T_compe_fase, T_centro_forma,T_fase_ficha, T_docu,T_departa, T_insti_edu, T_munici, T_DocumentFolder, T_encu,T_apre, T_raps_ficha, T_acti_docu, T_acti_ficha, T_acti_apre, T_acti_descri, T_crono, T_progra, T_compe, T_raps, T_ficha
-from django.db.models import Subquery, Exists, OuterRef
+from commons.models import T_fase, T_centro_forma, T_docu,T_departa, T_insti_edu, T_munici, T_encu,T_apre, T_progra, T_compe, T_raps, T_ficha
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 
 class FichaForm(forms.ModelForm):
@@ -48,25 +45,6 @@ class CascadaMunicipioInstitucionForm(forms.Form):
     )
 
 
-class ActividadForm(forms.ModelForm):
-    class Meta:
-        model = T_acti
-        fields = ['nom', 'descri', 'tipo', 'horas_auto', 'horas_dire']
-        widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la actividad'}),
-            'descri': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Descripción de la actividad'}),
-            'tipo': forms.SelectMultiple(attrs={'class': 'form-select tomselect-multiple', 'placeholder': 'Seleccione los tipos de actividad'}),
-            'horas_auto': forms.NumberInput(attrs={'class': 'form-select', 'placeholder': 'Horas autónomas'}),
-            'horas_dire': forms.NumberInput(attrs={'class': 'form-select', 'placeholder': 'Horas directas'})
-        }
-        labels = {
-            'nom': 'Nombre',
-            'descri': 'Descripcion',
-            'tipo': 'Tipo de actividad',
-            'horas_auto': 'Horas autónomas',
-            'horas_dire': 'Horas  directas'
-        }
-
 class DocumentosForm(forms.ModelForm):
     class Meta:
         model = T_docu
@@ -77,89 +55,6 @@ class DocumentosForm(forms.ModelForm):
         labels = {
             'archi': 'Archivo'
         }
-
-class RapsFichaForm(forms.Form):
-    raps = forms.ModelMultipleChoiceField(
-        queryset=T_raps_ficha.objects.none(),
-        widget=forms.SelectMultiple(attrs={
-            'class': 'form-select tomselect-raps',
-            'placeholder': 'Seleccione los RAPs asociados'
-        }),
-        required=True
-    )
-
-    def __init__(self, *args, **kwargs):
-        ficha = kwargs.pop('ficha', None)
-        super().__init__(*args, **kwargs)
-
-        if ficha:
-            fase_activa = T_fase_ficha.objects.filter(
-                ficha=ficha,
-                vige='1'
-            ).first()
-
-            if fase_activa:
-                self.fields['raps'].queryset = T_raps_ficha.objects.filter(
-                    ficha=ficha,
-                    fase=fase_activa.fase
-                ).distinct()
-                self.fase_activa = fase_activa.fase
-
-
-class CronogramaForm(forms.ModelForm):
-    class Meta:
-        model = T_crono
-        fields = ['nove', 'fecha_ini_acti', 'fecha_fin_acti',
-                'fecha_ini_cali', 'fecha_fin_cali']
-        widgets = {
-            'nove': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Escriba las novedades si aplican'}),
-            'fecha_ini_acti': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_fin_acti': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_ini_cali': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_fin_cali': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
-        }
-        labels = {
-            'nove': 'Novedades',
-            'fecha_ini_acti': 'Fecha de inicio actividad',
-            'fecha_fin_acti': 'Fecha finalizacion actividad',
-            'fecha_ini_cali': 'Fecha de inicio calificacion',
-            'fecha_fin_cali': 'Fecha finalizacion calificacion'
-        }
-    def clean(self):
-        cleaned_data = super().clean()
-        fecha_ini_acti = cleaned_data.get('fecha_ini_acti')
-        fecha_fin_acti = cleaned_data.get('fecha_fin_acti')
-        fecha_ini_cali = cleaned_data.get('fecha_ini_cali')
-        fecha_fin_cali = cleaned_data.get('fecha_fin_cali')
-
-        # Validar que fecha_fin_acti no sea antes que fecha_ini_acti
-        if fecha_ini_acti and fecha_fin_acti:
-            if fecha_fin_acti < fecha_ini_acti:
-                self.add_error('fecha_fin_acti', 'La fecha final de la actividad no puede ser anterior a la fecha inicial.')
-
-        # Validar que fechas de actividad no estén después de fechas de calificación
-        if fecha_ini_acti and fecha_ini_cali:
-            if fecha_ini_acti > fecha_ini_cali:
-                self.add_error('fecha_ini_cali', 'La fecha de inicio de calificación no puede ser antes de la fecha de inicio de actividad.')
-
-        if fecha_fin_acti and fecha_fin_cali:
-            if fecha_fin_acti > fecha_fin_cali:
-                self.add_error('fecha_fin_cali', 'La fecha final de calificación no puede ser anterior a la fecha final de actividad.')
-
-        # Validar que fecha_fin_cali no sea antes que fecha_ini_cali
-        if fecha_ini_cali and fecha_fin_cali:
-            if fecha_fin_cali < fecha_ini_cali:
-                self.add_error('fecha_fin_cali', 'La fecha final de calificación no puede ser anterior a la fecha inicial.')
-
-        # Validar que fechas de calificación no sean antes de las fechas de actividad
-        if fecha_ini_cali and fecha_ini_acti:
-            if fecha_ini_cali < fecha_ini_acti:
-                self.add_error('fecha_ini_cali', 'La fecha de inicio de calificación no puede ser anterior a la fecha de inicio de actividad.')
-
-        if fecha_fin_cali and fecha_fin_acti:
-            if fecha_fin_cali < fecha_fin_acti:
-                self.add_error('fecha_fin_cali', 'La fecha final de calificación no puede ser anterior a la fecha final de actividad.')
-
 
 
 class ProgramaForm(forms.ModelForm):
@@ -215,22 +110,6 @@ class RapsForm(forms.ModelForm):
             'compe': 'Competencia',
         }
 
-class GuiaForm(forms.ModelForm):
-    class Meta:
-        model = T_guia
-        fields = ['nom', 'horas_auto', 'horas_dire', 'progra']
-        widgets = {
-            'nom': forms.TextInput(attrs={'class': 'form-control', 'label': 'Ingrese el nombre'}),
-            'horas_auto': forms.TextInput(attrs={'class': 'form-control'}),
-            'horas_dire': forms.TextInput(attrs={'class': 'form-control'}),
-            'progra': forms.Select(attrs={'class': 'form-control'}),
-        }
-        labels = {
-            'nom': 'Nombre',
-            'horas_auto': 'Horas autonomas',
-            'horas_dire': 'Horas directas',
-            'progra': 'Programa',
-        }
 
 class EncuentroForm(forms.ModelForm):
     class Meta:

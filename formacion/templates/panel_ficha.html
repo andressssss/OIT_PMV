@@ -35,7 +35,7 @@
           <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
         </li>
         <li class="nav-item" role="presentation">
-          <a class="nav-link" id="cronograma-tab" data-bs-toggle="pill" href="#cronograma" role="tab" aria-controls="cronograma" aria-selected="false">Evaluar RAPS</a>
+          <a class="nav-link" id="juicios-tab" data-bs-toggle="pill" href="#juicios" role="tab" aria-controls="juicios" aria-selected="false">RAPS</a>
         </li>
         <li class="nav-item" role="presentation">
           <a class="nav-link" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false">Historial</a>
@@ -56,7 +56,7 @@
                 <h5 class="mb-3">Estructura del Portafolio</h5>
                 <div id="folderTree"></div>
               </div>
-              <hr/>
+              <hr />
               <!-- Sección del acordeón -->
               <div class="accordion mt-4" id="formatosPlantillasAccordion">
                 <h5 class="mb-3">Documentos del proceso</h5>
@@ -181,14 +181,9 @@
               <div class="d-flex justify-content-end mb-3">
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz"><i class="bi bi-person-plus"></i> Agregar Aprendiz</button>
               </div>
-              <!--                  <div class="d-flex justify-content-end mb-3">
-                            <a href="{% url 'descargar_portafolios_ficha_zip' ficha.id %}" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-download"></i> Descargar portafolios
-                            </a>
-                        </div>                  -->
               <div class="table-responsive">
-                <table id="tabla_aprendices_ficha" class="table table-hover table-bordered align-middle">
-                  <thead class="table-secondary text-center">
+                <table id="tabla_aprendices_ficha" class="table table-hover table-striped w-100">
+                  <thead>
                     <tr>
                       <th>Nombre</th>
                       <th>Apellido</th>
@@ -246,16 +241,48 @@
           </div>
         </div>
 
-        <!-- Cronograma -->
-        <div class="tab-pane fade" id="cronograma" role="tabpanel" aria-labelledby="cronograma-tab">
+        <!-- Juicios Evaluativos -->
+        <div class="tab-pane fade" id="juicios" role="tabpanel" aria-labelledby="juicios-tab">
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <h5 class="text-primary fw-bold mb-3">Estado actual de juicios</h5>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped w-100" id="tabla-juicios-actuales">
+                  <thead>
+                    <tr>
+                      <th>Fecha reporte</th>
+                      <th>Aprendiz</th>
+                      <th>RAP</th>
+                      <th>Evaluación</th>
+                      <th>Fecha evaluación</th>
+                      <th>Instructor</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historial de diferencias -->
           <div class="card shadow-sm">
-            <div class="card-body text-center">
-              <h5 class="text-primary fw-bold mb-3">Estamos trabajando en una mejor experiencia</h5>
-              <p class="mb-2">
-                El módulo de evaluación de RAPS se encuentra <strong>temporalmente inhabilitado</strong> debido a procesos de mejora.
-              </p>
-              <p class="mb-0">Muy pronto podrá acceder a una versión optimizada pensada especialmente para facilitar su gestión de actividades.</p>
-              <p class="text-muted mt-3" style="font-size: 0.9rem;">Agradecemos su comprensión y lo invitamos a volver a consultar este espacio próximamente.</p>
+            <div class="card-body">
+              <h5 class="text-primary fw-bold mb-3">Historial de actualizaciones</h5>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped w-100" id="tabla-juicios-historial">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Aprendiz</th>
+                      <th>Descripción</th>
+                      <th>Tipo</th>
+                      <th>Juicio</th>
+                      <th>Instructor</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -265,7 +292,7 @@
           <div class="card shadow-sm">
             <div class="card-body text-center">
               <h5 class="text-dark fw-bold mb-3">Historial de Acciones</h5>
-              <hr/>
+              <hr />
               <div class="mt-4">
                 <ul id="historialGeneralFicha" class="list-group list-group-flush text-start"></ul>
               </div>

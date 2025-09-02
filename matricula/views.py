@@ -16,7 +16,6 @@ from commons.models import (
     T_ficha,
     T_fase_ficha,
     T_raps,
-    T_raps_ficha,
     T_compe,
     T_gestor_depa,
     T_grupo,
@@ -33,7 +32,6 @@ from commons.models import (
     T_apre,
     T_gestor,
     T_gestor_insti_edu,
-    T_compe_progra
 )
 from .forms import AsignarAprendicesGrupoForm, GrupoForm, AsignarAprendicesMasivoForm, AsignarInstiForm
 from .scripts.cargar_tree import crear_datos_prueba 
@@ -1281,19 +1279,6 @@ def formalizar_ficha(request):
                 instru = None,
                 vige  = 1
             )
-
-            compe_ids = T_compe_progra.objects.filter(progra=ficha.progra).values('compe_id')
-            raps = T_raps.objects.filter(compe__in=Subquery(compe_ids))
-
-            raps_ficha_objs = []
-
-            for rap in raps:
-                for rap_fase  in rap.t_raps_fase_set.all():
-                    raps_ficha_objs.append(
-                        T_raps_ficha(ficha=ficha, rap=rap, fase=rap_fase.fase)
-                    )
-
-            T_raps_ficha.objects.bulk_create(raps_ficha_objs)
 
             T_apre.objects.filter(grupo=grupo).update(ficha=ficha)
 

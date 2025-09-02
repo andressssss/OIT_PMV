@@ -5,7 +5,6 @@ from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from django.db import transaction
 from django.contrib.staticfiles import finders
 from django.contrib.contenttypes.models import ContentType
-from django.utils.encoding import force_str
 import io
 import zipfile
 import os
@@ -25,19 +24,14 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from io import BytesIO
 from django.utils import timezone
-from django.db.models import Subquery, OuterRef, Exists
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
-from .forms import CascadaMunicipioInstitucionForm, GuiaForm, CargarFichasMasivoForm, CargarDocuPortafolioFichaForm, ActividadForm, RapsFichaForm, EncuApreForm, EncuentroForm, DocumentosForm, CronogramaForm, ProgramaForm, CompetenciaForm, RapsForm, FichaForm
-from commons.models import T_encu, AuditLog, T_departa, T_raps_fase, T_munici, T_compe_progra, T_gestor_depa, T_fase, T_centro_forma, T_guia, T_cali, T_prematri_docu, T_docu, T_munici, T_insti_edu, T_acti_apre, T_raps_acti, T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_raps_ficha, T_acti_ficha, T_ficha, T_crono, T_progra, T_fase_ficha, T_instru, T_acti_docu, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
-from django.utils.timezone import now
+from django.http import JsonResponse, HttpResponse
+from .forms import EncuApreForm, EncuentroForm, ProgramaForm, RapsForm
+from commons.models import T_encu, AuditLog, T_departa, T_munici, T_gestor_depa, T_fase, T_centro_forma, T_prematri_docu, T_docu, T_munici, T_insti_edu, T_perfil, T_DocumentFolderAprendiz, T_encu_apre, T_apre, T_ficha, T_progra, T_fase_ficha, T_instru, T_perfil, T_compe, T_raps, T_DocumentFolder, T_repre_legal, T_grupo, T_gestor, T_gestor_grupo
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.urls import reverse
 from django.contrib.auth.models import User
-from django.contrib import messages
-from django.db.models import F
 from io import TextIOWrapper
 from django.forms import ValidationError
 from django.core.validators import validate_email
@@ -47,7 +41,6 @@ logger = logging.getLogger('django')
 ###############################################################################################################
 #        VISTAS FICHA
 ###############################################################################################################
-
 
 @login_required
 def fichas(request):
@@ -217,199 +210,11 @@ def panel_ficha(request, ficha_id):
     fase = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
     aprendices = T_apre.objects.filter(ficha=ficha_id)
 
-    if request.method == 'GET':
-        encuentro_form = EncuentroForm()
-        actividad_form = ActividadForm()
-        cronograma_form = CronogramaForm()
-        raps_form = RapsFichaForm(ficha=ficha)
-        encuentro_form = EncuentroForm()
-        encuapre_form = EncuApreForm(ficha=ficha)
-
     return render(request, 'panel_ficha.html', {
         'ficha': ficha,
         'fase': fase,
         'aprendices': aprendices,
-        'encuentro_form': encuentro_form,
-        'actividad_form': actividad_form,
-        'cronograma_form': cronograma_form,
-        'raps_form': raps_form,
-        'encuapre_form': encuapre_form
-
     })
-
-
-@login_required
-def obtener_estado_fase(request, ficha_id):
-    fase_ficha = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
-    if not fase_ficha:
-        return JsonResponse({
-            'raps_count': 0,
-            'raps_pendientes': '',
-            'fase': 'Sin fase activa'
-        })
-
-    fase_id = fase_ficha.fase.id
-
-    raps_pendientes = (
-        T_raps_ficha.objects
-        .filter(
-            ficha_id=ficha_id,
-            fase_id=fase_id,
-            agre='No'
-        )
-        .values('rap_id', 'rap__nom')
-        .distinct()
-    )
-
-    raps_count = raps_pendientes.count()
-    tooltip_text = "<br>".join(
-        f"{i+1}. {rap['rap__nom']}" for i, rap in enumerate(raps_pendientes))
-
-    return JsonResponse({
-        'raps_count': raps_count,
-        'raps_pendientes': tooltip_text,
-        'fase': fase_ficha.fase.nom
-    })
-
-
-@login_required
-def cerrar_fase_ficha(request, ficha_id):
-    if not ficha_id:
-        return JsonResponse({"success": False, "error": "Falta el ID de la ficha."}, status=400)
-
-    try:
-        fase_actual = T_fase_ficha.objects.get(ficha_id=ficha_id, vige='1')
-        fase_actual_id = fase_actual.fase.id
-
-        if fase_actual_id >= 4:
-            return JsonResponse({
-                "status": "error",
-                "message": "No hay más fases para actualizar. Ya se encuentra en evaluación."
-            }, status=400)
-
-        # Cerrar la fase actual
-        fase_actual.vige = '0'
-        fase_actual.save()
-
-        siguiente_fase_id = fase_actual_id + 1
-        siguiente_fase_obj = T_fase.objects.get(id=siguiente_fase_id)
-
-        # Verificar si la siguiente fase ya existe
-        fase_siguiente_existente = T_fase_ficha.objects.filter(
-            ficha_id=ficha_id,
-            fase=siguiente_fase_obj
-        ).first()
-
-        if fase_siguiente_existente:
-            # Reactivar la fase existente
-            fase_siguiente_existente.vige = '1'
-            fase_siguiente_existente.fecha_ini = timezone.now()
-            fase_siguiente_existente.save()
-        else:
-            # Crear nueva fase activa
-            T_fase_ficha.objects.create(
-                ficha_id=ficha_id,
-                fase=siguiente_fase_obj,
-                vige='1',
-                fecha_ini=timezone.now(),
-                instru=None,
-            )
-
-        return JsonResponse({
-            "success": True,
-            "siguiente_fase": siguiente_fase_obj.nom,
-            "message": f"Fase '{fase_actual.fase.nom}' cerrada y nueva fase '{siguiente_fase_obj.nom}' activada."
-        })
-
-    except T_fase_ficha.DoesNotExist:
-        return JsonResponse({"success": False, "error": "No se encontró la fase activa."}, status=404)
-    except T_fase.DoesNotExist:
-        return JsonResponse({"success": False, "error": "Fase siguiente no existe en T_fase."}, status=404)
-
-
-@login_required
-def devolver_fase_ficha(request, ficha_id):
-    if not ficha_id:
-        return JsonResponse({"status": "error", "message": "Falta el ID de la ficha."}, status=400)
-
-    try:
-        fase_actual = T_fase_ficha.objects.get(ficha_id=ficha_id, vige='1')
-        fase_actual_id = fase_actual.fase.id
-
-        if fase_actual_id <= 1:
-            return JsonResponse({
-                "status": "error",
-                "message": "Ya está en la primera fase, no se puede devolver más."
-            }, status=400)
-
-        fase_anterior_id = fase_actual_id - 1
-
-        try:
-            fase_anterior_obj = T_fase.objects.get(id=fase_anterior_id)
-        except T_fase.DoesNotExist:
-            return JsonResponse({
-                "status": "error",
-                "message": f"No se encontró definición de fase con ID {fase_anterior_id} en T_fase."
-            }, status=404)
-
-        try:
-            fase_anterior_reg = T_fase_ficha.objects.get(
-                ficha_id=ficha_id, fase=fase_anterior_obj)
-        except T_fase_ficha.DoesNotExist:
-            return JsonResponse({
-                "status": "error",
-                "message": f"No se encontró un registro previo para la fase '{fase_anterior_obj.nom}'."
-            }, status=404)
-
-        # Cerrar fase actual
-        fase_actual.vige = '0'
-        fase_actual.save()
-
-        # Activar fase anterior
-        fase_anterior_reg.vige = '1'
-        fase_anterior_reg.save()
-
-        return JsonResponse({
-            "success": True,
-            "fase_actual": fase_anterior_obj.nom,
-            "message": f"Fase actual revertida a '{fase_anterior_obj.nom}'."
-        })
-
-    except T_fase_ficha.DoesNotExist:
-        return JsonResponse({"success": False, "error": "No se encontró la fase activa."}, status=404)
-
-
-@login_required
-def obtener_actividad(request, actividad_id):
-    try:
-        actividad_ficha = get_object_or_404(T_acti_ficha, id=actividad_id)
-        actividad = actividad_ficha.acti
-
-        raps_ids = list(
-            T_raps_ficha.objects
-            .filter(t_raps_acti__acti=actividad)
-            .values_list('id', flat=True)
-        )
-
-        data = {
-            'nom': actividad.nom,
-            'tipo': list(actividad.tipo.values_list('id', flat=True)),
-            'descri': actividad.descri,
-            'horas_auto': actividad.horas_auto,
-            'horas_dire': actividad.horas_dire,
-            'fecha_ini_acti': actividad_ficha.crono.fecha_ini_acti.strftime('%Y-%m-%d'),
-            'fecha_fin_acti': actividad_ficha.crono.fecha_fin_acti.strftime('%Y-%m-%d'),
-            'fecha_ini_cali': actividad_ficha.crono.fecha_ini_cali.strftime('%Y-%m-%d'),
-            'fecha_fin_cali': actividad_ficha.crono.fecha_fin_cali.strftime('%Y-%m-%d'),
-            'nove': actividad_ficha.crono.nove,
-            'raps': raps_ids,
-        }
-
-        return JsonResponse({'status': 'success', 'data': data})
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
 
 @login_required
@@ -531,6 +336,10 @@ def cargar_documento(request):
             return JsonResponse({'status': 'error', 'message': 'Debe cargar un documento'}, status=400)
 
         file = request.FILES["file"]
+        
+        if file.size == 0:
+            return JsonResponse({'status': 'error', 'message': 'El archivo está vacío o la carga falló'}, status=400)
+
         folder_id = request.POST.get("folder_id")
         contexto = request.POST.get("contexto")
 
@@ -554,11 +363,14 @@ def cargar_documento(request):
         # Guardar el archivo
         ruta_guardada = default_storage.save(ruta, file)
 
+        size_kb = max(1, file.size // 1024) if file.size >= 1024 else f"{file.size} B"
+
+
         # Crear registro en T_docu
         new_docu = T_docu.objects.create(
             nom=file.name,
             tipo=file.name.split('.')[-1],
-            tama=f"{file.size // 1024} KB",
+            tama=size_kb,
             archi=ruta_guardada,
             priva='No',
             esta='Activo'
@@ -1166,196 +978,6 @@ def editar_encuentro(request, encuentro_id):
     return JsonResponse({'status': 'success', 'message': 'Encuentro actualizado correctamente'}, status=200)
 
 
-@login_required
-def obtener_actividades(request, ficha_id):
-    actividades = T_acti_ficha.objects.filter(ficha_id=ficha_id)
-    fase = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
-    data = [
-        {
-            'id': actividad.id,
-            'nom': actividad.acti.nom,
-            'fecha_ini_acti': actividad.crono.fecha_ini_acti.strftime('%d/%m/%Y') if actividad.crono.fecha_ini_acti else '',
-            'fecha_fin_acti': actividad.crono.fecha_fin_acti.strftime('%d/%m/%Y') if actividad.crono.fecha_fin_acti else '',
-            'fecha_ini_cali': actividad.crono.fecha_ini_cali.strftime('%d/%m/%Y') if actividad.crono.fecha_ini_cali else '',
-            'fecha_fin_cali': actividad.crono.fecha_fin_cali.strftime('%d/%m/%Y') if actividad.crono.fecha_fin_cali else '',
-            'fase': actividad.acti.fase.nom,
-            'fase_ficha': fase.fase.nom
-        }
-        for actividad in actividades
-    ]
-
-    return JsonResponse(data, safe=False)
-
-
-@login_required
-def crear_actividad(request, ficha_id):
-    if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
-
-    ficha = get_object_or_404(T_ficha, id=ficha_id)
-    actividad_form = ActividadForm(request.POST)
-    cronograma_form = CronogramaForm(request.POST)
-    raps_form = RapsFichaForm(request.POST, ficha=ficha)
-
-    if not (actividad_form.is_valid() and cronograma_form.is_valid() and raps_form.is_valid()):
-        errores_custom = []
-
-        def agregar_errores(form):
-            for field, errors_list in form.errors.get_json_data().items():
-                nombre_campo = form.fields[field].label or field.capitalize()
-                for err in errors_list:
-                    errores_custom.append(
-                        f"<strong>{nombre_campo}</strong>: {err['message']}")
-
-        agregar_errores(actividad_form)
-        agregar_errores(cronograma_form)
-        agregar_errores(raps_form)
-
-        return JsonResponse({
-            'status': 'error',
-            'message': 'Errores en el formulario',
-            'errors': '<br>'.join(errores_custom)
-        }, status=400)
-
-    # Si llegamos aquí, todos los formularios son válidos
-    with transaction.atomic():
-        # Obtener la fase activa vinculada a la ficha
-        fase = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
-        if not fase:
-            return JsonResponse({'status': 'error', 'message': 'No se encontró fase activa para la ficha.'}, status=400)
-
-        # Crear actividad sin guardar aún para asignar fase
-        new_actividad = actividad_form.save(commit=False)
-        new_actividad.fase = fase.fase
-        new_actividad.save()
-        new_actividad.tipo.set(actividad_form.cleaned_data['tipo'])
-
-        # Crear cronograma
-        new_cronograma = cronograma_form.save()
-
-        # Crear relación actividad-ficha-cronograma
-        new_acti_ficha = T_acti_ficha.objects.create(
-            ficha=ficha,
-            acti=new_actividad,
-            crono=new_cronograma,
-            esta='Activo'
-        )
-
-        # Crear registros para aprendices con estado inicial y fecha actual
-        aprendices = T_apre.objects.filter(ficha=ficha)
-        for aprendiz in aprendices:
-            T_acti_apre.objects.create(
-                apre=aprendiz,
-                acti=new_acti_ficha,
-                apro='Pendiente',
-                fecha=now()
-            )
-
-        # Guardar raps seleccionados y marcar agre = 'Si'
-        raps_seleccionados = raps_form.cleaned_data['raps']
-
-        for rap_ficha in raps_seleccionados:
-            # Verifica que el RAP esté asociado a la fase actual
-            rap_ficha_fase = T_raps_ficha.objects.filter(
-                ficha=ficha,
-                rap=rap_ficha.rap,
-                fase=fase.fase  # fase actual
-            ).first()
-
-            if rap_ficha_fase:
-                # Crear relación actividad - rap
-                T_raps_acti.objects.create(
-                    rap=rap_ficha,
-                    acti=new_actividad
-                )
-                # Marcar como agregado solo el registro correspondiente a esta fase
-                rap_ficha_fase.agre = 'Si'
-                rap_ficha_fase.save()
-
-    return JsonResponse({'status': 'success', 'message': 'Actividad creada con éxito.'}, status=200)
-
-
-@login_required
-def listar_actividades_ficha(request, ficha_id):
-
-    actividades = T_acti_ficha.objects.select_related(
-        'crono', 'acti').filter(ficha_id=ficha_id)
-
-    data = []
-    for act in actividades:
-        data.append({
-            "title": act.acti.nom,
-            "fase": act.acti.fase.nom,
-            "start": act.crono.fecha_ini_acti.isoformat(),
-            "end": act.crono.fecha_fin_acti.isoformat(),
-            "start_check": act.crono.fecha_ini_cali.isoformat(),
-            "end_check": act.crono.fecha_fin_cali.isoformat()
-        })
-
-    return JsonResponse(data, safe=False)
-
-
-@require_POST
-@login_required
-def editar_actividad(request, actividad_id):
-
-    actividad = get_object_or_404(T_acti_ficha, pk=actividad_id)
-    ficha = actividad.ficha
-
-    form_actividad = ActividadForm(request.POST, instance=actividad.acti)
-    form_cronograma = CronogramaForm(request.POST, instance=actividad.crono)
-    form_raps = RapsFichaForm(request.POST, ficha=ficha)
-
-    if form_actividad.is_valid() and form_cronograma.is_valid() and form_raps.is_valid():
-        try:
-            with transaction.atomic():
-                # Guardar actividad y cronograma
-                form_actividad.save()
-                form_cronograma.save()
-
-                # Limpiar relaciones anteriores
-                T_raps_acti.objects.filter(acti=actividad.acti).delete()
-
-                # Crear nuevas relaciones
-                raps_seleccionados = form_raps.cleaned_data['raps']
-                for rap_ficha in raps_seleccionados:
-                    T_raps_acti.objects.create(
-                        rap=rap_ficha,
-                        acti=actividad.acti
-                    )
-
-                # Actualizar el campo agre
-                raps_ficha = T_raps_ficha.objects.filter(ficha=ficha)
-                for rap_ficha in raps_ficha:
-                    tiene_relaciones = T_raps_acti.objects.filter(
-                        rap=rap_ficha,
-                        acti__t_acti_ficha__ficha=ficha
-                    ).exists()
-                    rap_ficha.agre = 'Si' if tiene_relaciones else 'No'
-                    rap_ficha.save()
-
-            return JsonResponse({'success': True, 'message': 'Actividad actualizada correctamente.'})
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return JsonResponse({
-                'success': False,
-                'message': 'Error interno al actualizar la actividad.',
-                'error': str(e)
-            }, status=500)
-
-    # Si los formularios no son válidos
-    errores = {}
-    for form_name, form_obj in [('actividad', form_actividad), ('cronograma', form_cronograma), ('raps', form_raps)]:
-        errores[form_name] = form_obj.errors.get_json_data()
-
-    return JsonResponse({
-        'success': False,
-        'message': 'Error al actualizar la actividad.',
-        'errors': errores
-    }, status=400)
-
 ###############################################################################################################
 #        VISTAS FICHA MASIVO
 ###############################################################################################################
@@ -1804,20 +1426,6 @@ def cargar_fichas(request):
                 vige=1
             )
 
-            compe_ids = T_compe_progra.objects.filter(
-                progra=ficha.progra).values('compe_id')
-            raps = T_raps.objects.filter(compe__in=Subquery(compe_ids))
-
-            raps_ficha_objs = []
-
-            for rap in raps:
-                for rap_fase in rap.t_raps_fase_set.all():
-                    raps_ficha_objs.append(
-                        T_raps_ficha(ficha=ficha, rap=rap, fase=rap_fase.fase)
-                    )
-
-            T_raps_ficha.objects.bulk_create(raps_ficha_objs)
-
             crear_datos_prueba(ficha.id)
 
             for aprendiz in aprendices_creados:
@@ -1965,68 +1573,13 @@ def competencias(request):
     return render(request, 'competencias.html')
 
 
-@login_required
-def obtener_opciones_programas(request):
-    programas = T_progra.objects.filter(
-        t_compe_progra__isnull=False).distinct().values_list('nom')
-    return JsonResponse(list(programas), safe=False)
-
-
 ###############################################################################################################
 #        VISTAS RAPS
 ###############################################################################################################
 
 @login_required
 def listar_raps(request):
-    rap_form = RapsForm()
-    programas = T_progra.objects.filter(
-        Exists(
-            T_compe_progra.objects.filter(progra=OuterRef('pk'))
-        )
-    )
-
-    return render(request, 'raps.html', {
-        'rap_form': rap_form,
-        'programas': programas,
-    })
-
-
-@login_required
-def filtrar_raps(request):
-    if request.method == 'GET':
-        programas = request.GET.getlist('programas', [])
-        fases = request.GET.getlist('fases', [])
-        competencias = request.GET.getlist('competencias', [])
-
-        raps = T_raps.objects.select_related(
-            'compe').prefetch_related('compe__progra', 'fase')
-
-        if programas:
-            raps = raps.filter(compe__progra__nom__in=programas)
-        if fases:
-            raps = raps.filter(fase__nom__in=fases)
-        if competencias:
-            raps = raps.filter(compe__nom__in=competencias)
-
-        data = []
-        for rap in raps:
-            compe = rap.compe
-            fases = list(rap.fase.values_list('nom', flat=True))
-            programas = list(compe.progra.values_list(
-                'nom', flat=True)) if compe else []
-
-            data.append({
-                'id': rap.id,
-                'nom': rap.nom,
-                'fase': ', '.join(fases) if fases else None,
-                'competencia': compe.nom if compe else None,
-                'programa': ', '.join(programas) if programas else None
-            })
-
-        return JsonResponse(data, safe=False)
-
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
-
+    return render(request, 'raps.html')
 
 @login_required
 def obtener_opciones_fases_raps(request):
@@ -2039,10 +1592,7 @@ def obtener_opciones_fases_raps(request):
 
 @login_required
 def obtener_opciones_programas_raps(request):
-    programas = T_progra.objects.filter(
-        t_compe_progra__compe__t_raps__isnull=False
-    ).distinct().values_list('nom', flat=True)
-
+    programas = T_progra.objects.all().distinct().values_list('nom', flat=True)
     return JsonResponse(list(programas), safe=False)
 
 
@@ -2053,14 +1603,6 @@ def obtener_opciones_competencias_raps(request):
     ).distinct().values_list('nom', flat=True)
 
     return JsonResponse(list(competencias), safe=False)
-
-
-@login_required
-def obtener_competencias_programa(request, id_progra):
-    competencias = T_compe_progra.objects.filter(
-        progra_id=id_progra).distinct()
-    data = list(competencias.values('compe__id', 'compe__nom'))
-    return JsonResponse(data, safe=False)
 
 
 @login_required
@@ -2106,63 +1648,6 @@ def editar_rap(request, rap_id):
             return JsonResponse({'status': 'error', 'message': 'Error al actualizar el RAP', 'errors': form_rap.errors}, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
-
-
-###############################################################################################################
-#        VISTAS GUIAS
-###############################################################################################################
-
-@login_required
-def listar_guias(request):
-    guia_form = GuiaForm()
-    guias = T_guia.objects.all()
-    return render(request, 'guias.html', {
-        'guias': guias,
-        'guia_form': guia_form
-    })
-
-
-@login_required
-def crear_guia(request):
-    if request.method == 'POST':
-        guia_form = GuiaForm(request.POST)
-        if guia_form.is_valid():
-            guia_form.save()
-            return JsonResponse({'status': 'success', 'message': 'Guia creada'}, status=200)
-    return JsonResponse({'status': 'error', 'message': 'Metodo no permitido'}, status=405)
-
-
-@require_GET
-@login_required
-def obtener_guia(request, guia_id):
-    guia = T_guia.objects.filter(pk=guia_id).first()
-    if not guia:
-        return JsonResponse({'status': 'error', 'message': 'Guia no encontrada'}, status=404)
-
-    data = {
-        'id': guia.id,
-        'nom': guia.nom,
-        'horas_auto': guia.horas_auto,
-        'horas_dire': guia.horas_dire,
-        'progra': guia.progra.id
-    }
-
-    return JsonResponse(data)
-
-
-@require_POST
-@login_required
-def editar_guia(request, guia_id):
-    guia = T_guia.objects.filter(pk=guia_id).first()
-    if not guia:
-        return JsonResponse({'status': 'error', 'message': 'Guia no encontrada'}, status=404)
-
-    form_guia = GuiaForm(request.POST, instance=guia)
-
-    if form_guia.is_valid():
-        form_guia.save()
-        return JsonResponse({'status': 'success', 'message': 'Guia actualizada con exito'}, status=200)
-    return JsonResponse({'status': 'error', 'message': 'Error al actualizar la guia', 'errors': form_guia.errors}, status=400)
 
 
 @login_required
@@ -2221,120 +1706,11 @@ def get_instituciones(request, municipio_id):
 
 # Vista para cargar los municipios según el departamento
 
-
 @login_required
 def get_centros(request, departamento_id):
     centro_qs = T_centro_forma.objects.filter(depa_id=departamento_id)
     centros = list(centro_qs.values('id', 'nom'))
     return JsonResponse(centros, safe=False)
-
-
-@login_required
-def calificarActividad(request):
-    if request.method == 'POST':
-        ids = request.POST.getlist('aprendiz_id[]')
-        notas = request.POST.getlist('nota[]')
-        actividad_id = int(request.POST.get('actividad_id'))
-
-        try:
-            actividad = T_acti_ficha.objects.get(id=actividad_id)
-        except T_acti_ficha.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Actividad no encontrada'}, status=404)
-
-        fecha_actual = now().date()
-        if not (actividad.crono.fecha_ini_cali.date() <= fecha_actual <= actividad.crono.fecha_fin_cali.date()):
-            return JsonResponse({
-                'status': 'error',
-                'message': 'La actividad no está dentro del período de calificación',
-                'actividad_id': actividad_id
-            }, status=400)
-
-        for aprendiz_id in ids:
-            # Por defecto, asumimos que NO aprobó (0)
-            nota = '0'
-
-            # Si este aprendiz tiene un checkbox marcado, su valor estará en request.POST.getlist('nota[]')
-            # Comprobamos si el input con name="nota[]" y value=aprendiz_id existe
-            checkbox_name = f"nota_{aprendiz_id}"
-            if checkbox_name in request.POST:
-                nota = '1'
-
-            aprendiz = T_apre.objects.get(id=aprendiz_id)
-
-            T_cali.objects.update_or_create(
-                apre=aprendiz,
-                acti=actividad,
-                defaults={'cali': nota}
-            )
-        return JsonResponse({'status': 'success', 'message': 'Calificado!', 'actividad_id': actividad_id}, status=200)
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
-
-
-@login_required
-def obtener_aprendices_calificacion(request, ficha_id, actividad_id):
-
-    aprendices = T_apre.objects.filter(ficha_id=ficha_id)
-    respuesta = []
-
-    for aprendiz in aprendices:
-        cali = T_cali.objects.filter(
-            apre_id=aprendiz.id, acti_id=actividad_id
-        ).first()
-
-        respuesta.append({
-            'id': aprendiz.id,
-            'nombre': aprendiz.perfil.nom,
-            'apellido': aprendiz.perfil.apelli,
-            'nota': cali.cali if cali else None
-        })
-
-    return JsonResponse(respuesta, safe=False)
-
-
-@login_required
-def detalle_actividad(request, actividad_id):
-    actividad_ficha = get_object_or_404(T_acti_ficha, id=actividad_id)
-    actividad = actividad_ficha.acti
-    crono = actividad_ficha.crono
-    guia = actividad.guia
-    tipos = list(actividad.tipo.values_list('tipo', flat=True))
-
-    # RAPs desde la tabla personalizada T_raps_acti
-    raps = list(
-        T_raps_acti.objects.filter(acti=actividad)
-        .select_related('rap__compe')
-        .values(
-            'rap__rap__id',
-            'rap__rap__nom',
-            'rap__rap__compe__fase',
-            'rap__rap__compe__fase__nom',
-            'rap__rap__compe__nom'
-        )
-    )
-
-    data = {
-        "id": actividad.id,
-        "nombre": actividad.nom,
-        "descripcion": actividad.descri,
-        "tipo_actividad": tipos,
-        "fase": actividad.fase.nom,
-        "horas_directas": actividad.horas_dire,
-        "horas_autonomas": actividad.horas_auto,
-        "cronograma": {
-            "fecha_inicio_actividad": crono.fecha_ini_acti,
-            "fecha_fin_actividad": crono.fecha_fin_acti,
-            "fecha_inicio_calificacion": crono.fecha_ini_cali,
-            "fecha_fin_calificacion": crono.fecha_fin_cali,
-            "novedades": crono.nove
-        },
-        "raps": raps,
-        # "descripciones": descripciones,
-        "estado": actividad_ficha.esta,
-        "ficha_id": actividad_ficha.ficha.id,
-    }
-
-    return JsonResponse(data, safe=False)
-
 
 @login_required
 def detalle_programa(request, programa_id):
@@ -2365,13 +1741,11 @@ def detalle_programa(request, programa_id):
         'raps': raps,
     })
 
-
 def link_callback(uri, rel):
     result = finders.find(uri.replace(settings.STATIC_URL, ""))
     if result:
         return result
     raise Exception(f"Media URI must start with {settings.STATIC_URL}")
-
 
 @login_required
 def generar_acta_asistencia(request):
@@ -2555,7 +1929,6 @@ def generar_acta_asistencia(request):
 
     return HttpResponse("Formato no válido", status=400)
 
-
 @login_required
 def generar_acta_asistencia_aprendiz(request):
     aprendiz_id = request.GET.get('aprendiz_id')
@@ -2577,78 +1950,6 @@ def generar_acta_asistencia_aprendiz(request):
     pisa.CreatePDF(html, dest=buffer)
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"Acta_Asistencia_{aprendiz.perfil.nom}_{aprendiz.perfil.apelli}.pdf")
-
-
-@login_required
-def generar_informe_calificaciones(request):
-    ficha_id = request.GET.get('ficha_id')
-    formato = request.GET.get('formato')
-
-    ficha = T_ficha.objects.get(id=ficha_id)
-    actividades = T_acti_ficha.objects.filter(ficha=ficha).order_by('id')
-    aprendices = T_apre.objects.filter(ficha=ficha)
-
-    # Diccionario: aprendiz_id -> {actividad_id: "Aprobó"/"No aprobó"}
-    calificaciones = {
-        apre.id: {
-            acti.id: ""
-            for acti in actividades
-        } for apre in aprendices
-    }
-
-    registros = T_cali.objects.filter(
-        apre__in=aprendices, acti__in=actividades)
-
-    for cali in registros:
-        estado = "Aprobó" if int(cali.cali) == 1 else "No aprobó"
-        calificaciones[cali.apre.id][cali.acti.id] = estado
-
-    if formato == 'pdf':
-        template = get_template("reportes/informe_calificaciones.html")
-        tabla = []
-        for apre in aprendices:
-            fila = {
-                'apre': apre,
-                'calificaciones': [calificaciones[apre.id][acti.id] for acti in actividades]
-            }
-            tabla.append(fila)
-        html = template.render({
-            'logo_url': settings.STATIC_URL + 'images/imagenhome.png',
-            'tabla': tabla,
-            'ficha': ficha,
-            'actividades': actividades,
-            'aprendices': aprendices
-        })
-        buffer = BytesIO()
-        pisa.CreatePDF(html, dest=buffer, link_callback=link_callback)
-        buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True, filename=f"Informe_Calificaciones_{ficha.id}.pdf")
-
-    elif formato == 'excel':
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Calificaciones"
-
-        # Encabezado
-        ws.cell(row=1, column=1).value = "Aprendiz"
-        for col, acti in enumerate(actividades, start=2):
-            ws.cell(row=1, column=col).value = acti.acti.nom
-
-        # Filas
-        for row, apre in enumerate(aprendices, start=2):
-            ws.cell(
-                row=row, column=1).value = f"{apre.perfil.nom} {apre.perfil.apelli}"
-            for col, acti in enumerate(actividades, start=2):
-                estado = calificaciones[apre.id][acti.id]
-                ws.cell(row=row, column=col).value = estado
-
-        buffer = BytesIO()
-        wb.save(buffer)
-        buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True, filename=f"Informe_Calificaciones_{ficha.id}.xlsx")
-
-    return HttpResponse("Formato no válido", status=400)
-
 
 @login_required
 def detalle_encuentro(request, encuentro_id):
@@ -2686,7 +1987,6 @@ def detalle_encuentro(request, encuentro_id):
 #        VISTAS INFORMES
 ###############################################################################################################
 
-
 @login_required
 def informe_usuarios_x_rol(request):
     wb = openpyxl.Workbook()
@@ -2722,7 +2022,6 @@ def informe_usuarios_x_rol(request):
     wb.save(response)
     return response
 
-
 @login_required
 def informe_fichas_x_instructor(request):
     wb = openpyxl.Workbook()
@@ -2755,7 +2054,6 @@ def informe_fichas_x_instructor(request):
 
     wb.save(response)
     return response
-
 
 @login_required
 def informe_fichas_x_aprendiz(request):

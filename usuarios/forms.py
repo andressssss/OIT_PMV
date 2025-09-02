@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
-from commons.models import T_gestor_depa,T_docu_labo, T_instru, T_perfil,T_gestor, T_nove, T_admin, T_apre, T_lider, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
+from commons.models import T_gestor_depa,T_docu_labo, T_instru, T_perfil,T_gestor, T_admin, T_apre, T_lider, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
 
 class UserFormEdit(forms.ModelForm):
     class Meta:
@@ -208,22 +208,6 @@ class RepresanteLegalForm(forms.ModelForm):
             'paren': 'Parentesco'
         }
 
-class NovedadForm(forms.ModelForm):
-    class Meta:
-        model = T_nove
-        exclude = ['estado']  # El estado se asignara automaticamente
-        widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'descri': forms.TextInput(attrs={'class': 'form-control'}),
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'sub_tipo': forms.Select(attrs={'class': 'form-select'})
-        }
-        labels = {
-            'nombre': 'Nombre',
-            'descri': 'Descripción',
-            'tipo': 'Tipo',
-            'sub_tipo': 'Sub Tipo'
-        }
 
 class AdministradoresForm(forms.ModelForm):
     class Meta:
