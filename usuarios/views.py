@@ -65,19 +65,11 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-<<<<<<< HEAD
-import socket
-
-from django.conf import settings
-=======
->>>>>>> origin/develop
 print("TEMPLATES_DIR:", settings.TEMPLATES[0]['DIRS'])
 
 
 def home(request):
-    return render(request, 'home.html',{
-        'server_name': socket.gethostname()
-    })
+    return render(request, 'home.html')
 
 
 @never_cache
