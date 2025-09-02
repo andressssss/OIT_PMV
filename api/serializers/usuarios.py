@@ -144,3 +144,13 @@ class AprendizSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+class AprendizPanelFSerializer(serializers.ModelSerializer):
+    nombre = serializers.CharField(source="perfil.nom")
+    apellido = serializers.CharField(source="perfil.apelli")
+    dni = serializers.CharField(source="perfil.dni")
+    estado = serializers.CharField(source="esta")
+
+    class Meta:
+        model = T_apre
+        fields = ["id", "nombre", "apellido", "dni", "estado"]

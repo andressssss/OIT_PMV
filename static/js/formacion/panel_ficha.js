@@ -25,18 +25,8 @@ import {
 document.addEventListener("DOMContentLoaded", function () {
   const fichaId = getFichaIdFromUrl();
   const loadingDiv = document.getElementById("loading");
-  const tableAprendicesElement = document.getElementById(
-    "tabla_aprendices_ficha"
-  );
 
   const userRole = document.body.dataset.userRole;
-
-  // ======= Inicialización de DataTables =======
-  const table = new DataTable(tableAprendicesElement, {
-    language: {
-      url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
-    },
-  });
 
   // *******************************************************************
   // *                                                                 *
@@ -95,7 +85,26 @@ document.addEventListener("DOMContentLoaded", function () {
         ? "historialAprendiz"
         : "historialGeneralFicha";
     const container = document.getElementById(containerId);
+    const historialTitle = document.getElementById("historial-tab");
+
     container.innerHTML = "";
+
+    if (contexto === "fichaG") {
+      historialTitle.textContent = "Historial";
+
+      const spinner = document.createElement("span");
+      spinner.className = "spinner-border spinner-border-sm ms-2";
+      spinner.role = "status";
+      spinner.style.width = "1rem";
+      spinner.style.height = "1rem";
+      spinner.innerHTML = `<span class="visually-hidden">Loading...</span>`;
+
+      historialTitle.appendChild(spinner);
+
+      // guardamos referencia para remover después
+      historialTitle.dataset.spinnerId = "spinner-historial";
+      spinner.id = historialTitle.dataset.spinnerId;
+    }
 
     // Mensaje de carga
     const loadingMessage = document.createElement("li");
@@ -140,6 +149,11 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Error al cargar el historial:", error);
       container.innerHTML =
         '<li class="list-group-item text-danger">Error al cargar el historial</li>';
+    } finally {
+      if (contexto === "fichaG" && historialTitle) {
+        const spinner = document.getElementById("spinner-historial");
+        if (spinner) spinner.remove();
+      }
     }
   }
 
@@ -952,6 +966,96 @@ document.addEventListener("DOMContentLoaded", function () {
   // *                                                                 *
   // *******************************************************************
 
+  const tableAprendicesElement = document.getElementById(
+    "tabla_aprendices_ficha"
+  );
+
+  // ======= Inicialización de DataTables =======
+  const tableAprendices = new DataTable(tableAprendicesElement, {
+    serverSide: false,
+    processing: true,
+    ajax: {
+      url: `/api/usuarios/aprendices/por_ficha/?ficha_id=${fichaId}`,
+      type: "GET",
+      dataSrc: "",
+    },
+    columns: [
+      { data: "nombre" },
+      { data: "apellido" },
+      { data: "dni" },
+      {
+        data: "estado",
+        render: function (data, type, row) {
+          let badge = "";
+          switch (data.toLowerCase()) {
+            case "activo":
+              badge = '<span class="badge bg-success">Activo</span>';
+              break;
+            case "desertado":
+              badge = '<span class="badge bg-danger">Desertado</span>';
+              break;
+            case "en_formacion":
+              badge = '<span class="badge bg-primary">En formación</span>';
+              break;
+            case "prematricula":
+              badge = '<span class="badge bg-primary">Prematrícula</span>';
+              break;
+            case "aplazado":
+              badge =
+                '<span class="badge bg-warning text-dark">Aplazado</span>';
+              break;
+            default:
+              badge = `<span class="badge bg-secondary">${data}</span>`;
+          }
+          return badge;
+        },
+      },
+      {
+        data: null,
+        orderable: false,
+        render: function (data, type, row) {
+          return `
+            <div class="btn-group btn-group-sm mb-1" role="group">
+              <button class="btn btn-outline-secondary ver-portafolio" data-id="${
+                row.id
+              }" data-nombre="${row.nombre} ${
+            row.apellido
+          }" title="Subir portafolio">
+                <i class="bi bi-folder"></i>
+              </button>
+              <button class="btn btn-outline-info perfil-btn" data-id="${
+                row.id
+              }" title="Ver Perfil">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+              ${
+                row.estado.toLowerCase() !== "desertado"
+                  ? `
+                <button class="btn btn-outline-danger desertar-aprendiz" data-id="${row.id}" title="Marcar como desertado">
+                  <i class="bi bi-person-dash"></i>
+                </button>
+                <button class="btn btn-outline-dark desasociar-aprendiz" data-id="${row.id}" title="Eliminar de la ficha">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+                <button class="btn btn-outline-primary editar-aprendiz" data-id="${row.id}" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </button>`
+                  : `
+                <button class="btn btn-outline-success activar-aprendiz" data-id="${row.id}" title="Activar">
+                  <i class="bi bi-person-check"></i>
+                </button>`
+              }
+            </div>
+          `;
+        },
+      },
+    ],
+    language: {
+      url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+      emptyTable: "Sin aprendices registrados",
+    },
+  });
+
   const validarAprendizBtn = document.getElementById("validateBtn");
 
   validarAprendizBtn.addEventListener("click", async (e) => {
@@ -1037,7 +1141,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
       if (validarErrorDRF(response, data)) return;
       toastSuccess(data.message);
-      location.reload();
+      const modalEL = document.getElementById("modalAgregarAprendiz");
+      const modal = bootstrap.Modal.getInstance(modalEL);
+      modal.hide();
+      cargarHistorial("fichaG", fichaId);
+      tableAprendices.ajax.reload(null, false);
     } catch (error) {
       toastError(error);
     }
@@ -1101,7 +1209,11 @@ document.addEventListener("DOMContentLoaded", function () {
       toastSuccess(data.message);
       formCrearApre.reset();
       archivoInput.value = "";
-      location.reload();
+      const modalCrearApre = document.getElementById("modalCrearAprendiz");
+      const modalCrearApreI = bootstrap.Modal.getInstance(modalCrearApre);
+      modalCrearApreI.hide();
+      cargarHistorial("fichaG", fichaId);
+      tableAprendices.ajax.reload(null, false);
     } catch (error) {
       console.error(error);
       toastError("Error inesperado");
@@ -1381,7 +1493,11 @@ document.addEventListener("DOMContentLoaded", function () {
       if (validarErrorDRF(response, data)) return;
 
       toastSuccess(data.message);
-      location.reload();
+      const modalEl = document.getElementById("editAprendizModal");
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      modalInstance.hide();
+      cargarHistorial("fichaG", fichaId);
+      tableAprendices.ajax.reload(null, false);
     } catch (e) {
       toastError(e);
     } finally {
@@ -1405,9 +1521,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
 
       if (validarErrorDRF(response, data)) return;
-
       toastSuccess(data.message);
-      location.reload();
+      cargarHistorial("fichaG", fichaId);
+      tableAprendices.ajax.reload(null, false);
     } catch (error) {
       toastError(error);
     }
@@ -1427,9 +1543,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const data = await response.json();
       if (validarErrorDRF(response, data)) return;
-
       toastSuccess(data.message);
-      location.reload();
+      cargarHistorial("fichaG", fichaId);
+      tableAprendices.ajax.reload(null, false);
     } catch (e) {
       toastError(e);
     }
@@ -1451,7 +1567,8 @@ document.addEventListener("DOMContentLoaded", function () {
       if (validarErrorDRF(response, data)) return;
 
       toastSuccess(data.message);
-      location.reload();
+      tableAprendices.ajax.reload(null, false);
+      cargarHistorial("fichaG", fichaId);
     } catch (error) {
       toastError(error);
     }
@@ -1821,25 +1938,26 @@ document.addEventListener("DOMContentLoaded", function () {
       },
     },
     columns: [
-      { data: "fecha_diff", 
-        render: function(data, type, row) {
+      {
+        data: "fecha_diff",
+        render: function (data, type, row) {
           if (!data) return "Sin registro";
           const date = new Date(data);
           const day = String(date.getDate()).padStart(2, "0");
           const month = String(date.getMonth() + 1).padStart(2, "0");
           const year = date.getFullYear();
-          return `${year}-${month}-${day}`
-        }
+          return `${year}-${month}-${day}`;
+        },
       },
-      { data: "apre_nom"},
+      { data: "apre_nom" },
       { data: "descri" },
       { data: "tipo_cambi" },
-      { data: "jui_desc"},
-      { data: "instru_nom" }
+      { data: "jui_desc" },
+      { data: "instru_nom" },
     ],
     language: {
       url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
-      emptyTable: "Sin historial"
+      emptyTable: "Sin historial",
     },
   });
 });

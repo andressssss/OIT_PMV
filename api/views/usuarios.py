@@ -17,7 +17,7 @@ from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.contrib.auth.models import User
 from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal, AuditLog
-from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer
+from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer, AprendizPanelFSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, DateField
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
@@ -143,6 +143,16 @@ class AprendizViewSet(ModelViewSet):
     serializer_class = AprendizSerializer
     permission_classes = [IsAuthenticated, DenegarConsulta]
     pagination_class = DataTablesPagination
+    
+    @action(detail=False, methods=['get'], url_path='por_ficha')
+    def por_ficha(self, request):
+        ficha_id = request.query_params.get("ficha_id")
+        
+        if not ficha_id:
+            return Response({"message": "Debe proporcionar una ficha_id"}, status=400)
+        aprendices= T_apre.objects.filter(ficha_id=ficha_id)
+        serializer = AprendizPanelFSerializer(aprendices, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='filtrar')
     def filtrar(self, request):

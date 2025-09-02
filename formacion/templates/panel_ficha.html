@@ -192,49 +192,7 @@
                       <th></th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {% for aprendiz in aprendices %}
-                      <tr>
-                        <td>{{ aprendiz.perfil.nom }}</td>
-                        <td>{{ aprendiz.perfil.apelli }}</td>
-                        <td>{{ aprendiz.perfil.dni }}</td>
-                        <td>
-                          {% if aprendiz.esta == 'activo' %}
-                            <span class="badge bg-success">Activo</span>
-                          {% elif aprendiz.esta == 'desertado' %}
-                            <span class="badge bg-danger">Desertado</span>
-                          {% elif aprendiz.esta == 'en_formacion' %}
-                            <span class="badge bg-primary">En formación</span>
-                          {% elif aprendiz.esta == 'prematricula' %}
-                            <span class="badge bg-primary">Prematricula</span>
-                          {% elif aprendiz.esta == 'aplazado' %}
-                            <span class="badge bg-warning text-dark">Aplazado</span>
-                          {% else %}
-                            <span class="badge bg-secondary">{{ aprendiz.esta|title }}</span>
-                          {% endif %}
-                        </td>
-
-                        <td>
-                          <div class="btn-group btn-group-sm mb-1" role="group">
-                            <button class="btn btn-outline-secondary ver-portafolio" data-id="{{ aprendiz.id }}" data-nombre="{{ aprendiz.perfil.nom }} {{ aprendiz.perfil.apelli }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Subir portafolio"><i class="bi bi-folder"></i></button>
-
-                            <button class="btn btn-outline-info perfil-btn" data-id="{{ aprendiz.id }}" title="Ver Perfil" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-plus-lg"></i></button>
-
-                            {% if aprendiz.esta != 'desertado' %}
-                              <button class="btn btn-outline-danger desertar-aprendiz" data-id="{{ aprendiz.id }}" title="Marcar como desertado" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-person-dash"></i></button>
-
-                              <button class="btn btn-outline-dark desasociar-aprendiz" data-id="{{ aprendiz.id }}" title="Eliminar de la ficha" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-x-circle"></i></button>
-
-                              <button class="btn btn-outline-primary editar-aprendiz" data-id="{{ aprendiz.id }}" title="Editar" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-pencil"></i></button>
-                            {% endif %}
-                            {% if aprendiz.esta == 'desertado' %}
-                              <button class="btn btn-outline-success activar-aprendiz" data-id="{{ aprendiz.id }}" title="Activar" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi bi-person-check"></i></button>
-                            {% endif %}
-                          </div>
-                        </td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
+                  <tbody></tbody>
                 </table>
               </div>
             </div>
@@ -245,7 +203,7 @@
         <div class="tab-pane fade" id="juicios" role="tabpanel" aria-labelledby="juicios-tab">
           <div class="card shadow-sm mb-3">
             <div class="card-body">
-              <h5 class="text-primary fw-bold mb-3">Estado actual de juicios</h5>
+              <h5 class="mb-3">Estado actual de juicios</h5>
               <div class="table-responsive">
                 <table class="table table-hover table-striped w-100" id="tabla-juicios-actuales">
                   <thead>
@@ -267,7 +225,7 @@
           <!-- Historial de diferencias -->
           <div class="card shadow-sm">
             <div class="card-body">
-              <h5 class="text-primary fw-bold mb-3">Historial de actualizaciones</h5>
+              <h5 class="mb-3">Historial de actualizaciones</h5>
               <div class="table-responsive">
                 <table class="table table-hover table-striped w-100" id="tabla-juicios-historial">
                   <thead>
