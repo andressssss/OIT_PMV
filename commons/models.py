@@ -470,7 +470,7 @@ class T_raps(models.Model):
         managed = True
         db_table = 't_raps'
 
-    nom = models.CharField(max_length=200)
+    nom = models.CharField(max_length=300)
     compe = models.ForeignKey(T_compe, on_delete=models.CASCADE)
     fase = models.ManyToManyField(T_fase, through=T_raps_fase)
     comple = models.CharField(max_length=100, default='No')
