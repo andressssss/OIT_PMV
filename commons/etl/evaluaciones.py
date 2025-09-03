@@ -103,12 +103,14 @@ def transform(chunk):
 
     for _, row in chunk.iterrows():
         try:
+            fecha_repor = safe_date(row.get("FECHA_REPORTE"))
             ficha_num = row.get("FICHA")
             dni = clean_dni(row.get("NRO_DOC"))
             rap_cod = row.get("RESULTADO_ID")
             eva = row.get("EVALUACIÓN")
             fecha_eva = safe_date(row.get("FCH_EVALUACION"))
             instru_doc = clean_dni(row.get("INTRUCT_RESPONSABLE"))
+            
 
             # --- Resolver Ficha ---
             if ficha_num not in cache_fichas:
@@ -171,6 +173,7 @@ def transform(chunk):
                 instru = cache_instrus[instru_doc]
 
             registros.append({
+                "fecha_repor": fecha_repor,
                 "ficha": ficha,
                 "apre": apre,
                 "rap": rap,
