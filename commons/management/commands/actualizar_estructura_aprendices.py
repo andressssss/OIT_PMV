@@ -137,7 +137,8 @@ class Command(BaseCommand):
                 continue
 
             # Crear o actualizar la estructura
-            crear_estructura_arbol_aprendiz(aprendiz, estructura_documental_aprendiz)
+            crear_estructura_arbol_aprendiz(
+                aprendiz, estructura_documental_aprendiz)
 
             self.stdout.write(self.style.SUCCESS(
                 f"[{aprendiz.id}] Portafolio creado/actualizado correctamente"

@@ -34,6 +34,7 @@ from commons.models import (
     T_centro_forma,
     T_progra
 )
+from commons.mixins import PermisosMixin
 from .forms import InstructorForm, PerfilEForm, CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
@@ -357,6 +358,7 @@ def perfil(request):
         'form_perfil': form_perfil
     })
 
+
 @login_required
 def eliminar_documentoinstru(request, hv_id):
     archivo = get_object_or_404(T_docu_labo, id=hv_id)
@@ -383,9 +385,9 @@ def signout(request):
 
 @login_required
 def dashboard_admin(request):
-    perfil = getattr(request.user, 't_perfil', None)
-    rol = perfil.rol
-    return render(request, 'admin_dashboard.html', {'rol': rol})
+    mixin = PermisosMixin()
+    acciones = mixin.get_all_permissions(request)
+    return render(request, 'admin_dashboard.html', {'acciones': acciones})
 
 ### INSTRUCTORES ###
 
@@ -397,12 +399,18 @@ def instructores(request):
     programas = T_progra.objects.all()
     perfil_form = PerfilForm()
     instructor_form = InstructorForm()
+    
+    acciones = PermisosMixin().get_permission_actions_for(request, "instructores")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
     return render(request, 'instructor.html', {
         'instructores': instructores,
         'perfil_form': perfil_form,
         'instructor_form': instructor_form,
         'fichas': fichas,
-        'programas': programas
+        'programas': programas,
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -825,8 +833,13 @@ def cargar_instructores_masivo(request):
 @login_required
 def cuentas(request):
     cuentas = T_cuentas.objects.all()
+    acciones = PermisosMixin().get_permission_actions_for(request, "cuentas")
+    can_edit = acciones.get("editar", False)
+    can_view = acciones.get("ver", False)
     return render(request, 'cuentas.html', {
-        'cuentas': cuentas
+        'cuentas': cuentas,
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -930,11 +943,17 @@ def aprendices(request):
     representante_form = RepresanteLegalForm(
         representante_form_data, prefix='representante') if representante_form_data else RepresanteLegalForm(prefix='representante')
 
+    acciones = PermisosMixin().get_permission_actions_for(request, "aprendices")
+    can_edit = acciones.get("editar", False)
+    can_view = acciones.get("ver", False)
+
     return render(request, 'aprendiz.html', {
         'aprendices': aprendices,
         'rol': rol,
         'perfil_form': perfil_form,
-        'representante_form': representante_form
+        'representante_form': representante_form,
+        'can_edit': can_edit,
+        'can_view': can_view
     })
 
 ## Endpoint para editar aprendiz ##
@@ -1215,9 +1234,15 @@ def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
 def lideres(request):
     lideres = T_lider.objects.select_related('perfil__user').all()
     perfil_form = PerfilForm()
+    
+    acciones = PermisosMixin().get_permission_actions_for(request, "lideres")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
     return render(request, 'lideres.html', {
         'lideres': lideres,
         'perfil_form': perfil_form,
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -1348,10 +1373,16 @@ def administradores(request):
     administradores = T_admin.objects.select_related('perfil__user').all()
     perfil_form = PerfilForm()
     admin_form = AdministradoresForm()
+    
+    acciones = PermisosMixin().get_permission_actions_for(request, "admin")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False) 
     return render(request, 'administradores.html', {
         'administradores': administradores,
         'perfil_form': perfil_form,
-        'admin_form': admin_form
+        'admin_form': admin_form,
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -1491,8 +1522,14 @@ def editar_administrador(request, admin_id):
 @login_required
 def departamentos(request):
     departamentos = T_departa.objects.all()
+    acciones = PermisosMixin().get_permission_actions_for(request, "departamentos")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
+    
     return render(request, 'departamentos.html', {
-        'departamentos': departamentos
+        'departamentos': departamentos,
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -1561,8 +1598,14 @@ def eliminar_departamentos(request, departamento_id):
 @login_required
 def municipios(request):
     municipios = T_munici.objects.all()
+    acciones = PermisosMixin().get_permission_actions_for(request, "municipios")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
+    
     return render(request, 'municipios.html', {
-        'municipios': municipios
+        'municipios': municipios,
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -1632,9 +1675,15 @@ def instituciones(request):
     instituciones = T_insti_edu.objects.all()
     institucionForm = InstitucionForm()
 
+    acciones = PermisosMixin().get_permission_actions_for(request, "instituciones")
+    can_edit = acciones.get("editar", False)
+    can_view = acciones.get("ver", False)
+
     return render(request, 'instituciones.html', {
         'instituciones': instituciones,
-        'institucionForm': institucionForm
+        'institucionForm': institucionForm,
+        'can_edit': can_edit,
+        'can_view': can_view
     })
 
 ## Endpoint para editar institucion ##
@@ -1772,14 +1821,21 @@ def obtener_institucion_modal(request, institucion_id):
 ## Centros de formacion ##
 @login_required
 def centrosformacion(request):
+    acciones = PermisosMixin().get_permission_actions_for(request, "centros")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
     if request.method == 'GET':
         centroformacionForm = CentroFormacionForm()
         return render(request, 'centro_formacion.html', {
-            'centroformacionForm': centroformacionForm
+            'centroformacionForm': centroformacionForm,
+            'can_view': can_view,
+            'can_edit': can_edit
         })
     else:
         return render(request, 'centro_formacion.html', {
             'centroformacionForm': centroformacionForm,
+            'can_view': can_view,
+            'can_edit': can_edit
         })
 
 # Funcion para crear centros de formacion
@@ -1825,13 +1881,16 @@ def crear_centro(request):
 def listar_centros_formacion_json(request):
     centros = T_centro_forma.objects.all()
     data = []
+    can_edit = PermisosMixin().get_permission_actions_for(request, "centros").get("editar", False)
     for centro in centros:
         data.append({
             'id': centro.id,
             'nom': centro.nom,
             'cod': centro.cod,
-            'depa': centro.depa.nom_departa
+            'depa': centro.depa.nom_departa,
+            'can_edit': can_edit
         })
+
     return JsonResponse({'data': data})
 
 ## Endpoint para editar centro ##
@@ -2151,7 +2210,7 @@ def listar_instituciones(request):
         'muni__nom_departa').order_by(order_column)
     total_records = queryset.count()
 
-    # Filtros especiales (👈 mover arriba)
+    # Filtros especiales
     if municipio:
         queryset = queryset.filter(muni__id=municipio)
     if departamento:
@@ -2185,6 +2244,9 @@ def listar_instituciones(request):
 
     queryset = queryset[start:start + length]
 
+    acciones = PermisosMixin().get_permission_actions_for(request, "instituciones")
+    can_edit = acciones.get("editar", False)
+
     data = [{
         'nom': i.nom,
         'dire': i.dire,
@@ -2196,6 +2258,7 @@ def listar_instituciones(request):
         'gene': i.gene,
         'zona': i.zona,
         'id': i.id,
+        'can_edit': can_edit
     } for i in queryset]
 
     return JsonResponse({
@@ -2286,10 +2349,17 @@ def gestores(request):
         gestor.departamentos = ', '.join(
             [depa.depa.nom_departa for depa in gestor.t_gestor_depa_set.all()]
         )
+        
+    
+    acciones = PermisosMixin().get_permission_actions_for(request, "gestores")
+    can_edit = acciones.get("editar", False)
+    can_view = acciones.get("ver", False)
 
     return render(request, 'gestores.html', {
         'gestores': gestores,
-        'perfil_form': perfil_form
+        'perfil_form': perfil_form,
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -2472,10 +2542,10 @@ def reset_password_view(request):
 
 @login_required
 def usuarios(request):
-    usuarios = T_perfil.objects.all()
-    return render(request, 'usuarios.html', {
-        'usuarios': usuarios,
-    })
+    acciones = PermisosMixin().get_permission_actions_for(request, "usuarios")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
+    return render(request, 'usuarios.html', {'can_view': can_view, 'can_edit': can_edit})
 
 
 @login_required

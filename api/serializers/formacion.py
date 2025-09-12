@@ -96,9 +96,6 @@ class FichaEditarSerializer(FichaSerializer):
         return value
 
     def update(self, instance, validated_data):
-        logger.warning(f"Mensaje to wapo")
-        logger.warning(f"{self.context['request'].data}")
-
         instance.num = validated_data.get('num', instance.num)
         instance.insti = validated_data.get('insti_id', instance.insti)
         instance.centro = validated_data.get('centro_id', instance.centro)

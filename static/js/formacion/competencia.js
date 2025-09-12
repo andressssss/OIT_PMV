@@ -43,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
   //== Carga inicial a la tabla
   async function cargarDatosTabla() {
     try {
-
       document.querySelectorAll("#fase, #programa").forEach((el) => {
         el.addEventListener("change", aplicarFiltros);
       });
@@ -61,11 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
     table.clear();
 
     data.forEach((item) => {
-
       table.row.add([
         item.nom,
         item.cod,
-        `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
+        item.can_edit
+          ? `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${item.id}"
                     title="Editar"
                     data-bs-toggle="tooltip"
@@ -78,7 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">
                     <i class="bi bi-trash"></i>
-                </button>`,
+                </button>`
+          : "",
       ]);
     });
 
@@ -109,9 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // const params = new URLSearchParams(formData).toString();
 
     try {
-      const response = await fetch(
-        `/api/formacion/competencias/tabla/?`
-      );
+      const response = await fetch(`/api/formacion/competencias/tabla/?`);
       const data = await response.json();
       renderTabla(data);
     } catch (error) {
@@ -121,87 +119,93 @@ document.addEventListener("DOMContentLoaded", () => {
 
   //== Crear competencia
   const formCrearCompetencia = document.getElementById("formCrearCompetencia");
+  if (formCrearCompetencia) {
+    formCrearCompetencia.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btnCrearCompetencia");
+      const originalBtnContent = btn.innerHTML;
+      const formData = new FormData(formCrearCompetencia);
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("crearCompetenciaModal")
+      );
 
-  formCrearCompetencia.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById("btnCrearCompetencia");
-    const originalBtnContent = btn.innerHTML;
-    const formData = new FormData(formCrearCompetencia);
-    const modal = bootstrap.Modal.getInstance(
-      document.getElementById("crearCompetenciaModal")
-    );
+      showSpinner(btn);
 
-    showSpinner(btn);
-
-    setFormDisabled(formCrearCompetencia, true);
-    console.log(formData);
-    try {
-      const response = await fetch(`/api/formacion/competencias/`, {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-        },
-        body: formData,
-      });
-      const data = await response.json();
-      if (validarErrorDRF(response, data)) return;
-      toastSuccess(data.message);
-      resetForm(formCrearCompetencia);
-      modal.hide();
-      aplicarFiltros();
-    } catch (error) {
-      toastError(error);
-    } finally {
-      hideSpinner(btn, originalBtnContent);
-      setFormDisabled(formCrearCompetencia, false);
-    }
-  });
+      setFormDisabled(formCrearCompetencia, true);
+      console.log(formData);
+      try {
+        const response = await fetch(`/api/formacion/competencias/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+          body: formData,
+        });
+        const data = await response.json();
+        if (validarErrorDRF(response, data)) return;
+        toastSuccess(data.message);
+        resetForm(formCrearCompetencia);
+        modal.hide();
+        aplicarFiltros();
+      } catch (error) {
+        toastError(error);
+      } finally {
+        hideSpinner(btn, originalBtnContent);
+        setFormDisabled(formCrearCompetencia, false);
+      }
+    });
+  }
 
   //== Boton editar competencia
-  tableEl.addEventListener("click", async (e) => {
-    if (e.target.closest(".editBtn")) {
-      const btn = e.target.closest(".editBtn");
-      const originalBtnContent = btn.innerHTML;
-      const competenciaId = btn.dataset.id;
-      showSpinner(btn);
-      const modalEl = document.getElementById("editarCompetenciaModal");
-      const modalInstance = new bootstrap.Modal(modalEl);
-      document.getElementById("btnEditarCompetencia").disabled = true;
-      modalInstance.show();
+  if (tableEl) {
+    tableEl.addEventListener("click", async (e) => {
+      if (e.target.closest(".editBtn")) {
+        const btn = e.target.closest(".editBtn");
+        const originalBtnContent = btn.innerHTML;
+        const competenciaId = btn.dataset.id;
+        showSpinner(btn);
+        const modalEl = document.getElementById("editarCompetenciaModal");
+        const modalInstance = new bootstrap.Modal(modalEl);
+        document.getElementById("btnEditarCompetencia").disabled = true;
+        modalInstance.show();
 
-      await cargarDatosEditarCompetencia(competenciaId);
-      hideSpinner(btn, originalBtnContent);
-      document.getElementById("btnEditarCompetencia").disabled = false;
-    } else if (e.target.closest(".deleteBtn")) {
-      const btn = e.target.closest(".deleteBtn");
-      const originalBtnContent = btn.innerHTML;
-      const rapId = btn.dataset.id;
-      showSpinner(btn);
+        await cargarDatosEditarCompetencia(competenciaId);
+        hideSpinner(btn, originalBtnContent);
+        document.getElementById("btnEditarCompetencia").disabled = false;
+      } else if (e.target.closest(".deleteBtn")) {
+        const btn = e.target.closest(".deleteBtn");
+        const originalBtnContent = btn.innerHTML;
+        const rapId = btn.dataset.id;
+        showSpinner(btn);
 
-      const confirmed = await confirmDeletion(
-        "¿Desea eliminar esta competencia?"
-      );
-      if (confirmed) {
-        try {
-          const response = await fetch(`/api/formacion/competencias/${rapId}/`, {
-            method: "DELETE",
-            headers: {
-              "X-CSRFToken": csrfToken,
-            },
-          });
-          const data = await response.json();
-          if (validarErrorDRF(response, data)) return;
-          toastSuccess("Competencia eliminada correctamente");
-          aplicarFiltros();
-        } catch (error) {
-          toastError(error.message);
+        const confirmed = await confirmDeletion(
+          "¿Desea eliminar esta competencia?"
+        );
+        if (confirmed) {
+          try {
+            const response = await fetch(
+              `/api/formacion/competencias/${rapId}/`,
+              {
+                method: "DELETE",
+                headers: {
+                  "X-CSRFToken": csrfToken,
+                },
+              }
+            );
+            const data = await response.json();
+            if (validarErrorDRF(response, data)) return;
+            toastSuccess("Competencia eliminada correctamente");
+            aplicarFiltros();
+          } catch (error) {
+            toastError(error.message);
+          } finally {
+            hideSpinner(btn, originalBtnContent);
+            reiniciarTooltips();
+          }
         }
       }
-      hideSpinner(btn, originalBtnContent);
-      reiniciarTooltips();
-    }
-  });
-
+    });
+  }
   const formEditarCompetencia = document.getElementById(
     "formEditarCompetencia"
   );
@@ -229,38 +233,40 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   //== Guardar formulario editar competencia
-  formEditarCompetencia.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  if (formEditarCompetencia) {
+    formEditarCompetencia.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    const formData = new FormData(formEditarCompetencia);
-    const btn = document.getElementById("btnEditarCompetencia");
-    const originalBtnContent = btn.innerHTML;
-    showSpinner(btn);
-    setFormDisabled(formEditarCompetencia, true);
+      const formData = new FormData(formEditarCompetencia);
+      const btn = document.getElementById("btnEditarCompetencia");
+      const originalBtnContent = btn.innerHTML;
+      showSpinner(btn);
+      setFormDisabled(formEditarCompetencia, true);
 
-    try {
-      const response = await fetch(formEditarCompetencia.action, {
-        method: "PATCH",
-        headers: {
-          "X-CSRFToken": csrfToken,
-        },
-        body: formData,
-      });
-      const data = await response.json();
-      if (validarErrorDRF(response, data)) return;
+      try {
+        const response = await fetch(formEditarCompetencia.action, {
+          method: "PATCH",
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+          body: formData,
+        });
+        const data = await response.json();
+        if (validarErrorDRF(response, data)) return;
 
-      toastSuccess(data.message);
+        toastSuccess(data.message);
 
-      const modalEl = document.getElementById("editarCompetenciaModal");
-      const modalInstance = bootstrap.Modal.getInstance(modalEl);
-      modalInstance.hide();
+        const modalEl = document.getElementById("editarCompetenciaModal");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        modalInstance.hide();
 
-      aplicarFiltros();
-    } catch (error) {
-      toastError(error);
-    } finally {
-      setFormDisabled(formEditarCompetencia, false);
-      hideSpinner(btn, originalBtnContent);
-    }
-  });
+        aplicarFiltros();
+      } catch (error) {
+        toastError(error);
+      } finally {
+        setFormDisabled(formEditarCompetencia, false);
+        hideSpinner(btn, originalBtnContent);
+      }
+    });
+  }
 });

@@ -3,81 +3,360 @@
 {% load icons %}
 
 {% block content %}
-<main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center pb-4">
-                <h1 class="display-5">Gestión de Usuarios</h1>
-            </div>
-            <div class="table-responsive">
-                <table id="usuarios_table" class="table table-hover table-bordered align-middle">
-                    <thead class="table-secondary text-center">
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Apellido</th>
-                        <th>Tipo DNI</th>
-                        <th>DNI</th>
-                        <th>Username</th>
-                        <th>Ultima vez</th>
-                        <th>Rol</th>
-                        <th>Estado</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        </div>
+  {% if not can_view %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
     </div>
+  {% else %}
+  <main class="container py-5">
+    <section class="card card-body shadow-sm p-4">
+      <div class="row">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center pb-4">
+            <h1 class="display-5">Gestión de Usuarios</h1>
+          </div>
+          <div class="table-responsive">
+            <table id="usuarios_table" class="table table-hover table-bordered align-middle">
+              <thead class="table-secondary text-center">
+                <tr>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  <th>Tipo DNI</th>
+                  <th>DNI</th>
+                  <th>Username</th>
+                  <th>Ultima vez</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
-</main>
+  </main>
 
-<!-- Modal Restablecer Contraseña -->
-<div class="modal fade" id="modalReset" tabindex="-1" aria-labelledby="modalResetLabel" aria-hidden="true">
+  <!-- Modal Restablecer Contraseña -->
+  <div class="modal fade" id="modalReset" tabindex="-1" aria-labelledby="modalResetLabel" aria-hidden="true">
     <div class="modal-dialog">
-    <div class="modal-content">
+      <div class="modal-content">
         <form id="form-reset">
-        <div class="modal-header">
+          <div class="modal-header">
             <h5 class="modal-title" id="modalResetLabel">Restablecer contraseña <span id="nombre-usr-restablecer"></span></h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
+          </div>
+          <div class="modal-body">
             <label for="new-password" class="form-label">Coloque la nueva contraseña:</label>
-            <input type="password" id="new-password" class="form-control" placeholder="Nueva contraseña" required>
+            <input type="password" id="new-password" class="form-control" placeholder="Nueva contraseña" required />
             <div class="mt-2" id="password-help" style="font-size: 0.9em;">
-                <p class="mb-1">La contraseña debe contener:</p>
-                <ul class="list-unstyled mb-0">
+              <p class="mb-1">La contraseña debe contener:</p>
+              <ul class="list-unstyled mb-0">
                 <li id="rule-length" class="text-danger">🔴 Al menos 8 caracteres</li>
                 <li id="rule-uppercase" class="text-danger">🔴 Una letra mayúscula</li>
                 <li id="rule-lowercase" class="text-danger">🔴 Una letra minúscula</li>
                 <li id="rule-number" class="text-danger">🔴 Un número</li>
                 <li id="rule-special" class="text-danger">🔴 Un carácter especial</li>
-                </ul>
+              </ul>
             </div>
-            <input type="hidden" id="user-id-reset">
-        </div>
-        <div class="modal-footer">
+            <input type="hidden" id="user-id-reset" />
+          </div>
+          <div class="modal-footer">
             <button type="submit" id="btn-submit-contra" class="btn btn-success">Guardar</button>
-        </div>
+          </div>
         </form>
+      </div>
     </div>
+  </div>
+  <div class="modal fade" id="modalPermisos" tabindex="-1" aria-labelledby="modalPermisosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPermisosLabel">
+          Permisos de <span id="usuarioNombre"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="permisosForm">
+
+          <!-- ================= SISTEMA ================= -->
+          <h4 class="border-bottom mb-3">Sistema</h4>
+          <div class="row">
+            <!-- DEPARTAMENTOS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Departamentos</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="departamentos_ver" type="checkbox" />
+                <label class="form-check-label">Ver Departamentos</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="departamentos_editar" type="checkbox" />
+                <label class="form-check-label">Editar Departamentos</label>
+              </div>
+              <input type="text" class="form-control my-2" name="departamentos_filtro" placeholder='{"rol": "admin"}' />
+            </div>
+            <!-- MUNICIPIOS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Municipios</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="municipios_ver" type="checkbox" />
+                <label class="form-check-label">Ver Municipios</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="municipios_editar" type="checkbox" />
+                <label class="form-check-label">Editar Municipios</label>
+              </div>
+              <input type="text" class="form-control my-2" name="municipios_filtro" placeholder='{"rol": "admin"}' />
+            </div>
+            <!-- USUARIOS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Usuarios</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="usuarios_ver" type="checkbox" />
+                <label class="form-check-label">Ver Usuarios</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="usuarios_editar" type="checkbox" />
+                <label class="form-check-label">Editar Usuarios</label>
+              </div>
+              <input type="text" class="form-control my-2" name="usuarios_filtro" placeholder='{"rol": "admin"}' />
+            </div>
+          </div>
+
+          <!-- ================= USUARIOS Y ROLES ================= -->
+          <h4 class="border-bottom mt-4 mb-3">Usuarios y roles</h4>
+          <div class="row">
+
+            <!-- INSTRUCTORES -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Instructores</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="instructores_ver" type="checkbox" />
+                <label class="form-check-label">Ver Instructores</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="instructores_editar" type="checkbox" />
+                <label class="form-check-label">Editar Instructores</label>
+              </div>
+              <input type="text" class="form-control my-2" name="instructores_filtro" placeholder='{"profesion": "Ingeniero de sistemas"}' />
+            </div>
+
+            <!-- APRENDICES -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Aprendices</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="aprendices_ver" type="checkbox" />
+                <label class="form-check-label">Ver Aprendices</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="aprendices_editar" type="checkbox" />
+                <label class="form-check-label">Editar Aprendices</label>
+              </div>
+              <input type="text" class="form-control my-2" name="aprendices_filtro" placeholder='{"ficha_id": 12345}' />
+            </div>
+
+            <!-- ADMINISTRADORES -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Administradores</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="admin_ver" type="checkbox" />
+                <label class="form-check-label">Ver Administradores</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="admin_editar" type="checkbox" />
+                <label class="form-check-label">Editar Administradores</label>
+              </div>
+              <input type="text" class="form-control my-2" name="admin_filtro" placeholder='{"area": "RRHH"}' />
+            </div>
+
+            <!-- LÍDERES -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Líderes</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="lideres_ver" type="checkbox" />
+                <label class="form-check-label">Ver Líderes</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="lideres_editar" type="checkbox" />
+                <label class="form-check-label">Editar Líderes</label>
+              </div>
+              <input type="text" class="form-control my-2" name="lideres_filtro" placeholder='{"area": "Sistemas"}' />
+            </div>
+
+            <!-- CUENTAS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Cuentas</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="cuentas_ver" type="checkbox" />
+                <label class="form-check-label">Ver Cuentas</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="cuentas_editar" type="checkbox" />
+                <label class="form-check-label">Editar Cuentas</label>
+              </div>
+              <input type="text" class="form-control my-2" name="cuentas_filtro" placeholder='{"estado": "activo"}' />
+            </div>
+
+            <!-- GESTORES -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Gestores</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="gestores_ver" type="checkbox" />
+                <label class="form-check-label">Ver Gestores</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="gestores_editar" type="checkbox" />
+                <label class="form-check-label">Editar Gestores</label>
+              </div>
+              <input type="text" class="form-control my-2" name="gestores_filtro" placeholder='{"estado": "activo"}' />
+            </div>
+
+          </div>
+
+          <!-- ================= CURRÍCULO Y ACTIVIDADES ================= -->
+          <h4 class="border-bottom mt-4 mb-3">Currículo y actividades</h4>
+          <div class="row">
+
+            <!-- FICHAS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Fichas</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="fichas_ver" type="checkbox" />
+                <label class="form-check-label">Ver Fichas</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="fichas_editar" type="checkbox" />
+                <label class="form-check-label">Editar Fichas</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="portafolios_ver" type="checkbox" />
+                <label class="form-check-label">Ver portafolios</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="portafolios_editar" type="checkbox" />
+                <label class="form-check-label">Editar portafolios</label>
+              </div>
+              <input type="text" class="form-control my-2" name="fichas_filtro" placeholder='{"area": "Sistemas"}' />
+            </div>
+
+            <!-- INSTITUCIONES -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Instituciones educativas</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="instituciones_ver" type="checkbox" />
+                <label class="form-check-label">Ver Instituciones</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="instituciones_editar" type="checkbox" />
+                <label class="form-check-label">Editar Instituciones</label>
+              </div>
+              <input type="text" class="form-control my-2" name="instituciones_filtro" placeholder='{"departamento": "Antioquia"}' />
+            </div>
+
+            <!-- CENTROS FORMACION -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Centros de formación</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="centros_ver" type="checkbox" />
+                <label class="form-check-label">Ver Centros</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="centros_editar" type="checkbox" />
+                <label class="form-check-label">Editar Centros</label>
+              </div>
+              <input type="text" class="form-control my-2" name="centros_filtro" placeholder='{"departamento": "Antioquia"}' />
+            </div>
+
+            <!-- PROGRAMAS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Programas</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="programas_ver" type="checkbox" />
+                <label class="form-check-label">Ver Programas</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="programas_editar" type="checkbox" />
+                <label class="form-check-label">Editar Programas</label>
+              </div>
+              <input type="text" class="form-control my-2" name="programas_filtro" placeholder='{"nivel": "Tecnologo"}' />
+            </div>
+            
+            <!-- COMPETENCIAS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Competencias</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="competencias_ver" type="checkbox" />
+                <label class="form-check-label">Ver Competencias</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="competencias_editar" type="checkbox" />
+                <label class="form-check-label">Editar Competencias</label>
+              </div>
+              <input type="text" class="form-control my-2" name="competencias_filtro" placeholder='{"departamento": "Antioquia"}' />
+            </div>
+            
+            <!-- RAPS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>RAPS</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="raps_ver" type="checkbox" />
+                <label class="form-check-label">Ver Raps</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" name="raps_editar" type="checkbox" />
+                <label class="form-check-label">Editar Raps</label>
+              </div>
+              <input type="text" class="form-control my-2" name="raps_filtro" placeholder='{"departamento": "Antioquia"}' />
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" form="permisosForm" id="btn-guardarPerm">Guardar</button>
+      </div>
     </div>
+  </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
-<script type="module" src="{% static 'js/usuarios/usuario.js' %}"></script>
+  <script type="module" src="{% static 'js/usuarios/usuario.js' %}"></script>
 {% endblock %}

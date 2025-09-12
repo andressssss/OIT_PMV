@@ -148,7 +148,8 @@ document.addEventListener("DOMContentLoaded", () => {
         el.compe,
         el.progra,
         listaFases || "Sin registro",
-        `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
+        el.can_edit
+          ? `<button class="btn btn-outline-warning btn-sm mb-1 editBtn" 
                     data-id="${el.id}"
                     title="Editar"
                     data-bs-toggle="tooltip"
@@ -161,7 +162,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     data-bs-toggle="tooltip"
                     data-bs-placement="top">
                     <i class="bi bi-trash"></i>
-                </button>`,
+                </button>`
+          : "",
       ]);
     });
 
@@ -206,88 +208,91 @@ document.addEventListener("DOMContentLoaded", () => {
   //==Crear RAP
   const formCrearRAP = document.getElementById("formCrearRAP");
 
-  formCrearRAP.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById("btnCrearRAP");
-    const originalBtnContent = btn.innerHTML;
-    const formData = new FormData(formCrearRAP);
-    const modal = bootstrap.Modal.getInstance(
-      document.getElementById("crearRAPModal")
-    );
-
-    showSpinner(btn);
-    setFormDisabled(formCrearRAP, true);
-
-    try {
-      const response = await fetch(`/api/formacion/raps/`, {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "X-Requested-With": "XMLHttpRequest",
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (validarErrorDRF(response, data)) return;
-
-      toastSuccess(data.message);
-      resetForm(formCrearRAP);
-      modal.hide();
-      aplicarFiltros();
-    } catch (error) {
-      toastError(error || "Ocurrió un error inesperado");
-    } finally {
-      hideSpinner(btn, originalBtnContent);
-      setFormDisabled(formCrearRAP, false);
-    }
-  });
-
-  //== Boton editar RAP
-  tableEl.addEventListener("click", async (e) => {
-    if (e.target.closest(".editBtn")) {
-      const btn = e.target.closest(".editBtn");
+  if (formCrearRAP) {
+    formCrearRAP.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btnCrearRAP");
       const originalBtnContent = btn.innerHTML;
-      const rapId = btn.dataset.id;
+      const formData = new FormData(formCrearRAP);
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("crearRAPModal")
+      );
+
       showSpinner(btn);
-      const modalEl = document.getElementById("editarRAPModal");
-      const modalInstance = new bootstrap.Modal(modalEl);
-      modalInstance.show();
+      setFormDisabled(formCrearRAP, true);
 
-      await cargarDatosEditarRap(rapId);
-      hideSpinner(btn, originalBtnContent);
-    } else if (e.target.closest(".deleteBtn")) {
-      const btn = e.target.closest(".deleteBtn");
-      const originalBtnContent = btn.innerHTML;
-      const rapId = btn.dataset.id;
-      showSpinner(btn);
+      try {
+        const response = await fetch(`/api/formacion/raps/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: formData,
+        });
 
-      const confirmed = await confirmDeletion("¿Desea eliminar este RAP?");
-      if (confirmed) {
-        try {
-          const response = await fetch(`/api/formacion/raps/${rapId}/`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": csrfToken,
-              "X-Requested-With": "XMLHttpRequest",
-            },
-          });
-          const data = await response.json();
+        const data = await response.json();
 
-          if (validarErrorDRF(response, data)) return;
-          toastSuccess(data.message || "RAP eliminado correctamente");
-          aplicarFiltros();
-        } catch (error) {
-          toastError(error.message);
-        }
+        if (validarErrorDRF(response, data)) return;
+
+        toastSuccess(data.message);
+        resetForm(formCrearRAP);
+        modal.hide();
+        aplicarFiltros();
+      } catch (error) {
+        toastError(error || "Ocurrió un error inesperado");
+      } finally {
+        hideSpinner(btn, originalBtnContent);
+        setFormDisabled(formCrearRAP, false);
       }
-      hideSpinner(btn, originalBtnContent);
-      reiniciarTooltips();
-    }
-  });
+    });
+  }
 
+  if (tableEl) {
+    //== Boton editar RAP
+    tableEl.addEventListener("click", async (e) => {
+      if (e.target.closest(".editBtn")) {
+        const btn = e.target.closest(".editBtn");
+        const originalBtnContent = btn.innerHTML;
+        const rapId = btn.dataset.id;
+        showSpinner(btn);
+        const modalEl = document.getElementById("editarRAPModal");
+        const modalInstance = new bootstrap.Modal(modalEl);
+        modalInstance.show();
+
+        await cargarDatosEditarRap(rapId);
+        hideSpinner(btn, originalBtnContent);
+      } else if (e.target.closest(".deleteBtn")) {
+        const btn = e.target.closest(".deleteBtn");
+        const originalBtnContent = btn.innerHTML;
+        const rapId = btn.dataset.id;
+        showSpinner(btn);
+
+        const confirmed = await confirmDeletion("¿Desea eliminar este RAP?");
+        if (confirmed) {
+          try {
+            const response = await fetch(`/api/formacion/raps/${rapId}/`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+              },
+            });
+            const data = await response.json();
+
+            if (validarErrorDRF(response, data)) return;
+            toastSuccess(data.message || "RAP eliminado correctamente");
+            aplicarFiltros();
+          } catch (error) {
+            toastError(error.message);
+          }
+        }
+        hideSpinner(btn, originalBtnContent);
+        reiniciarTooltips();
+      }
+    });
+  }
   const formEditarRAP = document.getElementById("formEditarRAP");
 
   async function cargarDatosEditarRap(rapId) {
@@ -312,41 +317,43 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  formEditarRAP.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  if (formEditarRAP) {
+    formEditarRAP.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    const formData = new FormData(formEditarRAP);
-    const btn = document.getElementById("btnEditarRAP");
-    const originalBtnContent = btn.innerHTML;
+      const formData = new FormData(formEditarRAP);
+      const btn = document.getElementById("btnEditarRAP");
+      const originalBtnContent = btn.innerHTML;
 
-    showSpinner(btn);
-    setFormDisabled(formEditarRAP, true);
-    try {
-      const response = await fetch(formEditarRAP.action, {
-        method: "PATCH",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "X-Requested-With": "XMLHttpRequest",
-        },
-        body: formData,
-      });
-      const data = await response.json();
+      showSpinner(btn);
+      setFormDisabled(formEditarRAP, true);
+      try {
+        const response = await fetch(formEditarRAP.action, {
+          method: "PATCH",
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: formData,
+        });
+        const data = await response.json();
 
-      if (validarErrorDRF(response, data)) return;
+        if (validarErrorDRF(response, data)) return;
 
-      toastSuccess(data.message);
+        toastSuccess(data.message);
 
-      const modalEl = document.getElementById("editarRAPModal");
-      const modalInstance = bootstrap.Modal.getInstance(modalEl);
-      modalInstance.hide();
+        const modalEl = document.getElementById("editarRAPModal");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        modalInstance.hide();
 
-      aplicarFiltros();
-    } catch (error) {
-      toastError(error);
-    } finally {
-      setFormDisabled(formEditarRAP, false);
-      hideSpinner(btn, originalBtnContent);
-      reiniciarTooltips();
-    }
-  });
+        aplicarFiltros();
+      } catch (error) {
+        toastError(error);
+      } finally {
+        setFormDisabled(formEditarRAP, false);
+        hideSpinner(btn, originalBtnContent);
+        reiniciarTooltips();
+      }
+    });
+  }
 });

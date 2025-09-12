@@ -22,6 +22,7 @@ from django.utils.timezone import localtime
 from matricula.scripts.cargar_tree import crear_datos_prueba
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from commons.permisos import DenegarConsulta
+from commons.mixins import PermisosMixin
 
 import logging
 
@@ -53,7 +54,7 @@ class DataTablesPagination(PageNumberPagination):
 
 class RapsViewSet(ModelViewSet):
     queryset = T_raps.objects.all()
-    permission_classes = [IsAuthenticated, DenegarConsulta]
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -92,14 +93,19 @@ class RapsViewSet(ModelViewSet):
         if competencias:
             qs = qs.filter(compe__nom__in=competencias)
 
-        serializer = self.get_serializer(qs, many=True)
-        return Response(serializer.data)
+        data = self.get_serializer(qs, many=True).data
+        
+        can_edit = PermisosMixin().get_permission_actions_for(request, "raps").get("editar", False)
+        for d in data:
+            d["can_edit"] = can_edit
+
+        return Response(data)
 
 
 class CompetenciasViewSet(ModelViewSet):
     queryset = T_compe.objects.all()
     permission_classes = [IsAuthenticated]
-
+    
     def get_queryset(self):
         queryset = super().get_queryset()
         programa_id = self.request.query_params.get('programa')
@@ -139,8 +145,14 @@ class CompetenciasViewSet(ModelViewSet):
         if programas:
             qs = qs.filter(progra__nom__in=programas)
 
-        serializer = self.get_serializer(qs, many=True)
-        return Response(serializer.data)
+        can_edit = PermisosMixin().get_permission_actions_for(request, "competencias").get("editar", False)
+        
+        data = self.get_serializer(qs, many=True).data
+        
+        for item in data:
+            item["can_edit"] = can_edit 
+
+        return Response(data)
 
 
 class FichasViewSet(ModelViewSet):
