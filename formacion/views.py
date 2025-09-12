@@ -13,6 +13,7 @@ import csv
 import random
 import string
 import json
+from commons.mixins import PermisosMixin
 from commons.permisos import bloquear_si_consulta
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -44,7 +45,15 @@ logger = logging.getLogger('django')
 
 @login_required
 def fichas(request):
-    return render(request, 'listar_fichas.html')
+    mixin = PermisosMixin()
+    mixin.modulo = "fichas"
+    
+    acciones = mixin.get_permission_actions(request)
+    puede_ver = acciones.get("ver", False)
+    return render(request, 'listar_fichas.html', {
+      "puede_ver": puede_ver,
+      "acciones": acciones
+    })
 
 
 @require_GET
@@ -124,6 +133,11 @@ def filtrar_fichas(request):
             gestor=gestor).values_list('depa__nom_departa', flat=True)
         fichas = fichas.filter(
             insti__muni__nom_departa__nom_departa__in=departamentos)
+    
+    # Consulta de permisos sobre fichas
+    mixin = PermisosMixin()
+    mixin.modulo = "fichas"
+    fichas = mixin.apply_permission_filters(fichas, request)
 
     if estados:
         fichas = fichas.filter(esta__in=estados)
@@ -143,6 +157,12 @@ def filtrar_fichas(request):
 
     if programas:
         fichas = fichas.filter(progra__nom__in=programas)
+    acciones = mixin.get_permission_actions(request)
+    
+    # Consulta de permisos sobre portafolios
+    mixinP = PermisosMixin()
+    mixinP.modulo = "portafolios"
+    accionesP = mixinP.get_permission_actions(request)
 
     data = [
         {
@@ -156,7 +176,11 @@ def filtrar_fichas(request):
             'institucion': f.insti.nom,
             'instru': f.instru.perfil.nom if f.instru else None,
             'matricu': f.num_apre_proce,
-            'progra': f.progra.nom
+            'progra': f.progra.nom,
+            'can_edit': acciones.get("editar", False),
+            'can_delete': acciones.get("eliminar", False),
+            'can_view': acciones.get("ver", False),
+            'can_view_p': accionesP.get("ver", False)
         } for f in fichas
     ]
     return JsonResponse(data, safe=False)
@@ -208,12 +232,18 @@ def listar_fichas(request):
 def panel_ficha(request, ficha_id):
     ficha = get_object_or_404(T_ficha, id=ficha_id)
     fase = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
-    aprendices = T_apre.objects.filter(ficha=ficha_id)
+    mixin = PermisosMixin()
+    mixin.modulo = "portafolios"
+    
+    acciones = mixin.get_permission_actions(request)
+    puede_ver = acciones.get("ver", False)
+    puede_editar = acciones.get("editar", False)
 
     return render(request, 'panel_ficha.html', {
         'ficha': ficha,
         'fase': fase,
-        'aprendices': aprendices,
+        'puede_ver': puede_ver,
+        'puede_editar': puede_editar
     })
 
 
@@ -223,6 +253,11 @@ def obtener_carpetas(request, ficha_id):
     nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values(
         "id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi"
     )
+    
+    mixin = PermisosMixin()
+
+    acciones = mixin.get_permission_actions_for(request, "portafolios")
+    can_edit = acciones.get("editar", False)
 
     folder_map = {}
 
@@ -257,7 +292,10 @@ def obtener_carpetas(request, ficha_id):
         else:
             root_nodes.append(nodo)
 
-    return JsonResponse(root_nodes, safe=False)
+    return JsonResponse({
+      'can_edit': can_edit,
+      'nodos': root_nodes
+      }, safe=False)
 
 
 @login_required
@@ -621,8 +659,15 @@ def obtener_carpetas_aprendiz(request, aprendiz_id):
                 folder_map[parent_id]["children"].append(nodo)
         else:
             root_nodes.append(nodo)
+            
+    mixin = PermisosMixin()
+    acciones = mixin.get_permission_actions_for(request, "portafolios")
+    can_edit = acciones.get("editar", False)
 
-    return JsonResponse(root_nodes, safe=False)
+    return JsonResponse({
+      'nodos': root_nodes,
+      'can_edit': can_edit
+      }, safe=False)
 
 
 @login_required
@@ -1548,7 +1593,14 @@ def panel_aprendiz(request):
 @login_required
 def listar_programas(request):
     programas = T_progra.objects.all()
-    return render(request, 'programas.html', {'programas': programas})
+    acciones = PermisosMixin().get_permission_actions_for(request, "programas")
+    can_edit = acciones.get("editar", False)
+    can_view = acciones.get("ver", False)
+    return render(request, 'programas.html', {
+      'programas': programas,
+      'can_edit': can_edit,
+      'can_view': can_view
+      })
 
 
 @login_required
@@ -1570,7 +1622,13 @@ def crear_programa(request):
 
 @login_required
 def competencias(request):
-    return render(request, 'competencias.html')
+    acciones = PermisosMixin().get_permission_actions_for(request, "competencias")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
+    return render(request, 'competencias.html',{
+      'can_view': can_view,
+      'can_edit': can_edit
+    })
 
 
 ###############################################################################################################
@@ -1579,7 +1637,13 @@ def competencias(request):
 
 @login_required
 def listar_raps(request):
-    return render(request, 'raps.html')
+    acciones = PermisosMixin().get_permission_actions_for(request, "raps")
+    can_edit = acciones.get("editar", False)
+    can_view = acciones.get("ver", False)
+    return render(request, 'raps.html',{
+      'can_view': can_view,
+      'can_edit': can_edit
+    })
 
 @login_required
 def obtener_opciones_fases_raps(request):

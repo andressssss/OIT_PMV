@@ -423,6 +423,7 @@ export async function crearSelectForm({
   required = false,
 }) {
   const contenedorEl = document.querySelector(contenedor);
+  if (!contenedorEl) return;
   contenedorEl.innerHTML = `
         <div class="placeholder-glow">
             <span class="placeholder col-12 rounded"></span>
@@ -489,6 +490,9 @@ export async function crearSelect({
   contenedor,
 }) {
   const contenedorEl = document.querySelector(contenedor);
+  if(!contenedorEl){
+    return;
+  }
   contenedorEl.innerHTML = `
         <div class="placeholder-glow">
             <span class="placeholder col-12 rounded"></span>

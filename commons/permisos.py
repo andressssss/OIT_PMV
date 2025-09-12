@@ -6,6 +6,8 @@ from functools import wraps
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from .models import T_permi
+
 def bloquear_si_consulta(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
@@ -34,3 +36,13 @@ class DenegarConsulta(BasePermission):
         if perfil and perfil.rol == 'consulta':
             return False
         return True
+
+def user_can(perfil, modulo, accion, **kwargs):
+    permisos = T_permi.objects.filter(perfil=perfil, modulo=modulo, accion=accion)
+    
+    for p in permisos:
+        if not p.filtro:
+            return True
+        if all(kwargs.get(k) == v for k, v in p.filtro.items()):
+            return True
+    return False

@@ -16,12 +16,13 @@ from django.utils import timezone
 from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.contrib.auth.models import User
-from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal, AuditLog
-from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer, AprendizPanelFSerializer
+from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal, AuditLog, T_permi
+from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer, AprendizPanelFSerializer, PermisoSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, DateField
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from commons.permisos import DenegarConsulta
+from commons.mixins import PermisosMixin
 
 def comparar_diccionarios(before, after, prefix=""):
     cambios = []
@@ -30,10 +31,12 @@ def comparar_diccionarios(before, after, prefix=""):
         valor_despues = after.get(key)
 
         if isinstance(valor_antes, dict) and isinstance(valor_despues, dict):
-            cambios.extend(comparar_diccionarios(valor_antes, valor_despues, prefix=f"{prefix}{key}."))
+            cambios.extend(comparar_diccionarios(
+                valor_antes, valor_despues, prefix=f"{prefix}{key}."))
         else:
             if valor_antes != valor_despues:
-                cambios.append(f"{prefix}{key}: {valor_antes} → {valor_despues}")
+                cambios.append(
+                    f"{prefix}{key}: {valor_antes} → {valor_despues}")
     return cambios
 
 
@@ -58,7 +61,6 @@ class DataTablesPagination(PageNumberPagination):
             'recordsFiltered': self.count,
             'data': data
         })
-
 
 class PerfilViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -92,13 +94,13 @@ class PerfilViewSet(ModelViewSet):
 
         paginated = self.paginate_queryset(perfiles)
 
-        if paginated is not None:
-            serializer = PerfilSerializer(paginated, many=True)
-            return self.get_paginated_response(serializer.data)
+        can_edit = PermisosMixin().get_permission_actions_for(request, "usuarios").get("editar", False)
+        data = PerfilSerializer(paginated, many=True).data
 
-        serializer = PerfilSerializer(perfiles, many=True)
-        return Response(serializer.data)
+        for d in data:
+          d["can_edit"] = can_edit
 
+        return self.get_paginated_response(data)
 
 class CentroFormacionViewSet(ModelViewSet):
     queryset = T_centro_forma.objects.all()
@@ -138,21 +140,36 @@ class InstitucionViewSet(ModelViewSet):
         return queryset
 
 
-class AprendizViewSet(ModelViewSet):
+class AprendizViewSet(PermisosMixin, ModelViewSet):
     queryset = T_apre.objects.all()
     serializer_class = AprendizSerializer
-    permission_classes = [IsAuthenticated, DenegarConsulta]
+    permission_classes = [IsAuthenticated]
     pagination_class = DataTablesPagination
-    
+    modulo = "aprendices"
+
     @action(detail=False, methods=['get'], url_path='por_ficha')
     def por_ficha(self, request):
         ficha_id = request.query_params.get("ficha_id")
-        
+
         if not ficha_id:
             return Response({"message": "Debe proporcionar una ficha_id"}, status=400)
-        aprendices= T_apre.objects.filter(ficha_id=ficha_id)
+        aprendices = T_apre.objects.filter(ficha_id=ficha_id)
+        aprendices = self.apply_permission_filters_for(aprendices, request, modulo="portafolios")
+        
         serializer = AprendizPanelFSerializer(aprendices, many=True)
-        return Response(serializer.data)
+        
+        perfil = self.get_perfil(request)
+        puede_editar = T_permi.objects.filter(
+          perfil=perfil,
+          modu="portafolios",
+          acci="editar"
+        ).exists()
+        
+        data = serializer.data
+        for item in data:
+            item["can_edit"] = puede_editar
+            
+        return Response(data)
 
     @action(detail=False, methods=['get'], url_path='filtrar')
     def filtrar(self, request):
@@ -214,11 +231,15 @@ class AprendizViewSet(ModelViewSet):
                 "data": serializer.data
             })
 
-        serializer = AprendizSerializer(aprendices, many=True)
+        data = AprendizSerializer(aprendices, many=True).data
+        can_edit = PermisosMixin().get_permission_actions_for(request, "aprendices").get("editar", False)
+        
+        for d in data:
+            d["can_edit"] = can_edit
         return Response({
             "recordsTotal": total,
             "recordsFiltered": filtrados,
-            "data": serializer.data
+            "data": data,
         })
 
     def partial_update(self, request, *args, **kwargs):
@@ -282,7 +303,8 @@ class AprendizViewSet(ModelViewSet):
 
         # comparar recursivamente
         cambios = comparar_diccionarios(data_before, data_after)
-        extra_data = f"Aprendiz con DNI {instance.perfil.dni}: " + " | ".join(cambios) if cambios else "Sin cambios detectados"
+        extra_data = f"Aprendiz con DNI {instance.perfil.dni}: " + \
+            " | ".join(cambios) if cambios else "Sin cambios detectados"
 
         # insertar en AuditLog
         AuditLog.objects.create(
@@ -513,3 +535,36 @@ class AprendizViewSet(ModelViewSet):
 
         except Exception as e:
             return Response({"message": "Error al crear aprendiz", "errores": [str(e)]}, status=400)
+
+
+class PermisoViewSet(ModelViewSet):
+    serializer_class = PermisoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        perfil_id = self.request.query_params.get("perfil")
+        modu = self.request.query_params.get("modu")
+        acci = self.request.query_params.get("acci")
+
+        queryset = T_permi.objects.all()
+
+        if perfil_id:
+            queryset = queryset.filter(perfil_id=perfil_id)
+        if modu:
+            queryset = queryset.filter(modu=modu)
+        if acci:
+            queryset = queryset.filter(acci=acci)
+
+        return queryset
+
+    @action(detail=False, methods=['DELETE'], url_path="eliminar_por_perfil")
+    def eliminar_por_perfil(self, request):
+        perfil_id = request.query_params.get("perfil_id")
+        if not perfil_id:
+            return Response({"message": "Se requiere perfil_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        deleted_count, _ = T_permi.objects.filter(perfil_id=perfil_id).delete()
+        return Response(
+            {"detail": f"{deleted_count} permisos eliminados"},
+            status=status.HTTP_204_NO_CONTENT
+        )

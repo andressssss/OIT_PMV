@@ -1,4 +1,5 @@
 import {
+  setFormDisabled,
   toastSuccess,
   validarErrorDRF,
   toastError,
@@ -44,7 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
         data: null,
         orderable: false,
         render: function (data, type, row) {
-          let botones = `
+          if (row.can_edit) {
+            let botones = `
             <a class="btn btn-outline-secondary btn-sm mb-1 btn-establecer-contra"
                 data-id="${row.id}"
                 data-usuario="${row.nom} ${row.apelli}"
@@ -55,10 +57,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 data-bs-target="#modalReset">
                 <i class="bi bi-asterisk"></i>
             </a>
+            <a class="btn btn-outline-secondary btn-sm mb-1 btn-permisos"
+                data-id="${row.id}"
+                data-usuario="${row.nom} ${row.apelli}"
+                data-toggle="tooltip"
+                data-placement="top"
+                title="Establecer permisos"
+                data-bs-toggle="modal"
+                data-bs-target="#modalPermisos">
+                <i class="bi bi-key"></i>
+            </a>
           `;
 
-          if (row.is_active) {
-            botones += `
+            if (row.is_active) {
+              botones += `
               <a class="btn btn-outline-warning btn-sm mb-1 btn-inhabilitar"
                 data-id="${row.id}"
                 data-toggle="tooltip"
@@ -67,8 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <i class="bi bi-person-x"></i>
               </a>
             `;
-          } else {
-            botones += `
+            } else {
+              botones += `
               <a class="btn btn-outline-info btn-sm mb-1 btn-habilitar"
                 data-id="${row.id}"
                 data-toggle="tooltip"
@@ -77,8 +89,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <i class="bi bi-person-check"></i>
               </a>
             `;
-          }
-          return botones;
+            }
+            return botones;
+          } else return "";
         },
       },
     ],
@@ -146,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.closest(".btn-inhabilitar")) {
       const btn = e.target.closest(".btn-inhabilitar");
       const userId = btn.dataset.id;
-      if (await confirmAction({message: "¿Inhabilitar usuario?"})) {
+      if (await confirmAction({ message: "¿Inhabilitar usuario?" })) {
         try {
           const response = await fetch(`/api/usuarios/perfiles/${userId}/`, {
             method: "PATCH",
@@ -168,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.closest(".btn-habilitar")) {
       const btn = e.target.closest(".btn-habilitar");
       const userId = btn.dataset.id;
-      if (await confirmAction({message:"¿Habilitar usuario?"})) {
+      if (await confirmAction({ message: "¿Habilitar usuario?" })) {
         try {
           const response = await fetch(`/api/usuarios/perfiles/${userId}/`, {
             method: "PATCH",
@@ -185,6 +198,55 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
           toastError(e);
         }
+      }
+    }
+    if (e.target.closest(".btn-permisos")) {
+      const btn = e.target.closest(".btn-permisos");
+      currentUserId = btn.dataset.id;
+      const usuarioNombre = btn.dataset.usuario;
+
+      // Mostrar el nombre del usuario en el modal
+      modalPermisos.querySelector(".modal-title").textContent =
+        "Permisos de " + usuarioNombre;
+
+      // Limpiar el formulario antes de cargar
+      permisosForm.reset();
+      setFormDisabled(permisosForm, true);
+      document.getElementById("btn-guardarPerm").disabled = true;
+      // Cargar permisos actuales con GET
+      try {
+        const response = await fetch(
+          `/api/usuarios/permisos/?perfil=${currentUserId}`
+        );
+        const data = await response.json();
+        if (validarErrorDRF(response, data)) return;
+
+        data.forEach((el) => {
+          const { modu, acci, filtro } = el;
+
+          const ckBoxName = `${modu}_${acci}`;
+          const filtroName = `${modu}_filtro`;
+
+          const checkbox = permisosForm.querySelector(`[name="${ckBoxName}"]`);
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+
+          if (filtro !== null) {
+            const filtroInput = permisosForm.querySelector(
+              `[name="${filtroName}"]`
+            );
+            if (filtroInput) {
+              filtroInput.value = JSON.stringify(filtro, null, 2);
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Error cargando permisos:", err);
+        toastError("No se pudieron cargar los permisos del usuario.");
+      } finally {
+        setFormDisabled(permisosForm, false);
+        document.getElementById("btn-guardarPerm").disabled = false;
       }
     }
   });
@@ -263,6 +325,122 @@ document.addEventListener("DOMContentLoaded", () => {
         toastError("Error inesperado");
       } finally {
         hideSpinner(btn, originalBtnContent);
+      }
+    });
+
+  const modalPermisos = document.getElementById("modalPermisos");
+  const permisosForm = document.getElementById("permisosForm");
+  let currentUserId = null;
+
+  // Guardar permisos
+  document
+    .getElementById("btn-guardarPerm")
+    .addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!currentUserId) return;
+      const btn = document.getElementById("btn-guardarPerm");
+      const originalBtnContent = btn.innerHTML;
+
+      showSpinner(btn);
+      // Construir objeto con los datos del formulario
+      const formData = new FormData(permisosForm);
+      setFormDisabled(permisosForm, true);
+      const permisos = {};
+      for (const [key, value] of formData.entries()) {
+        const input = permisosForm.querySelector(`[name="${key}"]`);
+        if (input.type === "checkbox") {
+          permisos[key] = input.checked;
+        } else {
+          try {
+            // Intentar parsear JSON en campos de texto
+            permisos[key] = JSON.parse(value);
+          } catch {
+            permisos[key] = value;
+          }
+        }
+      }
+
+      try {
+        // 1. Eliminar permisos actuales de este perfil
+        await fetch(
+          `/api/usuarios/permisos/eliminar_por_perfil/?perfil_id=${currentUserId}`,
+          {
+            method: "DELETE",
+            headers: { "X-CSRFToken": csrfToken },
+          }
+        );
+
+        // 2. Crear nuevos permisos con los datos del formulario
+        const entries = Object.entries(permisos);
+        for (const [key, value] of entries) {
+          if (value && value !== "" && value !== false) {
+            // separar "modulo_accion"
+            if (key.includes("_")) {
+              const [modu, acci] = key.split("_");
+
+              if (acci === "filtro") {
+                const check = await fetch(
+                  `/api/usuarios/permisos/?perfil=${currentUserId}&modu=${modu}&acci=ver`
+                );
+                const data = await check.json();
+
+                if (data.length > 0) {
+                  const permisoId = data[0].id;
+                  await fetch(`/api/usuarios/permisos/${permisoId}/`, {
+                    method: "PATCH",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": csrfToken,
+                    },
+                    body: JSON.stringify({ filtro: value }),
+                  });
+                } else {
+                  const response = await fetch("/api/usuarios/permisos/", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": csrfToken,
+                    },
+                    body: JSON.stringify({
+                      perfil: currentUserId,
+                      modu: modu,
+                      acci: "ver",
+                      filtro: value,
+                    }),
+                  });
+                  const data = await response.json();
+                  if (validarErrorDRF(response, data)) return;
+                }
+              } else {
+                const response = await fetch("/api/usuarios/permisos/", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                  },
+                  body: JSON.stringify({
+                    perfil: currentUserId,
+                    modu: modu,
+                    acci: acci,
+                    filtro: null,
+                  }),
+                });
+                const data = await response.json();
+                if (validarErrorDRF(response, data)) return;
+              }
+            }
+          }
+        }
+
+        toastSuccess("Permisos actualizados correctamente");
+        const modal = bootstrap.Modal.getInstance(modalPermisos);
+        modal.hide();
+      } catch (err) {
+        console.error("Error guardando permisos:", err);
+        toastError("No se pudieron guardar los permisos.");
+      } finally {
+        hideSpinner(btn, originalBtnContent);
+        setFormDisabled(permisosForm, false);
       }
     });
 });

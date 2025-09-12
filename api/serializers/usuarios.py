@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from commons.models import T_perfil, T_departa, T_munici, T_insti_edu, T_centro_forma, T_apre, T_ficha, T_repre_legal
+from commons.models import T_perfil, T_departa, T_munici, T_insti_edu, T_centro_forma, T_apre, T_ficha, T_repre_legal, T_permi
 
 
 class PerfilSerializer(serializers.ModelSerializer):
@@ -154,3 +154,12 @@ class AprendizPanelFSerializer(serializers.ModelSerializer):
     class Meta:
         model = T_apre
         fields = ["id", "nombre", "apellido", "dni", "estado"]
+
+
+class PermisoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = T_permi
+        fields = ["id", "perfil", "modu", "acci", "filtro"]
+        extra_kwargs = {
+            "perfil": {"read_only": False}
+        }

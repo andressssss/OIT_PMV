@@ -4,532 +4,543 @@
 {% load custom_filters %}
 
 {% block content %}
-  <main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0 display-5">
-          {% if ficha.num == '' %}
-            Panel de ficha sin numero - Fase
-          {% else %}
-            Panel de la ficha {{ ficha.num }} - Fase
-          {% endif %}
-          {% if fase|lower == 'analisis' %}
-            análisis
-          {% else %}
-            {{ fase }}
-          {% endif %}- Grupo {{ ficha.grupo.id }}
-        </h2>
-        {% if ficha.instru %}
-          <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
-        {% else %}
-          <span class="h5 text-muted mb-0">Sin instructor</span>
-        {% endif %}
-      </div>
-
-      <!-- NavPills -->
-      <ul class="nav nav-pills mb-4 nav-fill" id="instructorTab" role="tablist">
-        <li class="nav-item" role="presentation">
-          <a class="nav-link active" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true">Portafolio Ficha</a>
-        </li>
-        <li class="nav-item" role="presentation">
-          <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
-        </li>
-        <li class="nav-item" role="presentation">
-          <a class="nav-link" id="juicios-tab" data-bs-toggle="pill" href="#juicios" role="tab" aria-controls="juicios" aria-selected="false">RAPS</a>
-        </li>
-        <li class="nav-item" role="presentation">
-          <a class="nav-link" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false">Historial</a>
-        </li>
-      </ul>
-
-      <!-- Contenido de las Pills -->
-      <div class="tab-content" id="instructorTabContent">
-        <!-- Portafolio Ficha -->
-        <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <div class="d-flex justify-content-end mb-3">
-                <a href="{% url 'descargar_portafolio_zip' ficha.id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> Descargar portafolio</a>
-              </div>
-              <!-- Sección del árbol de carpetas -->
-              <div class="mb-5">
-                <h5 class="mb-3">Estructura del Portafolio</h5>
-                <div id="folderTree"></div>
-              </div>
-              <hr />
-              <!-- Sección del acordeón -->
-              <div class="accordion mt-4" id="formatosPlantillasAccordion">
-                <h5 class="mb-3">Documentos del proceso</h5>
-                <!-- 1. Plan de trabajo concertado -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading1"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1">1. Plan de Trabajo Concertado con sus Descriptores</button></h2>
-                  <div id="collapse1" class="accordion-collapse collapse" aria-labelledby="heading1" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                          <a href="{% static '/documents/portafolio_ficha/1/DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX.docx' %}">DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX</a><br />
-                          <small>Debe subir el DESCRIPTOR de todos sus APRENDICES ACTIVOS unificados en un documento PDF. Para cada fase.</small>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 2. Guía de Aprendizaje -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading2"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">2. GFPI-F-135 - Guía de Aprendizaje</button></h2>
-                  <div id="collapse2" class="accordion-collapse collapse" aria-labelledby="heading2" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                          <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN  DEL TALLER.docx' %}">FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN DEL TALLER</a><br />
-                          <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO.docx' %}">FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO</a><br />
-                          <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO.docx' %}">FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO</a><br />
-                          <a href="{% static '/documents/portafolio_ficha/2/FORMATO RUBRICA  CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE.docx' %}">FORMATO RUBRICA CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE</a><br />
-                          <a href="{% static '/documents/portafolio_ficha/2/FORMATO RÚBRICA CON EJEMPLO,  CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS.docx' %}">FORMATO RÚBRICA CON EJEMPLO, CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS</a><br />
-                          <small>Dados los ejemplos, unifique en un solo PDF, por cada formato escogido, los documentos diligenciados por todos sus APRENDICES ACTIVOS.</small>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 3. Formato Acta V02 -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading3"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">3. GORF-084 - Formato Acta V02</button></h2>
-                  <div id="collapse3" class="accordion-collapse collapse" aria-labelledby="heading3" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <a href="{% static '/documents/portafolio_ficha/3/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a>
-                      <a href="{% static '/documents/portafolio_ficha/3/EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024 (2).pdf' %}">EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024</a>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 4. Planeación Etapa Productiva -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading4"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">4. GFPI-F-023 - Planeación Etapa Productiva</button></h2>
-                  <div id="collapse4" class="accordion-collapse collapse" aria-labelledby="heading4" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <a href="{% static '/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo.xlsx' %}">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo</a><br />
-                      <small>Subir el formato sin llenar</small>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 5. Formato de Inasistencias -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading5"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">5. Formato de Inasistencias</button></h2>
-                  <div id="collapse5" class="accordion-collapse collapse" aria-labelledby="heading5" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <a href="{% static '/documents/portafolio_ficha/5/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx ' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
-                      <small>Mantenerlo ACTUALIZADO a la fecha.</small>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 6. Acta Plan de Mejoramiento -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading6"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6" aria-expanded="false" aria-controls="collapse6">6. Acta Plan de Mejoramiento</button></h2>
-                  <div id="collapse6" class="accordion-collapse collapse" aria-labelledby="heading6" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                          <a href="{% static '/documents/portafolio_ficha/6/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
-                          <small>Se deja constancia en un ACTA del PLAN DE MEJORAMIENTO definido o se registra en un ACTA que no se aplicó.</small>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 7. Evidencias Intensificación -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading7"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7" aria-expanded="false" aria-controls="collapse7">7. Evidencias de Estrategia de Intensificación</button></h2>
-                  <div id="collapse7" class="accordion-collapse collapse" aria-labelledby="heading7" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <a href="{% static '/documents/portafolio_ficha/7/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
-                      <a href="{% static '/documents/portafolio_ficha/7/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 8. Formato de Homologación -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header" id="heading8"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse8" aria-expanded="false" aria-controls="collapse8">8. GFPI-F-035 - Formato de Homologación</button></h2>
-                  <div id="collapse8" class="accordion-collapse collapse" aria-labelledby="heading8" data-bs-parent="#formatosPlantillasAccordion">
-                    <div class="accordion-body">
-                      <a href="#">GFPI-F-035 Formato de Homologación Técnico.docx</a><br />
-                      <small>Del programa que le corresponde a la FICHA completamente diligenciado y con FIRMAS.</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <hr />
-              <div class="mt-4">
-                <h5>Historial de Acciones</h5>
-                <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Aprendices -->
-        <div class="tab-pane fade" id="aprendicespes" role="tabpanel" aria-labelledby="aprendices-tab">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <!-- Botón para agregar nuevo aprendiz -->
-              <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz"><i class="bi bi-person-plus"></i> Agregar Aprendiz</button>
-              </div>
-              <div class="table-responsive">
-                <table id="tabla_aprendices_ficha" class="table table-hover table-striped w-100">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Apellido</th>
-                      <th>DNI</th>
-                      <th>Estado</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Juicios Evaluativos -->
-        <div class="tab-pane fade" id="juicios" role="tabpanel" aria-labelledby="juicios-tab">
-          <div class="card shadow-sm mb-3">
-            <div class="card-body">
-              <h5 class="mb-3">Estado actual de juicios</h5>
-              <div class="table-responsive">
-                <table class="table table-hover table-striped w-100" id="tabla-juicios-actuales">
-                  <thead>
-                    <tr>
-                      <th>Fecha reporte</th>
-                      <th>Aprendiz</th>
-                      <th>RAP</th>
-                      <th>Evaluación</th>
-                      <th>Fecha evaluación</th>
-                      <th>Instructor</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Historial de diferencias -->
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="mb-3">Historial de actualizaciones</h5>
-              <div class="table-responsive">
-                <table class="table table-hover table-striped w-100" id="tabla-juicios-historial">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Aprendiz</th>
-                      <th>Descripción</th>
-                      <th>Tipo</th>
-                      <th>Juicio</th>
-                      <th>Instructor</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Historial -->
-        <div class="tab-pane fade" id="historial" role="tabpanel" aria-labelledby="historial-tab">
-          <div class="card shadow-sm">
-            <div class="card-body text-center">
-              <h5 class="text-dark fw-bold mb-3">Historial de Acciones</h5>
-              <hr />
-              <div class="mt-4">
-                <ul id="historialGeneralFicha" class="list-group list-group-flush text-start"></ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Modal carga de documentos portafolio ficha -->
-  <div class="modal fade" id="uploadModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="uploadModalLabel">Subir Documento</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <input type="file" id="fileInput" class="form-control" multiple />
-          <div class="uploadProgressList"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" id="uploadButton" class="btn btn-primary">Subir</button>
-        </div>
+  {% if not puede_ver %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
       </div>
     </div>
-  </div>
-
-  <!-- Modal portafolio aprendiz -->
-  <div class="modal fade" id="portafolioAprendizModal" tabindex="-1" aria-labelledby="portafolioAprendizModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-      <div class="modal-content">
-        <!-- Header -->
-        <div class="modal-header">
-          <h5 class="modal-title" id="portafolioAprendizModalLabel">Portafolio del Aprendiz</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+  {% else %}
+    <main class="container py-5">
+      <section class="card card-body shadow-sm p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="mb-0 display-5">
+            {% if ficha.num == '' %}
+              Panel de ficha sin numero - Fase
+            {% else %}
+              Panel de la ficha {{ ficha.num }} - Fase
+            {% endif %}
+            {% if fase|lower == 'analisis' %}
+              análisis
+            {% else %}
+              {{ fase }}
+            {% endif %}- Grupo {{ ficha.grupo.id }}
+          </h2>
+          {% if ficha.instru %}
+            <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
+          {% else %}
+            <span class="h5 text-muted mb-0">Sin instructor</span>
+          {% endif %}
         </div>
 
-        <!-- Body -->
-        <div class="modal-body">
-          <!-- Árbol de carpetas -->
-          <div id="folderTreeAprendiz"></div>
+        <!-- NavPills -->
+        <ul class="nav nav-pills mb-4 nav-fill" id="instructorTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a class="nav-link active" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true">Portafolio Ficha</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="juicios-tab" data-bs-toggle="pill" href="#juicios" role="tab" aria-controls="juicios" aria-selected="false">RAPS</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false">Historial</a>
+          </li>
+        </ul>
 
-          <hr />
+        <!-- Contenido de las Pills -->
+        <div class="tab-content" id="instructorTabContent">
+          <!-- Portafolio Ficha -->
+          <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-end mb-3">
+                  <a href="{% url 'descargar_portafolio_zip' ficha.id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> Descargar portafolio</a>
+                </div>
+                <!-- Sección del árbol de carpetas -->
+                <div class="mb-5">
+                  <h5 class="mb-3">Estructura del Portafolio</h5>
+                  <div id="folderTree"></div>
+                </div>
+                <hr />
+                <!-- Sección del acordeón -->
+                <div class="accordion mt-4" id="formatosPlantillasAccordion">
+                  <h5 class="mb-3">Documentos del proceso</h5>
+                  <!-- 1. Plan de trabajo concertado -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading1"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1">1. Plan de Trabajo Concertado con sus Descriptores</button></h2>
+                    <div id="collapse1" class="accordion-collapse collapse" aria-labelledby="heading1" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <ul class="list-group list-group-flush">
+                          <li class="list-group-item">
+                            <a href="{% static '/documents/portafolio_ficha/1/DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX.docx' %}">DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX</a><br />
+                            <small>Debe subir el DESCRIPTOR de todos sus APRENDICES ACTIVOS unificados en un documento PDF. Para cada fase.</small>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 2. Guía de Aprendizaje -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading2"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">2. GFPI-F-135 - Guía de Aprendizaje</button></h2>
+                    <div id="collapse2" class="accordion-collapse collapse" aria-labelledby="heading2" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <ul class="list-group list-group-flush">
+                          <li class="list-group-item">
+                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN  DEL TALLER.docx' %}">FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN DEL TALLER</a><br />
+                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO.docx' %}">FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO</a><br />
+                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO.docx' %}">FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO</a><br />
+                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO RUBRICA  CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE.docx' %}">FORMATO RUBRICA CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE</a><br />
+                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO RÚBRICA CON EJEMPLO,  CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS.docx' %}">FORMATO RÚBRICA CON EJEMPLO, CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS</a><br />
+                            <small>Dados los ejemplos, unifique en un solo PDF, por cada formato escogido, los documentos diligenciados por todos sus APRENDICES ACTIVOS.</small>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 3. Formato Acta V02 -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading3"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">3. GORF-084 - Formato Acta V02</button></h2>
+                    <div id="collapse3" class="accordion-collapse collapse" aria-labelledby="heading3" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <a href="{% static '/documents/portafolio_ficha/3/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a>
+                        <a href="{% static '/documents/portafolio_ficha/3/EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024 (2).pdf' %}">EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024</a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 4. Planeación Etapa Productiva -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading4"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">4. GFPI-F-023 - Planeación Etapa Productiva</button></h2>
+                    <div id="collapse4" class="accordion-collapse collapse" aria-labelledby="heading4" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <a href="{% static '/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo.xlsx' %}">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo</a><br />
+                        <small>Subir el formato sin llenar</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 5. Formato de Inasistencias -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading5"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">5. Formato de Inasistencias</button></h2>
+                    <div id="collapse5" class="accordion-collapse collapse" aria-labelledby="heading5" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <a href="{% static '/documents/portafolio_ficha/5/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx ' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
+                        <small>Mantenerlo ACTUALIZADO a la fecha.</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 6. Acta Plan de Mejoramiento -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading6"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6" aria-expanded="false" aria-controls="collapse6">6. Acta Plan de Mejoramiento</button></h2>
+                    <div id="collapse6" class="accordion-collapse collapse" aria-labelledby="heading6" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <ul class="list-group list-group-flush">
+                          <li class="list-group-item">
+                            <a href="{% static '/documents/portafolio_ficha/6/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
+                            <small>Se deja constancia en un ACTA del PLAN DE MEJORAMIENTO definido o se registra en un ACTA que no se aplicó.</small>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 7. Evidencias Intensificación -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading7"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7" aria-expanded="false" aria-controls="collapse7">7. Evidencias de Estrategia de Intensificación</button></h2>
+                    <div id="collapse7" class="accordion-collapse collapse" aria-labelledby="heading7" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <a href="{% static '/documents/portafolio_ficha/7/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
+                        <a href="{% static '/documents/portafolio_ficha/7/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 8. Formato de Homologación -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading8"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse8" aria-expanded="false" aria-controls="collapse8">8. GFPI-F-035 - Formato de Homologación</button></h2>
+                    <div id="collapse8" class="accordion-collapse collapse" aria-labelledby="heading8" data-bs-parent="#formatosPlantillasAccordion">
+                      <div class="accordion-body">
+                        <a href="#">GFPI-F-035 Formato de Homologación Técnico.docx</a><br />
+                        <small>Del programa que le corresponde a la FICHA completamente diligenciado y con FIRMAS.</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <hr />
+                <div class="mt-4">
+                  <h5>Historial de Acciones</h5>
+                  <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aprendices -->
+          <div class="tab-pane fade" id="aprendicespes" role="tabpanel" aria-labelledby="aprendices-tab">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <!-- Botón para agregar nuevo aprendiz -->
+                {% if puede_editar %}
+                  <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarAprendiz"><i class="bi bi-person-plus"></i> Agregar Aprendiz</button>
+                  </div>
+                {% endif %}
+                <div class="table-responsive">
+                  <table id="tabla_aprendices_ficha" class="table table-hover table-striped w-100">
+                    <thead>
+                      <tr>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>DNI</th>
+                        <th>Estado</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Juicios Evaluativos -->
+          <div class="tab-pane fade" id="juicios" role="tabpanel" aria-labelledby="juicios-tab">
+            <div class="card shadow-sm mb-3">
+              <div class="card-body">
+                <h5 class="mb-3">Estado actual de juicios</h5>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped w-100" id="tabla-juicios-actuales">
+                    <thead>
+                      <tr>
+                        <th>Fecha reporte</th>
+                        <th>Aprendiz</th>
+                        <th>RAP</th>
+                        <th>Evaluación</th>
+                        <th>Fecha evaluación</th>
+                        <th>Instructor</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Historial de diferencias -->
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="mb-3">Historial de actualizaciones</h5>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped w-100" id="tabla-juicios-historial">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Aprendiz</th>
+                        <th>Descripción</th>
+                        <th>Tipo</th>
+                        <th>Juicio</th>
+                        <th>Instructor</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- Historial -->
-          <div class="mt-4">
-            <h5>Historial de Acciones</h5>
-            <ul id="historialAprendiz" class="list-group list-group-flush text-start"></ul>
+          <div class="tab-pane fade" id="historial" role="tabpanel" aria-labelledby="historial-tab">
+            <div class="card shadow-sm">
+              <div class="card-body text-center">
+                <h5 class="text-dark fw-bold mb-3">Historial de Acciones</h5>
+                <hr />
+                <div class="mt-4">
+                  <ul id="historialGeneralFicha" class="list-group list-group-flush text-start"></ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
+    </main>
 
-        <!-- Footer -->
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal carga de documentos portafolio aprendiz -->
-  <div class="modal fade" id="uploadModalAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalAprendizLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="uploadModalAprendizLabel">Subir Documento</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <input type="file" id="fileInputAprendiz" class="form-control" multiple />
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" id="uploadButtonAprendiz" class="btn btn-primary">Subir</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Ver Perfil -->
-  <div class="modal fade" id="modalVerPerfil" tabindex="-1" role="dialog" aria-labelledby="modalVerPerfilLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalEditAprendizLabel"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body" id="contenidoPerfil">
-          <!-- Aquí se cargará el perfil -->
-          Cargando...
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal asociar nuevo aprendiz -->
-  <div class="modal fade" id="modalAgregarAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAgregarAprendizLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalAgregarAprendizLabel">Agregar aprendiz</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted small mb-3">Aquí se validará si el aprendiz es actualmente asociable, si está vinculado a otra ficha o si es necesario crearlo ya que no existe en el sistema.</p>
-          <label for="aprendizDni">Numero de identificación:</label>
-          <input type="text" id="aprendizDni" class="form-control" placeholder="Ingrese número de documento" />
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" id="validateBtn" class="btn btn-primary">Validar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: crear apre -->
-  <div class="modal fade" id="modalCrearAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalCrearAprendizLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <form id="formCrearApre" enctype="multipart/form-data">
+    <!-- Modal carga de documentos portafolio ficha -->
+    <div class="modal fade" id="uploadModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalCrearAprendizLabel">Crear aprendiz desde CSV</h5>
+            <h5 class="modal-title" id="uploadModalLabel">Subir Documento</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="file" id="fileInput" class="form-control" multiple />
+            <div class="uploadProgressList"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" id="uploadButton" class="btn btn-primary">Subir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal portafolio aprendiz -->
+    <div class="modal fade" id="portafolioAprendizModal" tabindex="-1" aria-labelledby="portafolioAprendizModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <!-- Header -->
+          <div class="modal-header">
+            <h5 class="modal-title" id="portafolioAprendizModalLabel">Portafolio del Aprendiz</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body">
+            <!-- Árbol de carpetas -->
+            <div id="folderTreeAprendiz"></div>
+
+            <hr />
+
+            <!-- Historial -->
+            <div class="mt-4">
+              <h5>Historial de Acciones</h5>
+              <ul id="historialAprendiz" class="list-group list-group-flush text-start"></ul>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal carga de documentos portafolio aprendiz -->
+    <div class="modal fade" id="uploadModalAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="uploadModalAprendizLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="uploadModalAprendizLabel">Subir Documento</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="file" id="fileInputAprendiz" class="form-control" multiple />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" id="uploadButtonAprendiz" class="btn btn-primary">Subir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Ver Perfil -->
+    <div class="modal fade" id="modalVerPerfil" tabindex="-1" role="dialog" aria-labelledby="modalVerPerfilLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEditAprendizLabel"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body" id="contenidoPerfil">
+            <!-- Aquí se cargará el perfil -->
+            Cargando...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal asociar nuevo aprendiz -->
+    <div class="modal fade" id="modalAgregarAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAgregarAprendizLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalAgregarAprendizLabel">Agregar aprendiz</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted small mb-3">Aquí se validará si el aprendiz es actualmente asociable, si está vinculado a otra ficha o si es necesario crearlo ya que no existe en el sistema.</p>
+            <label for="aprendizDni">Numero de identificación:</label>
+            <input type="text" id="aprendizDni" class="form-control" placeholder="Ingrese número de documento" />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" id="validateBtn" class="btn btn-primary">Validar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: crear apre -->
+    <div class="modal fade" id="modalCrearAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalCrearAprendizLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <form id="formCrearApre" enctype="multipart/form-data">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalCrearAprendizLabel">Crear aprendiz desde CSV</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-info">
+                Cargue acá la información del aprendiz siguiendo las reglas con las que ya está familiarizado. En este caso, <strong>solo puede existir un registro en el archivo CSV</strong>.
+              </div>
+
+              <!-- NUEVO AVISO -->
+              <div class="alert alert-warning">
+                Tenga en cuenta que algunos campos del representante (<strong>correo, teléfono, dirección y tipo de documento</strong>) son opcionales y pueden dejarse en blanco si no aplica o no tiene la información.
+              </div>
+
+              <div class="mb-3">
+                <label for="archivoAprendiz" class="form-label">Archivo CSV</label>
+                <input class="form-control" type="file" id="archivoAprendiz" name="archivo" accept=".csv" required />
+              </div>
+
+              <div id="errores" class="alert alert-danger d-none"></div>
+              <div id="resumen" class="alert alert-success d-none"></div>
+            </div>
+            <div class="modal-footer">
+              <button id="btnCrear" type="submit" class="btn btn-primary">Crear</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para editar Aprendiz -->
+    <div class="modal fade" id="editAprendizModal" tabindex="-1" aria-labelledby="modalEditAprendizLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEditAprendizLabel">Editar Aprendiz</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
           <div class="modal-body">
-            <div class="alert alert-info">
-              Cargue acá la información del aprendiz siguiendo las reglas con las que ya está familiarizado. En este caso, <strong>solo puede existir un registro en el archivo CSV</strong>.
-            </div>
+            <form id="formEditarAprendiz" method="POST">
+              <!-- Aquí puedes insertar tu token CSRF dinámicamente si usas JS -->
+              <h3>Datos del Perfil</h3>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="nom">Nombres</label>
+                  <input type="text" class="form-control" id="nom" name="nom" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="apelli">Apellidos</label>
+                  <input type="text" class="form-control" id="apelli" name="apelli" />
+                </div>
+              </div>
 
-            <!-- NUEVO AVISO -->
-            <div class="alert alert-warning">
-              Tenga en cuenta que algunos campos del representante (<strong>correo, teléfono, dirección y tipo de documento</strong>) son opcionales y pueden dejarse en blanco si no aplica o no tiene la información.
-            </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="tipo_dni">Tipo de documento</label>
+                  <select class="form-select" id="tipo_dni" name="tipo_dni">
+                    <option value="cc">Cédula de Ciudadanía</option>
+                    <option value="ti">Tarjeta de Identidad</option>
+                    <option value="pp">Pasaporte</option>
+                    <option value="ce">Cédula de Extranjería</option>
+                    <option value="ppt">Permiso por protección temporal</option>
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="dni">Número de documento</label>
+                  <input type="text" class="form-control" id="dni" name="dni" />
+                </div>
+              </div>
 
-            <div class="mb-3">
-              <label for="archivoAprendiz" class="form-label">Archivo CSV</label>
-              <input class="form-control" type="file" id="archivoAprendiz" name="archivo" accept=".csv" required />
-            </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="tele">Teléfono</label>
+                  <input type="text" class="form-control" id="tele" name="tele" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="dire">Dirección</label>
+                  <input type="text" class="form-control" id="dire" name="dire" />
+                </div>
+              </div>
 
-            <div id="errores" class="alert alert-danger d-none"></div>
-            <div id="resumen" class="alert alert-success d-none"></div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="mail">Correo electrónico</label>
+                  <input type="email" class="form-control" id="mail" name="mail" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="gene">Género</label>
+                  <select class="form-select" id="gene" name="gene">
+                    <option value="H">Masculino</option>
+                    <option value="M">Femenino</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="fecha_naci">Fecha de nacimiento</label>
+                  <input type="date" class="form-control" id="fecha_naci" name="fecha_naci" />
+                </div>
+              </div>
+
+              <h3>Datos del Representante Legal</h3>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="nom_repre">Nombre completo</label>
+                  <input type="text" class="form-control" id="nom_repre" name="nom_repre" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="dni_repre">Número de documento</label>
+                  <input type="text" class="form-control" id="dni_repre" name="dni_repre" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="tele_repre">Teléfono</label>
+                  <input type="text" class="form-control" id="tele_repre" name="tele_repre" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="dire_repre">Dirección</label>
+                  <input type="text" class="form-control" id="dire_repre" name="dire_repre" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="mail_repre">Correo electrónico</label>
+                  <input type="email" class="form-control" id="mail_repre" name="mail_repre" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="paren_repre">Parentesco</label>
+                  <select class="form-select" id="paren_repre" name="paren_repre">
+                    <option value="">Seleccione parentesco</option>
+                    <option value="padre">Padre</option>
+                    <option value="madre">Madre</option>
+                    <option value="abuelo">Abuelo</option>
+                    <option value="abuela">Abuela</option>
+                    <option value="hermano">Hermano</option>
+                    <option value="hermana">Hermana</option>
+                    <option value="tio">Tio</option>
+                    <option value="tia">Tia</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmit">Guardar cambios</button>
+              </div>
+            </form>
           </div>
-          <div class="modal-footer">
-            <button id="btnCrear" type="submit" class="btn btn-primary">Crear</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal para editar Aprendiz -->
-  <div class="modal fade" id="editAprendizModal" tabindex="-1" aria-labelledby="modalEditAprendizLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalEditAprendizLabel">Editar Aprendiz</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <form id="formEditarAprendiz" method="POST">
-            <!-- Aquí puedes insertar tu token CSRF dinámicamente si usas JS -->
-            <h3>Datos del Perfil</h3>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="nom">Nombres</label>
-                <input type="text" class="form-control" id="nom" name="nom" />
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="apelli">Apellidos</label>
-                <input type="text" class="form-control" id="apelli" name="apelli" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="tipo_dni">Tipo de documento</label>
-                <select class="form-select" id="tipo_dni" name="tipo_dni">
-                  <option value="cc">Cédula de Ciudadanía</option>
-                  <option value="ti">Tarjeta de Identidad</option>
-                  <option value="pp">Pasaporte</option>
-                  <option value="ce">Cédula de Extranjería</option>
-                  <option value="ppt">Permiso por protección temporal</option>
-                </select>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="dni">Número de documento</label>
-                <input type="text" class="form-control" id="dni" name="dni" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="tele">Teléfono</label>
-                <input type="text" class="form-control" id="tele" name="tele" />
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="dire">Dirección</label>
-                <input type="text" class="form-control" id="dire" name="dire" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="mail">Correo electrónico</label>
-                <input type="email" class="form-control" id="mail" name="mail" />
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="gene">Género</label>
-                <select class="form-select" id="gene" name="gene">
-                  <option value="H">Masculino</option>
-                  <option value="M">Femenino</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="fecha_naci">Fecha de nacimiento</label>
-                <input type="date" class="form-control" id="fecha_naci" name="fecha_naci" />
-              </div>
-            </div>
-
-            <h3>Datos del Representante Legal</h3>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="nom_repre">Nombre completo</label>
-                <input type="text" class="form-control" id="nom_repre" name="nom_repre" />
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="dni_repre">Número de documento</label>
-                <input type="text" class="form-control" id="dni_repre" name="dni_repre" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="tele_repre">Teléfono</label>
-                <input type="text" class="form-control" id="tele_repre" name="tele_repre" />
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="dire_repre">Dirección</label>
-                <input type="text" class="form-control" id="dire_repre" name="dire_repre" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="mail_repre">Correo electrónico</label>
-                <input type="email" class="form-control" id="mail_repre" name="mail_repre" />
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="paren_repre">Parentesco</label>
-                <select class="form-select" id="paren_repre" name="paren_repre">
-                  <option value="">Seleccione parentesco</option>
-                  <option value="padre">Padre</option>
-                  <option value="madre">Madre</option>
-                  <option value="abuelo">Abuelo</option>
-                  <option value="abuela">Abuela</option>
-                  <option value="hermano">Hermano</option>
-                  <option value="hermana">Hermana</option>
-                  <option value="tio">Tio</option>
-                  <option value="tia">Tia</option>
-                  <option value="otro">Otro</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary" id="btnSubmit">Guardar cambios</button>
-            </div>
-          </form>
         </div>
       </div>
     </div>
-  </div>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}

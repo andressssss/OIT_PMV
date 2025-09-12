@@ -65,3 +65,6 @@ gunicorn==23.0.0
 uvicorn==0.34.2
 
 django-select2==8.4.0
+
+# Dbug para vs code
+debugpy==1.8.16

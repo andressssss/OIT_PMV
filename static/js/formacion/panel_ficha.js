@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function verTree() {
     const container = document.getElementById("folderTree");
-
+    if (!container) return;
     const loadingMessage = document.createElement("p");
     loadingMessage.innerHTML = `
         <div class="d-flex justify-content-center align-items-center">
@@ -65,10 +65,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       container.innerHTML = "";
 
-      container.appendChild(renderTree(data));
+      container.appendChild(renderTree(data.nodos, data.can_edit));
 
       // Agregar listeners después de renderizar el árbol
-      addEventListeners();
+      addEventListeners(data.can_edit);
       cargarHistorial("fichaG", fichaId);
       cargarHistorial("ficha", fichaId);
     } catch (error) {
@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function renderTree(nodes) {
+  function renderTree(nodes, can_edit) {
     if (!nodes || nodes.length === 0) return null;
 
     const ul = document.createElement("ul");
@@ -193,7 +193,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subFolderContainer.id = `folder-${node.id}`;
 
         if (
-          (userRole === "instructor" || userRole === "admin") &&
+          can_edit &&
           (!node.children ||
             node.children.length === 0 ||
             node.children.every((child) => child.tipo === "documento"))
@@ -219,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         // Procesar hijos recursivamente si existen
         if (node.children && node.children.length > 0) {
-          subFolderContainer.appendChild(renderTree(node.children));
+          subFolderContainer.appendChild(renderTree(node.children, can_edit));
         }
 
         // Ensamblar elementos de carpeta
@@ -269,7 +269,7 @@ document.addEventListener("DOMContentLoaded", function () {
         link.appendChild(span);
         li.appendChild(link);
 
-        if (userRole === "instructor" || userRole === "admin") {
+        if (can_edit) {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
@@ -306,7 +306,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let treeListenersInitialized = false;
 
   // Agregar event listeners después de renderizar el árbol
-  function addEventListeners() {
+  function addEventListeners(can_edit) {
     if (treeListenersInitialized) return;
     const folderTree = document.getElementById("folderTree");
     if (!folderTree) return;
@@ -331,7 +331,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const folderId = li?.dataset.folderId;
         if (!docId) return;
         const confirmed = await confirmDeletion("¿Eliminar este documento?");
-        if (confirmed) deleteFile(docId, folderId);
+        if (confirmed) deleteFile(docId, folderId, can_edit);
         return;
       }
 
@@ -344,56 +344,59 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    // Dragover delegado
-    folderTree.addEventListener("dragover", (e) => {
-      const folder = e.target.closest(
-        "[data-folder-id][data-droppable='true']"
-      );
-      if (folder) {
+    if (can_edit) {
+      // Dragover delegado
+      folderTree.addEventListener("dragover", (e) => {
+        const folder = e.target.closest(
+          "[data-folder-id][data-droppable='true']"
+        );
+        if (folder) {
+          e.preventDefault();
+          folder.classList.add("dragover-highlight");
+        }
+      });
+
+      // Dragleave delegado
+      folderTree.addEventListener("dragleave", (e) => {
+        const folder = e.target.closest(
+          "[data-folder-id][data-droppable='true']"
+        );
+        if (folder) folder.classList.remove("dragover-highlight");
+      });
+
+      // Drop delegado
+      folderTree.addEventListener("drop", async (e) => {
+        const folder = e.target.closest(
+          "[data-folder-id][data-droppable='true']"
+        );
+        if (!folder) return;
         e.preventDefault();
-        folder.classList.add("dragover-highlight");
-      }
-    });
+        folder.classList.remove("dragover-highlight");
+        await handleDropOnFolder(folder, e, "ficha", can_edit);
+      });
 
-    // Dragleave delegado
-    folderTree.addEventListener("dragleave", (e) => {
-      const folder = e.target.closest(
-        "[data-folder-id][data-droppable='true']"
-      );
-      if (folder) folder.classList.remove("dragover-highlight");
-    });
+      // Dragstart delegado (se propaga)
+      folderTree.addEventListener("dragstart", (e) => {
+        const docItem = e.target.closest("li[data-document-id]");
+        if (!docItem) return;
+        e.dataTransfer.setData("type", "document");
+        e.dataTransfer.setData("documentId", docItem.dataset.documentId);
+        e.dataTransfer.setData("sourceFolderId", docItem.dataset.folderId);
+        // Opcional: indicar el efecto
+        e.dataTransfer.effectAllowed = "move";
+      });
 
-    // Drop delegado
-    folderTree.addEventListener("drop", async (e) => {
-      const folder = e.target.closest(
-        "[data-folder-id][data-droppable='true']"
-      );
-      if (!folder) return;
-      e.preventDefault();
-      folder.classList.remove("dragover-highlight");
-      await handleDropOnFolder(folder, e, "ficha");
-    });
-
-    // Dragstart delegado (se propaga)
-    folderTree.addEventListener("dragstart", (e) => {
-      const docItem = e.target.closest("li[data-document-id]");
-      if (!docItem) return;
-      e.dataTransfer.setData("type", "document");
-      e.dataTransfer.setData("documentId", docItem.dataset.documentId);
-      e.dataTransfer.setData("sourceFolderId", docItem.dataset.folderId);
-      // Opcional: indicar el efecto
-      e.dataTransfer.effectAllowed = "move";
-    });
-
-    // Botón subir (fuera del árbol)
-    const uploadButton = document.getElementById("uploadButton");
-    if (uploadButton)
-      uploadButton.addEventListener("click", () => uploadFile("ficha"));
-
+      // Botón subir (fuera del árbol)
+      const uploadButton = document.getElementById("uploadButton");
+      if (uploadButton)
+        uploadButton.addEventListener("click", () =>
+          uploadFile("ficha", can_edit)
+        );
+    }
     treeListenersInitialized = true;
   }
 
-  async function handleDropOnFolder(folderElement, e, contexto) {
+  async function handleDropOnFolder(folderElement, e, contexto, can_edit) {
     const folderId = folderElement.dataset.folderId;
     const type = e.dataTransfer.getData("type");
 
@@ -434,8 +437,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         toastSuccess(data.message || "Documento movido con éxito.");
         // Recargar carpeta origen y destino
-        await actualizarCarpeta(sourceFolderId, contexto);
-        await actualizarCarpeta(folderId, contexto);
+        await actualizarCarpeta(sourceFolderId, contexto, can_edit);
+        await actualizarCarpeta(folderId, contexto, can_edit);
       } catch (err) {
         console.error("Error moviendo documento:", err);
         toastError("Error al mover el documento.");
@@ -613,7 +616,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       await Promise.all(uploadTasks);
-      await actualizarCarpeta(folderId, contexto);
+      await actualizarCarpeta(folderId, contexto, can_edit);
     } catch (err) {
       console.error("Error en la subida por drag & drop:", err);
       toastError("Error al subir los documentos: " + err.message);
@@ -657,7 +660,7 @@ document.addEventListener("DOMContentLoaded", function () {
     modal.show();
   }
 
-  async function uploadFile(contexto) {
+  async function uploadFile(contexto, can_edit) {
     const config = {
       ficha: {
         uploadButton: "uploadButton",
@@ -845,7 +848,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       await Promise.all(uploadTasks);
-      await actualizarCarpeta(folderId, contexto);
+      await actualizarCarpeta(folderId, contexto, can_edit);
       fileInputElement.value = "";
     } catch (error) {
       console.error("Error al subir el archivo:", error);
@@ -853,7 +856,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function deleteFile(fileId, folderId) {
+  async function deleteFile(fileId, folderId, can_edit) {
     try {
       const response = await fetch(`/api/tree/eliminar_documento/${fileId}`, {
         method: "DELETE",
@@ -867,7 +870,7 @@ document.addEventListener("DOMContentLoaded", function () {
         toastSuccess("Documento eliminado.");
 
         if (folderId) {
-          await actualizarCarpeta(folderId, "ficha");
+          await actualizarCarpeta(folderId, "ficha", can_edit);
         } else {
           verTree();
         }
@@ -879,7 +882,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function actualizarCarpeta(folderId, contexto) {
+  async function actualizarCarpeta(folderId, contexto, can_edit) {
     let aprendizId = null;
 
     if (contexto === "aprendiz")
@@ -938,7 +941,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Renderizar hijos
       if (data.length > 0) {
-        const hijos = renderFn(data);
+        const hijos = renderFn(data, can_edit);
         if (hijos) {
           subFolderContainer.appendChild(hijos);
         }
@@ -1029,8 +1032,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 <i class="bi bi-plus-lg"></i>
               </button>
               ${
-                row.estado.toLowerCase() !== "desertado"
-                  ? `
+                row.can_edit === true
+                  ? row.estado.toLowerCase() !== "desertado"
+                    ? `
                 <button class="btn btn-outline-danger desertar-aprendiz" data-id="${row.id}" title="Marcar como desertado">
                   <i class="bi bi-person-dash"></i>
                 </button>
@@ -1040,10 +1044,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 <button class="btn btn-outline-primary editar-aprendiz" data-id="${row.id}" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </button>`
-                  : `
+                    : `
                 <button class="btn btn-outline-success activar-aprendiz" data-id="${row.id}" title="Activar">
                   <i class="bi bi-person-check"></i>
                 </button>`
+                  : ``
               }
             </div>
           `;
@@ -1058,73 +1063,75 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const validarAprendizBtn = document.getElementById("validateBtn");
 
-  validarAprendizBtn.addEventListener("click", async (e) => {
-    const aprendizDniEl = document.getElementById("aprendizDni");
-    const aprendizDni = aprendizDniEl.value.trim();
-    const originalBtnContent = validarAprendizBtn.innerHTML;
-    showSpinner(validarAprendizBtn);
+  if (validarAprendizBtn) {
+    validarAprendizBtn.addEventListener("click", async (e) => {
+      const aprendizDniEl = document.getElementById("aprendizDni");
+      const aprendizDni = aprendizDniEl.value.trim();
+      const originalBtnContent = validarAprendizBtn.innerHTML;
+      showSpinner(validarAprendizBtn);
 
-    try {
-      const response = await fetch(
-        `/api/usuarios/aprendices/validar_dni/?dni=${aprendizDni}`
-      );
-      const data = await response.json();
+      try {
+        const response = await fetch(
+          `/api/usuarios/aprendices/validar_dni/?dni=${aprendizDni}`
+        );
+        const data = await response.json();
 
-      if (validarErrorDRF(response, data)) return;
+        if (validarErrorDRF(response, data)) return;
 
-      if (data.existe === false) {
-        if (
-          await confirmAction({
-            message: "¿Desea crear un nuevo aprendiz?",
-            title: "Aprendiz no encontrado",
-            icon: "question",
-          })
-        ) {
-          const modalEl = document.getElementById("modalAgregarAprendiz");
-          const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
-          modalInstance.hide();
+        if (data.existe === false) {
+          if (
+            await confirmAction({
+              message: "¿Desea crear un nuevo aprendiz?",
+              title: "Aprendiz no encontrado",
+              icon: "question",
+            })
+          ) {
+            const modalEl = document.getElementById("modalAgregarAprendiz");
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.hide();
 
-          const modalCrearApre = document.getElementById("modalCrearAprendiz");
-          const modalCrearApreI = new bootstrap.Modal(modalCrearApre);
-          modalCrearApreI.show();
+            const modalCrearApre =
+              document.getElementById("modalCrearAprendiz");
+            const modalCrearApreI = new bootstrap.Modal(modalCrearApre);
+            modalCrearApreI.show();
+          }
+          return;
         }
-        return;
-      }
 
-      if (data.existe === true && data.asociado === false) {
-        if (
-          await confirmAction({
-            message:
-              "El aprendiz existe pero no esta asociado a ninguna ficha, ¿Desea asociarlo a esta?",
-            title: "Aprendiz sin ficha",
-            icon: "question",
-          })
-        ) {
-          asociarAprendiz(aprendizDni);
+        if (data.existe === true && data.asociado === false) {
+          if (
+            await confirmAction({
+              message:
+                "El aprendiz existe pero no esta asociado a ninguna ficha, ¿Desea asociarlo a esta?",
+              title: "Aprendiz sin ficha",
+              icon: "question",
+            })
+          ) {
+            asociarAprendiz(aprendizDni);
+          }
+          return;
         }
-        return;
-      }
 
-      if (data.existe === true && data.asociado === true) {
-        confirmAction({
-          message: `El aprendiz ya esta asociado a la ficha ${
-            data.message.split("ficha")[1]
-          }. Primero gestione el retiro con el instructor responsable.`,
-          title: "Aprendiz ya asociado",
-          icon: "info",
-          confirmButtonText: "Aceptar",
-        });
-        return;
+        if (data.existe === true && data.asociado === true) {
+          confirmAction({
+            message: `El aprendiz ya esta asociado a la ficha ${
+              data.message.split("ficha")[1]
+            }. Primero gestione el retiro con el instructor responsable.`,
+            title: "Aprendiz ya asociado",
+            icon: "info",
+            confirmButtonText: "Aceptar",
+          });
+          return;
+        }
+      } catch (error) {
+        toastError("Error al validar aprendiz");
+        console.error(error);
+      } finally {
+        hideSpinner(validarAprendizBtn, originalBtnContent);
+        aprendizDniEl.value = "";
       }
-    } catch (error) {
-      toastError("Error al validar aprendiz");
-      console.error(error);
-    } finally {
-      hideSpinner(validarAprendizBtn, originalBtnContent);
-      aprendizDniEl.value = "";
-    }
-  });
-
+    });
+  }
   async function asociarAprendiz(aprendizDni) {
     try {
       const response = await fetch(
@@ -1153,222 +1160,228 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const formCrearApre = document.getElementById("formCrearApre");
 
-  formCrearApre.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById("btnCrear");
-    const originalBtnContent = btn.innerHTML;
-    const alertError = document.getElementById("errores");
-    const alertSuccess = document.getElementById("resumen");
-    const archivoInput = document.getElementById("archivoAprendiz");
+  if (formCrearApre) {
+    formCrearApre.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btnCrear");
+      const originalBtnContent = btn.innerHTML;
+      const alertError = document.getElementById("errores");
+      const alertSuccess = document.getElementById("resumen");
+      const archivoInput = document.getElementById("archivoAprendiz");
 
-    alertError.classList.add("d-none");
-    alertSuccess.classList.add("d-none");
-    alertError.textContent = "";
-    alertSuccess.textContent = "";
+      alertError.classList.add("d-none");
+      alertSuccess.classList.add("d-none");
+      alertError.textContent = "";
+      alertSuccess.textContent = "";
 
-    const archivo = archivoInput.files[0];
-    if (!archivo) {
-      toastError("Debe seleccionar un archivo.");
-      return;
-    }
-
-    if (!archivo.name.endsWith(".csv")) {
-      toastError("Solo se permiten archivos .csv");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("archivo", archivo);
-    formData.append("ficha_id", fichaId);
-
-    setFormDisabled(formCrearApre, true);
-    showSpinner(btn);
-
-    try {
-      const response = await fetch(`/api/usuarios/aprendices/crear_un_apre/`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          "X-CSRFToken": csrfToken,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.errores) {
-          alertError.textContent = data.errores.join("\n");
-          alertError.classList.remove("d-none");
-        }
-        toastError(data.message || "Error desconocido");
+      const archivo = archivoInput.files[0];
+      if (!archivo) {
+        toastError("Debe seleccionar un archivo.");
         return;
       }
 
-      alertSuccess.innerHTML = `<strong>Resultado:</strong> ${data.message}`;
-      alertSuccess.classList.remove("d-none");
-      toastSuccess(data.message);
-      formCrearApre.reset();
-      archivoInput.value = "";
-      const modalCrearApre = document.getElementById("modalCrearAprendiz");
-      const modalCrearApreI = bootstrap.Modal.getInstance(modalCrearApre);
-      modalCrearApreI.hide();
-      cargarHistorial("fichaG", fichaId);
-      tableAprendices.ajax.reload(null, false);
-    } catch (error) {
-      console.error(error);
-      toastError("Error inesperado");
-    } finally {
-      setFormDisabled(formCrearApre, false);
-      hideSpinner(btn, originalBtnContent);
-    }
-  });
+      if (!archivo.name.endsWith(".csv")) {
+        toastError("Solo se permiten archivos .csv");
+        return;
+      }
 
-  tableAprendicesElement.addEventListener("click", async (e) => {
-    //== Boton ver portafolio aprendiz
-    const target = e.target.closest(".ver-portafolio");
-    if (target) {
-      const aprendizId = target.getAttribute("data-id");
-      const aprendizNombre = target.getAttribute("data-nombre");
+      const formData = new FormData();
+      formData.append("archivo", archivo);
+      formData.append("ficha_id", fichaId);
 
-      document.getElementById(
-        "portafolioAprendizModalLabel"
-      ).textContent = `Portafolio de ${aprendizNombre}`;
+      setFormDisabled(formCrearApre, true);
+      showSpinner(btn);
 
-      document.getElementById("folderTreeAprendiz").innerHTML = "";
+      try {
+        const response = await fetch(
+          `/api/usuarios/aprendices/crear_un_apre/`,
+          {
+            method: "POST",
+            body: formData,
+            headers: {
+              "X-CSRFToken": csrfToken,
+            },
+          }
+        );
 
-      cargarPortafolio(aprendizId);
+        const data = await response.json();
 
-      const modalEl = document.getElementById("portafolioAprendizModal");
-      modalEl.dataset.aprendizId = aprendizId;
-      modalEl.removeAttribute("aria-hidden");
-      new bootstrap.Modal(modalEl).show();
-
-      modalEl.addEventListener("hidden.bs.modal", function () {
-        document.getElementById("folderTreeAprendiz").innerHTML = "";
-        modalEl.setAttribute("aria-hidden", "true");
-
-        if (
-          document.activeElement &&
-          modalEl.contains(document.activeElement)
-        ) {
-          document.activeElement.blur();
+        if (!response.ok) {
+          if (data.errores) {
+            alertError.textContent = data.errores.join("\n");
+            alertError.classList.remove("d-none");
+          }
+          toastError(data.message || "Error desconocido");
+          return;
         }
 
-        const btnAbrir = document.querySelector(".ver-portafolio");
-        if (btnAbrir) btnAbrir.focus();
-      });
-    }
-    //== Boton ver perfil aprendiz
-    const target1 = e.target.closest(".perfil-btn");
+        alertSuccess.innerHTML = `<strong>Resultado:</strong> ${data.message}`;
+        alertSuccess.classList.remove("d-none");
+        toastSuccess(data.message);
+        formCrearApre.reset();
+        archivoInput.value = "";
+        const modalCrearApre = document.getElementById("modalCrearAprendiz");
+        const modalCrearApreI = bootstrap.Modal.getInstance(modalCrearApre);
+        modalCrearApreI.hide();
+        cargarHistorial("fichaG", fichaId);
+        tableAprendices.ajax.reload(null, false);
+      } catch (error) {
+        console.error(error);
+        toastError("Error inesperado");
+      } finally {
+        setFormDisabled(formCrearApre, false);
+        hideSpinner(btn, originalBtnContent);
+      }
+    });
+  }
 
-    if (target1) {
-      const contenidoPerfil = document.getElementById("contenidoPerfil");
-      contenidoPerfil.innerHTML = "<p>Cargando perfil...</p>";
-      fadeIn(loadingDiv);
-      const aprendizId = target1.dataset.id;
+  if (tableAprendicesElement) {
+    tableAprendicesElement.addEventListener("click", async (e) => {
+      //== Boton ver portafolio aprendiz
+      const target = e.target.closest(".ver-portafolio");
+      if (target) {
+        const aprendizId = target.getAttribute("data-id");
+        const aprendizNombre = target.getAttribute("data-nombre");
 
-      const modalElement = document.getElementById("modalVerPerfil");
-      const modalInstance = new bootstrap.Modal(modalElement);
-      modalInstance.show();
+        document.getElementById(
+          "portafolioAprendizModalLabel"
+        ).textContent = `Portafolio de ${aprendizNombre}`;
 
-      fetch(`/api/aprendices/modal/ver_perfil_aprendiz/${aprendizId}`)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Error en la respuesta del servidor");
+        document.getElementById("folderTreeAprendiz").innerHTML = "";
+
+        cargarPortafolio(aprendizId);
+
+        const modalEl = document.getElementById("portafolioAprendizModal");
+        modalEl.dataset.aprendizId = aprendizId;
+        modalEl.removeAttribute("aria-hidden");
+        new bootstrap.Modal(modalEl).show();
+
+        modalEl.addEventListener("hidden.bs.modal", function () {
+          document.getElementById("folderTreeAprendiz").innerHTML = "";
+          modalEl.setAttribute("aria-hidden", "true");
+
+          if (
+            document.activeElement &&
+            modalEl.contains(document.activeElement)
+          ) {
+            document.activeElement.blur();
           }
-          return response.text();
-        })
-        .then((data) => {
-          contenidoPerfil.innerHTML = data;
-        })
-        .catch((error) => {
-          console.error("Error al cargar perfil:", error);
-          contenidoPerfil.innerHTML =
-            '<p class="text-danger">Error al cargar el perfil</p>';
-        })
-        .finally(() => {
-          fadeOut(loadingDiv);
+
+          const btnAbrir = document.querySelector(".ver-portafolio");
+          if (btnAbrir) btnAbrir.focus();
         });
-    }
-
-    const target2 = e.target.closest(".desertar-aprendiz");
-    if (target2) {
-      const confirm = await confirmAction({
-        message:
-          "¿Esta seguro de marcar como desertado al aprendiz?, esta acción no se puede deshacer",
-        title: "Desertar aprendiz",
-        icon: "warning",
-      });
-      if (!confirm) return;
-      const originalBtnContent = target2.innerHTML;
-      showSpinner(target2);
-      const aprendizId = target2.getAttribute("data-id");
-
-      try {
-        await desertarAprendiz(aprendizId);
-      } finally {
-        hideSpinner(target2, originalBtnContent);
       }
-    }
+      //== Boton ver perfil aprendiz
+      const target1 = e.target.closest(".perfil-btn");
 
-    const target3 = e.target.closest(".desasociar-aprendiz");
-    if (target3) {
-      const confirm = await confirmAction({
-        message:
-          "¿Esta seguro que desea desasociar al aprendiz?, quedara habilitado para su registro en otra ficha",
-        title: "Eliminar de la ficha",
-        icon: "warning",
-      });
-      if (!confirm) return;
-      const originalBtnContent = target3.innerHTML;
-      showSpinner(target3);
-      const aprendizId = target3.getAttribute("data-id");
+      if (target1) {
+        const contenidoPerfil = document.getElementById("contenidoPerfil");
+        contenidoPerfil.innerHTML = "<p>Cargando perfil...</p>";
+        fadeIn(loadingDiv);
+        const aprendizId = target1.dataset.id;
 
-      try {
-        await desasociarAprendiz(aprendizId);
-      } finally {
-        hideSpinner(target3, originalBtnContent);
+        const modalElement = document.getElementById("modalVerPerfil");
+        const modalInstance = new bootstrap.Modal(modalElement);
+        modalInstance.show();
+
+        fetch(`/api/aprendices/modal/ver_perfil_aprendiz/${aprendizId}`)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Error en la respuesta del servidor");
+            }
+            return response.text();
+          })
+          .then((data) => {
+            contenidoPerfil.innerHTML = data;
+          })
+          .catch((error) => {
+            console.error("Error al cargar perfil:", error);
+            contenidoPerfil.innerHTML =
+              '<p class="text-danger">Error al cargar el perfil</p>';
+          })
+          .finally(() => {
+            fadeOut(loadingDiv);
+          });
       }
-    }
 
-    const target4 = e.target.closest(".editar-aprendiz");
-    if (target4) {
-      const originalBtnContent = target4.innerHTML;
-      const aprendizId = target4.getAttribute("data-id");
-      showSpinner(target4);
+      const target2 = e.target.closest(".desertar-aprendiz");
+      if (target2) {
+        const confirm = await confirmAction({
+          message:
+            "¿Esta seguro de marcar como desertado al aprendiz?, esta acción no se puede deshacer",
+          title: "Desertar aprendiz",
+          icon: "warning",
+        });
+        if (!confirm) return;
+        const originalBtnContent = target2.innerHTML;
+        showSpinner(target2);
+        const aprendizId = target2.getAttribute("data-id");
 
-      const modalEl = document.getElementById("editAprendizModal");
-      const modalInstance = new bootstrap.Modal(modalEl);
-      modalInstance.show();
-
-      try {
-        await fillDataAprendiz(aprendizId);
-      } finally {
-        hideSpinner(target4, originalBtnContent);
+        try {
+          await desertarAprendiz(aprendizId);
+        } finally {
+          hideSpinner(target2, originalBtnContent);
+        }
       }
-    }
 
-    const target5 = e.target.closest(".activar-aprendiz");
-    if (target5) {
-      const confirm = await confirmAction({
-        message:
-          "¿Esta seguro que desea activar al aprendiz?, quedara activo en la actual ficha",
-        title: "Activar aprendiz",
-        icon: "warning",
-      });
-      if (!confirm) return;
-      const originalBtnContent = target5.innerHTML;
-      showSpinner(target5);
-      const aprendizId = target5.getAttribute("data-id");
+      const target3 = e.target.closest(".desasociar-aprendiz");
+      if (target3) {
+        const confirm = await confirmAction({
+          message:
+            "¿Esta seguro que desea desasociar al aprendiz?, quedara habilitado para su registro en otra ficha",
+          title: "Eliminar de la ficha",
+          icon: "warning",
+        });
+        if (!confirm) return;
+        const originalBtnContent = target3.innerHTML;
+        showSpinner(target3);
+        const aprendizId = target3.getAttribute("data-id");
 
-      try {
-        await activarAprendiz(aprendizId);
-      } finally {
-        hideSpinner(target5, originalBtnContent);
+        try {
+          await desasociarAprendiz(aprendizId);
+        } finally {
+          hideSpinner(target3, originalBtnContent);
+        }
       }
-    }
-  });
 
+      const target4 = e.target.closest(".editar-aprendiz");
+      if (target4) {
+        const originalBtnContent = target4.innerHTML;
+        const aprendizId = target4.getAttribute("data-id");
+        showSpinner(target4);
+
+        const modalEl = document.getElementById("editAprendizModal");
+        const modalInstance = new bootstrap.Modal(modalEl);
+        modalInstance.show();
+
+        try {
+          await fillDataAprendiz(aprendizId);
+        } finally {
+          hideSpinner(target4, originalBtnContent);
+        }
+      }
+
+      const target5 = e.target.closest(".activar-aprendiz");
+      if (target5) {
+        const confirm = await confirmAction({
+          message:
+            "¿Esta seguro que desea activar al aprendiz?, quedara activo en la actual ficha",
+          title: "Activar aprendiz",
+          icon: "warning",
+        });
+        if (!confirm) return;
+        const originalBtnContent = target5.innerHTML;
+        showSpinner(target5);
+        const aprendizId = target5.getAttribute("data-id");
+
+        try {
+          await activarAprendiz(aprendizId);
+        } finally {
+          hideSpinner(target5, originalBtnContent);
+        }
+      }
+    });
+  }
   const formEditarAprendiz = document.getElementById("formEditarAprendiz");
 
   async function fillDataAprendiz(aprendizId) {
@@ -1417,94 +1430,104 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  formEditarAprendiz.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  if (formEditarAprendiz) {
+    formEditarAprendiz.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    const btn = document.getElementById("btnSubmit");
-    const originalBtnContent = btn.innerHTML;
+      const btn = document.getElementById("btnSubmit");
+      const originalBtnContent = btn.innerHTML;
 
-    showSpinner(btn);
-    setFormDisabled(formEditarAprendiz, true);
+      showSpinner(btn);
+      setFormDisabled(formEditarAprendiz, true);
 
-    const sanitize = (value) => (value.trim() === "" ? null : value);
-    const repreLegalPayload = {
-      nom: sanitize(
-        formEditarAprendiz.querySelector('[name="nom_repre"]').value
-      ),
-      dni: sanitize(
-        formEditarAprendiz.querySelector('[name="dni_repre"]').value
-      ),
-      tele: sanitize(
-        formEditarAprendiz.querySelector('[name="tele_repre"]').value
-      ),
-      dire: sanitize(
-        formEditarAprendiz.querySelector('[name="dire_repre"]').value
-      ),
-      mail: sanitize(
-        formEditarAprendiz.querySelector('[name="mail_repre"]').value
-      ),
-      paren: sanitize(
-        formEditarAprendiz.querySelector('[name="paren_repre"]').value
-      ),
-    };
-
-    const tieneDatosRepre = Object.values(repreLegalPayload).some(
-      (val) => val !== null
-    );
-
-    const payload = {
-      perfil: {
-        nom: sanitize(formEditarAprendiz.querySelector('[name="nom"]').value),
-        apelli: sanitize(
-          formEditarAprendiz.querySelector('[name="apelli"]').value
+      const sanitize = (value) => (value.trim() === "" ? null : value);
+      const repreLegalPayload = {
+        nom: sanitize(
+          formEditarAprendiz.querySelector('[name="nom_repre"]').value
         ),
-        tipo_dni: sanitize(
-          formEditarAprendiz.querySelector('[name="tipo_dni"]').value
+        dni: sanitize(
+          formEditarAprendiz.querySelector('[name="dni_repre"]').value
         ),
-        dni: sanitize(formEditarAprendiz.querySelector('[name="dni"]').value),
-        tele: sanitize(formEditarAprendiz.querySelector('[name="tele"]').value),
-        dire: sanitize(formEditarAprendiz.querySelector('[name="dire"]').value),
-        gene: sanitize(formEditarAprendiz.querySelector('[name="gene"]').value),
-        mail: sanitize(formEditarAprendiz.querySelector('[name="mail"]').value),
-        fecha_naci: sanitize(
-          formEditarAprendiz.querySelector('[name="fecha_naci"]').value
+        tele: sanitize(
+          formEditarAprendiz.querySelector('[name="tele_repre"]').value
         ),
-      },
-    };
+        dire: sanitize(
+          formEditarAprendiz.querySelector('[name="dire_repre"]').value
+        ),
+        mail: sanitize(
+          formEditarAprendiz.querySelector('[name="mail_repre"]').value
+        ),
+        paren: sanitize(
+          formEditarAprendiz.querySelector('[name="paren_repre"]').value
+        ),
+      };
 
-    if (tieneDatosRepre) {
-      payload.repre_legal = repreLegalPayload;
-    } else {
-      payload.repre_legal = null;
-    }
+      const tieneDatosRepre = Object.values(repreLegalPayload).some(
+        (val) => val !== null
+      );
 
-    try {
-      const response = await fetch(formEditarAprendiz.dataset.action, {
-        method: "PATCH",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/json",
+      const payload = {
+        perfil: {
+          nom: sanitize(formEditarAprendiz.querySelector('[name="nom"]').value),
+          apelli: sanitize(
+            formEditarAprendiz.querySelector('[name="apelli"]').value
+          ),
+          tipo_dni: sanitize(
+            formEditarAprendiz.querySelector('[name="tipo_dni"]').value
+          ),
+          dni: sanitize(formEditarAprendiz.querySelector('[name="dni"]').value),
+          tele: sanitize(
+            formEditarAprendiz.querySelector('[name="tele"]').value
+          ),
+          dire: sanitize(
+            formEditarAprendiz.querySelector('[name="dire"]').value
+          ),
+          gene: sanitize(
+            formEditarAprendiz.querySelector('[name="gene"]').value
+          ),
+          mail: sanitize(
+            formEditarAprendiz.querySelector('[name="mail"]').value
+          ),
+          fecha_naci: sanitize(
+            formEditarAprendiz.querySelector('[name="fecha_naci"]').value
+          ),
         },
-        body: JSON.stringify(payload),
-      });
+      };
 
-      const data = await response.json();
-      if (validarErrorDRF(response, data)) return;
+      if (tieneDatosRepre) {
+        payload.repre_legal = repreLegalPayload;
+      } else {
+        payload.repre_legal = null;
+      }
 
-      toastSuccess(data.message);
-      const modalEl = document.getElementById("editAprendizModal");
-      const modalInstance = bootstrap.Modal.getInstance(modalEl);
-      modalInstance.hide();
-      cargarHistorial("fichaG", fichaId);
-      tableAprendices.ajax.reload(null, false);
-    } catch (e) {
-      toastError(e);
-    } finally {
-      hideSpinner(btn, originalBtnContent);
-      setFormDisabled(formEditarAprendiz, false);
-    }
-  });
+      try {
+        const response = await fetch(formEditarAprendiz.dataset.action, {
+          method: "PATCH",
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+        if (validarErrorDRF(response, data)) return;
+
+        toastSuccess(data.message);
+        const modalEl = document.getElementById("editAprendizModal");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        modalInstance.hide();
+        cargarHistorial("fichaG", fichaId);
+        tableAprendices.ajax.reload(null, false);
+      } catch (e) {
+        toastError(e);
+      } finally {
+        hideSpinner(btn, originalBtnContent);
+        setFormDisabled(formEditarAprendiz, false);
+      }
+    });
+  }
 
   async function desasociarAprendiz(aprendizId) {
     try {
@@ -1584,12 +1607,12 @@ document.addEventListener("DOMContentLoaded", function () {
       const portafolioContainer = document.getElementById("folderTreeAprendiz");
       portafolioContainer.innerHTML = "";
 
-      const portafolioTree = renderPortafolioTree(data);
+      const portafolioTree = renderPortafolioTree(data.nodos, data.can_edit);
       if (portafolioTree) {
         portafolioContainer.appendChild(portafolioTree);
       }
 
-      agregarEventListenersPortafolio();
+      agregarEventListenersPortafolio(data.can_edit);
       cargarHistorial("aprendiz", aprendizId);
     } catch (error) {
       console.error("Error cargando los nodos:", error);
@@ -1601,7 +1624,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Función de renderizado optimizada para portafolios
-  function renderPortafolioTree(nodes) {
+  function renderPortafolioTree(nodes, can_edit) {
     if (!nodes || nodes.length === 0) return null;
 
     const ul = document.createElement("ul");
@@ -1629,7 +1652,7 @@ document.addEventListener("DOMContentLoaded", function () {
         subFolderContainer.id = `portafolio-folder-${node.id}`;
 
         if (
-          (userRole === "instructor" || userRole === "admin") &&
+          can_edit &&
           (!node.children ||
             node.children.length === 0 ||
             node.children.every((child) => child.tipo === "documento"))
@@ -1654,7 +1677,9 @@ document.addEventListener("DOMContentLoaded", function () {
           subFolderContainer.appendChild(uploadLi);
         }
         if (node.children && node.children.length > 0) {
-          subFolderContainer.appendChild(renderPortafolioTree(node.children));
+          subFolderContainer.appendChild(
+            renderPortafolioTree(node.children, can_edit)
+          );
         }
 
         li.appendChild(icon);
@@ -1702,7 +1727,7 @@ document.addEventListener("DOMContentLoaded", function () {
         link.append(icon, span);
         li.appendChild(link);
 
-        if (userRole === "instructor" || userRole === "admin") {
+        if (can_edit) {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
@@ -1740,7 +1765,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let treeApreListenersInitialized = false;
 
   // Event listeners específicos para el portafolio
-  function agregarEventListenersPortafolio() {
+  function agregarEventListenersPortafolio(can_edit) {
     if (treeApreListenersInitialized) return;
 
     const treeContainer = document.getElementById("folderTreeAprendiz");
@@ -1756,72 +1781,76 @@ document.addEventListener("DOMContentLoaded", function () {
         togglePortafolioFolder(folderId, icon);
         return;
       }
+      if (can_edit) {
+        const target2 = e.target.closest(".bi-trash");
+        if (target2) {
+          const li = target2.closest("li");
+          const docId = li?.dataset.documentId;
+          const folderId = li.dataset.folderId;
+          if (!docId) return;
 
-      const target2 = e.target.closest(".bi-trash");
-      if (target2) {
-        const li = target2.closest("li");
-        const docId = li?.dataset.documentId;
-        const folderId = li.dataset.folderId;
-        if (!docId) return;
+          const confirmed = await confirmToast("¿Eliminar este documento?");
+          if (confirmed) deleteFileAprendiz(docId, folderId, can_edit);
+          return;
+        }
 
-        const confirmed = await confirmToast("¿Eliminar este documento?");
-        if (confirmed) deleteFileAprendiz(docId, folderId);
-        return;
-      }
-
-      const target3 = e.target.closest(".upload-item");
-      if (target3) {
-        const folderId = target3.dataset.folderId;
-        openUploadModalAprendiz(folderId);
-        return;
-      }
-    });
-
-    treeContainer.addEventListener("dragover", (e) => {
-      const folder = e.target.closest(
-        "[data-folder-id][data-droppable='true']"
-      );
-
-      if (folder) {
-        e.preventDefault();
-        folder.classList.add("dragover-highlight");
+        const target3 = e.target.closest(".upload-item");
+        if (target3) {
+          const folderId = target3.dataset.folderId;
+          openUploadModalAprendiz(folderId);
+          return;
+        }
       }
     });
 
-    treeContainer.addEventListener("dragleave", (e) => {
-      const folder = e.target.closest(
-        "[data-folder-id][data-droppable='true']"
-      );
+    if (can_edit) {
+      treeContainer.addEventListener("dragover", (e) => {
+        const folder = e.target.closest(
+          "[data-folder-id][data-droppable='true']"
+        );
 
-      if (folder) {
+        if (folder) {
+          e.preventDefault();
+          folder.classList.add("dragover-highlight");
+        }
+      });
+
+      treeContainer.addEventListener("dragleave", (e) => {
+        const folder = e.target.closest(
+          "[data-folder-id][data-droppable='true']"
+        );
+
+        if (folder) {
+          e.preventDefault();
+          folder.classList.remove("dragover-highlight");
+        }
+      });
+
+      treeContainer.addEventListener("drop", async (e) => {
+        const folder = e.target.closest(
+          "[data-folder-id][data-droppable='true']"
+        );
+        if (!folder) return;
         e.preventDefault();
         folder.classList.remove("dragover-highlight");
-      }
-    });
+        await handleDropOnFolder(folder, e, "aprendiz");
+      });
 
-    treeContainer.addEventListener("drop", async (e) => {
-      const folder = e.target.closest(
-        "[data-folder-id][data-droppable='true']"
-      );
-      if (!folder) return;
-      e.preventDefault();
-      folder.classList.remove("dragover-highlight");
-      await handleDropOnFolder(folder, e, "aprendiz");
-    });
-
-    treeContainer.addEventListener("dragstart", (e) => {
-      const docItem = e.target.closest("li[data-document-id");
-      if (!docItem) return;
-      e.dataTransfer.setData("type", "document");
-      e.dataTransfer.setData("documentId", docItem.dataset.documentId);
-      e.dataTransfer.setData("sourceFolderId", docItem.dataset.folderId);
-      // Opcional: indicar el efecto
-      e.dataTransfer.effectAllowed = "move";
-    });
-
+      treeContainer.addEventListener("dragstart", (e) => {
+        const docItem = e.target.closest("li[data-document-id");
+        if (!docItem) return;
+        e.dataTransfer.setData("type", "document");
+        e.dataTransfer.setData("documentId", docItem.dataset.documentId);
+        e.dataTransfer.setData("sourceFolderId", docItem.dataset.folderId);
+        // Opcional: indicar el efecto
+        e.dataTransfer.effectAllowed = "move";
+      });
+    }
     const uploadButton = document.getElementById("uploadButtonAprendiz");
     if (uploadButton)
-      uploadButton.addEventListener("click", () => uploadFile("aprendiz"));
+      uploadButton.addEventListener("click", () =>
+        uploadFile("aprendiz", can_edit)
+      );
 
     treeApreListenersInitialized = true;
   }
@@ -1862,7 +1891,7 @@ document.addEventListener("DOMContentLoaded", function () {
     modal.show();
   }
 
-  async function deleteFileAprendiz(fileId, folderId) {
+  async function deleteFileAprendiz(fileId, folderId, can_edit) {
     try {
       const response = await fetch(
         `/api/tree/eliminar_documento_aprendiz/${fileId}`,
@@ -1879,7 +1908,7 @@ document.addEventListener("DOMContentLoaded", function () {
         toastSuccess("Documento eliminado.");
 
         if (folderId) {
-          await actualizarCarpeta(folderId, "aprendiz");
+          await actualizarCarpeta(folderId, "aprendiz", can_edit);
         } else {
           verTree();
         }

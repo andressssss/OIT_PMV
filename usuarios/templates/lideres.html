@@ -3,201 +3,210 @@
 {% load icons %}
 
 {% block content %}
-<main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
-    <div class="row">
-        <div class="col-12">
+  {% if not can_view %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
+    </div>
+  {% else %}
+    <main class="container py-5">
+      <section class="card card-body shadow-sm p-4">
+        <div class="row">
+          <div class="col-12">
             <div class="d-flex justify-content-between align-items-center pb-4">
-                <h1 class="display-5">Gestión de Equipo Nacional</h1>
+              <h1 class="display-5">Gestión de Equipo Nacional</h1>
+              {% if can_edit %}
                 <div>
-                    <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear aprendiz" data-bs-toggle="modal" data-bs-target="#crearLiderModal">
-                        {% icon 'plus' %}
-                    </a>
+                  <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear aprendiz" data-bs-toggle="modal" data-bs-target="#crearLiderModal">{% icon 'plus' %}</a>
                 </div>
+              {% endif %}
             </div>
             <div class="table-responsive">
-                <table id="lideres" class="table table-hover table-bordered align-middle">
-                    <thead class="table-secondary text-center">
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Apellido</th>
-                        <th>Telefono</th>
-                        <th>Direccion</th>
-                        <th>Mail</th>
-                        <th>Fecha nacimiento</th>
-                        <th>Area</th>
-                        <th>Estado</th>
-                        <th></th>
-                    </tr>
+              <table id="lideres" class="table table-hover table-bordered align-middle">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Telefono</th>
+                    <th>Direccion</th>
+                    <th>Mail</th>
+                    <th>Fecha nacimiento</th>
+                    <th>Area</th>
+                    <th>Estado</th>
+                    {% if can_edit %}
+                      <th></th>
+                    {% endif %}
+                  </tr>
                 </thead>
                 <tbody>
-                    {% for lider in lideres %}
+                  {% for lider in lideres %}
                     <tr>
-                        <td>{{ lider.perfil.nom}}</td>
-                        <td>{{ lider.perfil.apelli}}</td>
-                        <td>{{ lider.perfil.tele}}</td>
-                        <td>{{ lider.perfil.dire}}</td>
-                        <td>{{ lider.perfil.user.email}}</td>
-                        <td>{{ lider.perfil.fecha_naci}}</td>
-                        <td>{{ lider.area}}</td>
-                        <td>{{ lider.esta}}</td>
+                      <td>{{ lider.perfil.nom }}</td>
+                      <td>{{ lider.perfil.apelli }}</td>
+                      <td>{{ lider.perfil.tele }}</td>
+                      <td>{{ lider.perfil.dire }}</td>
+                      <td>{{ lider.perfil.user.email }}</td>
+                      <td>{{ lider.perfil.fecha_naci }}</td>
+                      <td>{{ lider.area }}</td>
+                      <td>{{ lider.esta }}</td>
+                      {% if can_edit %}
                         <td>
-                        <a class="btn btn-outline-warning btn-sm mb-1 edit-btn" data-id="{{ lider.id }}" data-toggle="tooltip" data-placement="top" title="Editar">
-                            <i class="bi bi-pencil-square"></i>
-                        </a>
-                        <a class="btn btn-outline-danger btn-sm delete-btn" data-id="{{ lider.id }}" data-toggle="tooltip" data-placement="top" title="Eliminar">
-                            {% icon 'delete' %}
-                        </a>
+                          <a class="btn btn-outline-warning btn-sm mb-1 edit-btn" data-id="{{ lider.id }}" data-toggle="tooltip" data-placement="top" title="Editar"><i class="bi bi-pencil-square"></i></a>
+                          <a class="btn btn-outline-danger btn-sm delete-btn" data-id="{{ lider.id }}" data-toggle="tooltip" data-placement="top" title="Eliminar">{% icon 'delete' %}</a>
                         </td>
+                      {% endif %}
                     </tr>
-                    {% endfor %}
+                  {% endfor %}
                 </tbody>
-            </table>
+              </table>
+            </div>
+          </div>
         </div>
-        </div>
-    </div>
-    </section>
-</main>
-<!-- Modal para crear Lider -->
-<div class="modal fade" id="crearLiderModal" tabindex="-1" aria-labelledby="modalLiderLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+      </section>
+    </main>
+    <!-- Modal para crear Lider -->
+    <div class="modal fade" id="crearLiderModal" tabindex="-1" aria-labelledby="modalLiderLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalLiderLabel">Crear Líder</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formCrearLider">
-                    {% csrf_token %}
-                    <h3>Datos del Perfil</h3>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
-                            {{ perfil_form.nom }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
-                            {{ perfil_form.apelli }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
-                            {{ perfil_form.tipo_dni }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
-                            {{ perfil_form.dni }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
-                            {{ perfil_form.tele }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
-                            {{ perfil_form.dire }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
-                            {{ perfil_form.mail }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
-                            {{ perfil_form.gene }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
-                            {{ perfil_form.fecha_naci }}
-                        </div>
-                    </div>
-                    <div id="errorCrearLider" class="text-danger mt-2"></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" id="btnCrearLider" class="btn btn-primary">Guardar</button>
-                    </div>
-                </form>
-            </div>
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalLiderLabel">Crear Líder</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formCrearLider">
+              {% csrf_token %}
+              <h3>Datos del Perfil</h3>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
+                  {{ perfil_form.nom }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
+                  {{ perfil_form.apelli }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
+                  {{ perfil_form.tipo_dni }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
+                  {{ perfil_form.dni }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
+                  {{ perfil_form.tele }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
+                  {{ perfil_form.dire }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
+                  {{ perfil_form.mail }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                  {{ perfil_form.gene }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
+                  {{ perfil_form.fecha_naci }}
+                </div>
+              </div>
+              <div id="errorCrearLider" class="text-danger mt-2"></div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" id="btnCrearLider" class="btn btn-primary">Guardar</button>
+              </div>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
-</div>
-<!-- Modal para Editar Líder -->
-<div class="modal fade" id="editarLiderModal" tabindex="-1" aria-labelledby="modalLiderLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <!-- Modal para Editar Líder -->
+    <div class="modal fade" id="editarLiderModal" tabindex="-1" aria-labelledby="modalLiderLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalLiderLabel">Editar Líder</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formEditarLider">
-                    {% csrf_token %}
-                    <input type="hidden" name="lider_id" id="liderId"> <!-- Campo oculto para ID -->
-                    
-                    <h3>Datos del Perfil</h3>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
-                            {{ perfil_form.nom }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
-                            {{ perfil_form.apelli }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
-                            {{ perfil_form.tipo_dni }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
-                            {{ perfil_form.dni }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
-                            {{ perfil_form.tele }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
-                            {{ perfil_form.dire }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
-                            {{ perfil_form.mail }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
-                            {{ perfil_form.gene }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
-                            {{ perfil_form.fecha_naci }}
-                        </div>
-                    </div>
-                    <div id="errorEditarLider" class="text-danger mt-2"></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" id="btnGuardarLider" class="btn btn-primary">Actualizar</button>
-                    </div>
-                </form>
-            </div>
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalLiderLabel">Editar Líder</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formEditarLider">
+              {% csrf_token %}
+              <input type="hidden" name="lider_id" id="liderId" /> <!-- Campo oculto para ID -->
+
+              <h3>Datos del Perfil</h3>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.nom.id_for_label }}">{{ perfil_form.nom.label }}</label>
+                  {{ perfil_form.nom }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.apelli.id_for_label }}">{{ perfil_form.apelli.label }}</label>
+                  {{ perfil_form.apelli }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.tipo_dni.id_for_label }}">{{ perfil_form.tipo_dni.label }}</label>
+                  {{ perfil_form.tipo_dni }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.dni.id_for_label }}">{{ perfil_form.dni.label }}</label>
+                  {{ perfil_form.dni }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.tele.id_for_label }}">{{ perfil_form.tele.label }}</label>
+                  {{ perfil_form.tele }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.dire.id_for_label }}">{{ perfil_form.dire.label }}</label>
+                  {{ perfil_form.dire }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.mail.id_for_label }}">{{ perfil_form.mail.label }}</label>
+                  {{ perfil_form.mail }}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.gene.id_for_label }}">{{ perfil_form.gene.label }}</label>
+                  {{ perfil_form.gene }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ perfil_form.fecha_naci.id_for_label }}">{{ perfil_form.fecha_naci.label }}</label>
+                  {{ perfil_form.fecha_naci }}
+                </div>
+              </div>
+              <div id="errorEditarLider" class="text-danger mt-2"></div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" id="btnGuardarLider" class="btn btn-primary">Actualizar</button>
+              </div>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
-</div>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}
-<script type="module" src="{% static 'js/usuarios/lider.js' %}"></script>
+  <script type="module" src="{% static 'js/usuarios/lider.js' %}"></script>
 {% endblock %}
