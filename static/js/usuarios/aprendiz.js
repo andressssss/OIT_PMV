@@ -46,22 +46,23 @@ document.addEventListener("DOMContentLoaded", () => {
         data: null,
         orderable: false,
         render: function (data, type, row) {
-          return `
-                <button class="btn btn-outline-warning btn-sm mb-1 edit-btn" 
-                    data-id="${row.id}"
-                    title="Editar"
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top">
-                    <i class="bi bi-pencil-square"></i>
-                </button>
-                <button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
+          let botones = `<button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
                     data-id="${row.id}"
                     title="Ver Perfil"
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">
                     <i class="bi bi-plus-lg"></i>
-                </button>
-              `;
+                </button>`;
+          if (row.can_edit) {
+            botones += `<button class="btn btn-outline-warning btn-sm mb-1 edit-btn" 
+                    data-id="${row.id}"
+                    title="Editar"
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top">
+                    <i class="bi bi-pencil-square"></i>
+                </button>`;
+          }
+          return botones;
         },
       },
     ],
@@ -79,37 +80,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ======== Funcion para llenar la tabla =========
   function cargarDatosTabla() {
-    fadeIn(loadingDiv);
-    fadeOutElement(contenedor);
+    if (contenedor) {
+      fadeIn(loadingDiv);
+      fadeOutElement(contenedor);
 
-    const promesasSelect2 = [
-      cargarOpciones(
-        "/api/aprendices/usuarios_crea/",
-        "#usuarios_creacion",
-        "Creado por"
-      ),
-      cargarOpciones(
-        "/api/aprendices/estados/",
-        "#estados",
-        "Seleccione un estado"
-      ),
-    ];
+      const promesasSelect2 = [
+        cargarOpciones(
+          "/api/aprendices/usuarios_crea/",
+          "#usuarios_creacion",
+          "Creado por"
+        ),
+        cargarOpciones(
+          "/api/aprendices/estados/",
+          "#estados",
+          "Seleccione un estado"
+        ),
+      ];
 
-    // =======Iniciar select organizar ========
-    new TomSelect(selectElemento, {
-      placeholder: "Ordenar por...",
-      allowEmptyOption: true,
-      plugins: ["clear_button"],
-      controlInput: false,
-      render: {
-        option_create: null,
-      },
-    });
+      // =======Iniciar select organizar ========
+      new TomSelect(selectElemento, {
+        placeholder: "Ordenar por...",
+        allowEmptyOption: true,
+        plugins: ["clear_button"],
+        controlInput: false,
+        render: {
+          option_create: null,
+        },
+      });
 
-    Promise.all([...promesasSelect2]).finally(() => {
-      fadeOut(loadingDiv);
-      fadeInElement(contenedor);
-    });
+      Promise.all([...promesasSelect2]).finally(() => {
+        fadeOut(loadingDiv);
+        fadeInElement(contenedor);
+      });
+    }
   }
 
   // ========= Funcion para filtrar la tabla =======
@@ -261,47 +264,49 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   //======== Guardar formulario editar aprendiz
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
 
-    const url = form.action;
+      const url = form.action;
 
-    const formData = new FormData(form);
-    const data = new URLSearchParams(formData).toString();
+      const formData = new FormData(form);
+      const data = new URLSearchParams(formData).toString();
 
-    const inputs = form.querySelectorAll("input, select, button");
-    inputs.forEach((el) => (el.disabled = true));
+      const inputs = form.querySelectorAll("input, select, button");
+      inputs.forEach((el) => (el.disabled = true));
 
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      body: data,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          return response.json().then((error) => {
-            throw error;
-          });
-        }
-        return response.json();
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: data,
       })
-      .then((data) => {
-        showSuccessToast(data.message);
+        .then((response) => {
+          if (!response.ok) {
+            return response.json().then((error) => {
+              throw error;
+            });
+          }
+          return response.json();
+        })
+        .then((data) => {
+          showSuccessToast(data.message);
 
-        const modalElement = document.getElementById("editAprendizModal");
-        const modalInstance = bootstrap.Modal.getInstance(modalElement);
-        modalInstance.hide();
+          const modalElement = document.getElementById("editAprendizModal");
+          const modalInstance = bootstrap.Modal.getInstance(modalElement);
+          modalInstance.hide();
 
-        aplicarFiltros();
-      })
-      .catch((error) => {
-        showErrorToast(error.message);
-      })
-      .finally(() => {
-        inputs.forEach((el) => (el.disabled = false));
-      });
-  });
+          aplicarFiltros();
+        })
+        .catch((error) => {
+          showErrorToast(error.message);
+        })
+        .finally(() => {
+          inputs.forEach((el) => (el.disabled = false));
+        });
+    });
+  }
 });

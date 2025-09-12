@@ -3,94 +3,105 @@
 {% load icons %}
 
 {% block content %}
-  <main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
-      <div class="row">
-        <div id="contenedor" class="col-12">
-          <div class="d-flex justify-content-between align-items-center pb-4">
-            <h1 class="display-5">Gestión de competencias</h1>
-            <div>
-              <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear competencia" data-bs-toggle="modal" data-bs-target="#crearCompetenciaModal">{% icon 'plus' %}</a>
+  {% if not can_view %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
+    </div>
+  {% else %}
+    <main class="container py-5">
+      <section class="card card-body shadow-sm p-4">
+        <div class="row">
+          <div id="contenedor" class="col-12">
+            <div class="d-flex justify-content-between align-items-center pb-4">
+              <h1 class="display-5">Gestión de competencias</h1>
+              {% if can_edit %}
+                <div>
+                  <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear competencia" data-bs-toggle="modal" data-bs-target="#crearCompetenciaModal">{% icon 'plus' %}</a>
+                </div>
+              {% endif %}
+            </div>
+            <div class="table-responsive">
+              <table id="competencias_table" class="table table-hover table-bordered align-middle">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <td>
+                    <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span>
+                  </td>
+                </tbody>
+              </table>
             </div>
           </div>
-          <div class="table-responsive">
-            <table id="competencias_table" class="table table-hover table-bordered align-middle">
-              <thead class="table-secondary text-center">
-                <tr>
-                  <th>Nombre</th>
-                  <th>Código</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <td>
-                  <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span>
-                </td>
-              </tbody>
-            </table>
+        </div>
+      </section>
+    </main>
+    <!-- Modal para crear competencias -->
+    <div class="modal fade" id="crearCompetenciaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="crearCompetenciaModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="crearCompetenciaModalLabel">Crear Competencia</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formCrearCompetencia">
+              {% csrf_token %}
+              <label for="nom_crear">Nombre:</label>
+              <input type="text" class="form-control" id="nom_crear" name="nom" required />
+
+              <label for="cod_crear">Código:</label>
+              <input type="number" name="cod" id="cod_crear" class="form-control" required />
+
+              <div id="errorEditarCompetencia" class="text-danger mt-2"></div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" form="formCrearCompetencia" id="btnCrearCompetencia" class="btn btn-primary">Crear competencia</button>
           </div>
         </div>
       </div>
-    </section>
-  </main>
-  <!-- Modal para crear competencias -->
-  <div class="modal fade" id="crearCompetenciaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="crearCompetenciaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="crearCompetenciaModalLabel">Crear Competencia</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="formCrearCompetencia">
-            {% csrf_token %}
-            <label for="nom_crear">Nombre:</label>
-            <input type="text" class="form-control" id="nom_crear" name="nom" required/>
+    </div>
+    <!-- Modal para editar competencias -->
+    <div class="modal fade" id="editarCompetenciaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarCompetenciaModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editarCompetenciaModalLabel">Editar Competencia</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formEditarCompetencia">
+              {% csrf_token %}
+              <label for="nom_edit">Nombre:</label>
+              <input type="text" class="form-control" id="nom_edit" name="nom" required />
 
-            <label for="cod_crear">Código:</label>
-            <input type="number" name="cod" id="cod_crear" class="form-control" required/>
+              <label for="cod_edit">Código:</label>
+              <input type="number" name="cod" id="cod_edit" class="form-control" required />
 
-            <div id="errorEditarCompetencia" class="text-danger mt-2"></div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" form="formCrearCompetencia" id="btnCrearCompetencia" class="btn btn-primary">Crear competencia</button>
+              <div id="errorEditarCompetencia" class="text-danger mt-2"></div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" form="formEditarCompetencia" id="btnEditarCompetencia" class="btn btn-primary">Editar competencia</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  <!-- Modal para editar competencias -->
-  <div class="modal fade" id="editarCompetenciaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarCompetenciaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="editarCompetenciaModalLabel">Editar Competencia</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="formEditarCompetencia">
-            {% csrf_token %}
-            <label for="nom_edit">Nombre:</label>
-            <input type="text" class="form-control" id="nom_edit" name="nom" required/>
-
-            <label for="cod_edit">Código:</label>
-            <input type="number" name="cod" id="cod_edit" class="form-control" required/>
-
-            <div id="errorEditarCompetencia" class="text-danger mt-2"></div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" form="formEditarCompetencia" id="btnEditarCompetencia" class="btn btn-primary">Editar competencia</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}

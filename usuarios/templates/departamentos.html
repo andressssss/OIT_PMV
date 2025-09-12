@@ -3,50 +3,58 @@
 {% load icons %}
 
 {% block content %}
-<main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
-    <div class="row">
-        <div class="col-12">
+  {% if not can_view %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
+    </div>
+  {% else %}
+    <main class="container py-5">
+      <section class="card card-body shadow-sm p-4">
+        <div class="row">
+          <div class="col-12">
             <div class="d-flex justify-content-between align-items-center pb-4">
-                <h1 class="display-5">Gestión de departamentos</h1>
+              <h1 class="display-5">Gestión de departamentos</h1>
+              {% if can_edit %}
                 <div>
-                    <a href="/departamentos/crear/" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear departamento">
-                        {% icon 'plus' %}
-                    </a>
+                  <a href="/departamentos/crear/" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear departamento">{% icon 'plus' %}</a>
                 </div>
+              {% endif %}
             </div>
             <div class="table-responsive">
-                <table id="departamentos_table" class="table table-hover table-bordered align-middle">
-                    <thead class="table-secondary text-center">
-                    <tr>
-                        <th></th>
-                        <th>Codigo departamento</th>
-                        <th>Departamento</th>
-                    </tr>
+              <table id="departamentos_table" class="table table-hover table-bordered align-middle">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    {% if can_edit %}
+                    <th></th>
+                    {% endif %}
+                    <th>Codigo departamento</th>
+                    <th>Departamento</th>
+                  </tr>
                 </thead>
                 <tbody>
-                    {% for departamento in departamentos %}
+                  {% for departamento in departamentos %}
                     <tr data-id="{{ departamento.id }}">
-                        <td>
-                        <a href="{% url 'detalle_departamentos' departamento.id  %}" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Editar">
-                            {% icon 'edit' %}
-                        </a>
-                        
-                        <a href="{% url 'eliminar_departamentos' departamento.id %}" class="btn btn-danger btn-sm" data-toggle="tooltip" data-placement="top" title="Eliminar">
-                            {% icon 'delete' %}
-                        </a>
-                        </td>
-                        <td>{{ departamento.cod_departa}}</td>
-                        <td>{{ departamento.nom_departa}}</td>
-                       
+                      {% if can_edit %}
+                      <td>
 
+                        <a href="{% url 'detalle_departamentos' departamento.id %}" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Editar">{% icon 'edit' %}</a>
+
+                        <a href="{% url 'eliminar_departamentos' departamento.id %}" class="btn btn-danger btn-sm" data-toggle="tooltip" data-placement="top" title="Eliminar">{% icon 'delete' %}</a>
+                      </td>
+                      {% endif %}
+                      <td>{{ departamento.cod_departa }}</td>
+                      <td>{{ departamento.nom_departa }}</td>
                     </tr>
-                    {% endfor %}
+                  {% endfor %}
                 </tbody>
-            </table>
+              </table>
+            </div>
+          </div>
         </div>
-        </div>
-    </div>
-    </section>
-</main>
+      </section>
+    </main>
+  {% endif %}
 {% endblock %}

@@ -3,216 +3,235 @@
 {% load icons %}
 
 {% block content %}
-<main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
+  {% if not puede_ver %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
+    </div>
+  {% else %}
+    <main class="container py-5">
+      <section class="card card-body shadow-sm p-4">
         <div class="row">
-        <div class="col-12">
+          <div class="col-12">
             <div class="d-flex justify-content-between align-items-center pb-4">
-                <h1 class="display-5">Gestión de fichas</h1>
-                <div>
-                    {% if perfil.rol == 'instructor' %}
-                    <a id="btnFichasMasivo" href="/fichas/crear_masivo" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear ficha masivo">
-                        {% icon 'plus' %}
-                    </a>
-                    {% elif perfil.rol == 'admin' %}
-                    <div class="btn-toolbar" role="toolbar" aria-label="Barra de herramientas de fichas">
-                        <div class="btn-group me-2" role="group" aria-label="Grupo de acciones">
+              <h1 class="display-5">Gestión de fichas</h1>
+              <div>
+                {% if perfil.rol == 'instructor' %}
+                  <a id="btnFichasMasivo" href="/fichas/crear_masivo" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear ficha masivo">{% icon 'plus' %}</a>
+                {% elif perfil.rol == 'admin' %}
+                  <div class="btn-toolbar" role="toolbar" aria-label="Barra de herramientas de fichas">
+                    <div class="btn-group me-2" role="group" aria-label="Grupo de acciones">
+                      <!-- Botón: Importar fichas desde CSV -->
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalImportarFichas" data-bs-toggle="tooltip" title="Importar fichas desde CSV"><i class="bi bi-card-list"></i></button>
 
-                            <!-- Botón: Importar fichas desde CSV -->
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalImportarFichas" data-bs-toggle="tooltip" title="Importar fichas desde CSV">
-                                <i class="bi bi-card-list"></i>
-                            </button>
-
-                            <!-- Botón: Asignar aprendices desde CSV -->
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarAprendices" data-bs-toggle="tooltip" title="Asignar aprendices a fichas">
-                                <i class="bi bi-file-earmark-person"></i>
-                            </button>
-                        </div>
+                      <!-- Botón: Asignar aprendices desde CSV -->
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarAprendices" data-bs-toggle="tooltip" title="Asignar aprendices a fichas"><i class="bi bi-file-earmark-person"></i></button>
                     </div>
-                    {% endif %}
-                </div>
+                  </div>
+                {% endif %}
+              </div>
             </div>
             <div id="contenedor-filtros">
-                <h5>Filtrar y organizar:</h5>
-                <form id="filtros-form" class="row mb-3">
-                    <div class="col-md-3" id="contenedor-estado">
-                        <div class="placeholder-glow">
-                            <span class="placeholder col-12 rounded"></span>
-                        </div>
-                    </div>
-                    <div class="col-md-3" id="contenedor-instructor">
-                        <div class="placeholder-glow">
-                            <span class="placeholder col-12 rounded"></span>
-                        </div>
-                    </div>
-                    <div class="col-md-6" id="contenedor-programa">
-                        <div class="placeholder-glow">
-                            <span class="placeholder col-12 rounded"></span>
-                        </div>
-                    </div>
-                </form>
+              <h5>Filtrar y organizar:</h5>
+              <form id="filtros-form" class="row mb-3">
+                <div class="col-md-3" id="contenedor-estado">
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-12 rounded"></span>
+                  </div>
+                </div>
+                <div class="col-md-3" id="contenedor-instructor">
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-12 rounded"></span>
+                  </div>
+                </div>
+                <div class="col-md-6" id="contenedor-programa">
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-12 rounded"></span>
+                  </div>
+                </div>
+              </form>
             </div>
             <div class="table-responsive">
-                <table id="listado_fichas_table" class="table table-hover table-bordered align-middle">
-                    <thead class="table-secondary text-center">
-                    <tr>
-                        <th>Numero ficha</th>
-                        <th>Numero grupo</th>
-                        <th>Estado</th>
-                        <th>Fecha apertura</th>
-                        <th>Centro</th>
-                        <th>Institución</th>
-                        <th>Instructor</th>
-                        <th>Matriculados</th>
-                        <th>Programa</th>
-                        <th></th>
-                    </tr>
+              <table id="listado_fichas_table" class="table table-hover table-bordered align-middle">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    <th>Numero ficha</th>
+                    <th>Numero grupo</th>
+                    <th>Estado</th>
+                    <th>Fecha apertura</th>
+                    <th>Centro</th>
+                    <th>Institución</th>
+                    <th>Instructor</th>
+                    <th>Matriculados</th>
+                    <th>Programa</th>
+                    <th></th>
+                  </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-                        <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span></td>
-                    </tr>
+                  <tr>
+                    <td>
+                      <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                    </td>
+                    <td>
+                      <span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span>
+                    </td>
+                  </tr>
                 </tbody>
-            </table>
-        </div>
-        </div>
-    </div>
-    </section>
-</main>
-<!-- Modal para editar ficha -->
-<div class="modal fade" id="editarFichaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarFichaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editarFichaModalLabel">Cambiar numero de ficha</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </table>
             </div>
-            <div class="modal-body">
-            <form id="formEditarFicha">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="num_ficha" class="form-label">Número de ficha:</label>
-                        <input type="text" class="form-control" id="num_ficha" name="num">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="fase" class="form-label">Fase actual</label>
-                        <select name="fase_id" id="fase" class="form-select" required>
-                            <option value="1">Análisis</option>
-                            <option value="2">Planeación</option>
-                            <option value="3">Ejecución</option>
-                            <option value="4">Evaluación</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                    <label for="departamento" class="form-label">Departamento</label>
-                    <div id="contenedor-departamentos">
-                        <div class="placeholder-glow">
-                            <span class="placeholder col-12 rounded"></span>
-                        </div>
-                    </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                    <label for="municipio" class="form-label">Municipio</label>
-                    <div id="contenedor-municipios">
-                        <div class="placeholder-glow">
-                            <span class="placeholder col-12 rounded"></span>
-                        </div>
-                    </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                    <label for="colegio" class="form-label">Colegio</label>
-                    <div id="contenedor-instituciones">
-                        <select name="insti_id" id="institucion" class="form-select" required disabled>
-                            <option value="">Seleccione un colegio</option>
-                        </select>
-                        <small>De ser necesario seleccione nuevamente el departamento y municipio</small>
-                    </div>
-                    </div>
-
-                    <!-- Centro de formación -->
-                    <div class="col-md-6 mb-3">
-                    <label for="centro_forma" class="form-label">Centro de formación</label>
-                    <div id="contenedor-centros">
-                        <div class="placeholder-glow">
-                            <span class="placeholder col-12 rounded"></span>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-                
-                <div id="errorEditarFicha" class="text-danger mt-2"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" id="btnEditarFicha" class="btn btn-primary">Guardar</button>
-                </div>
-            </form>
+          </div>
         </div>
-    </div>
-</div>
+      </section>
+    </main>
 
-<!-- Modal: Importar fichas -->
-<div class="modal fade" id="modalImportarFichas" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalImportarFichasLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <!-- Modal para editar ficha -->
+    <div class="modal fade" id="editarFichaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarFichaModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editarFichaModalLabel">Cambiar numero de ficha</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="formEditarFicha">
+            {% csrf_token %}
+            <div class="modal-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="num_ficha" class="form-label">Número de ficha:</label>
+                  <input type="text" class="form-control" id="num_ficha" name="num" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="fase" class="form-label">Fase actual</label>
+                  <select name="fase_id" id="fase" class="form-select" required>
+                    <option value="1">Análisis</option>
+                    <option value="2">Planeación</option>
+                    <option value="3">Ejecución</option>
+                    <option value="4">Evaluación</option>
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="departamento" class="form-label">Departamento</label>
+                  <div id="contenedor-departamentos">
+                    <div class="placeholder-glow">
+                      <span class="placeholder col-12 rounded"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="municipio" class="form-label">Municipio</label>
+                  <div id="contenedor-municipios">
+                    <div class="placeholder-glow">
+                      <span class="placeholder col-12 rounded"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="colegio" class="form-label">Colegio</label>
+                  <div id="contenedor-instituciones">
+                    <select name="insti_id" id="institucion" class="form-select" required disabled>
+                      <option value="">Seleccione un colegio</option>
+                    </select>
+                    <small>De ser necesario seleccione nuevamente el departamento y municipio</small>
+                  </div>
+                </div>
+                <!-- Centro de formación -->
+                <div class="col-md-6 mb-3">
+                  <label for="centro_forma" class="form-label">Centro de formación</label>
+                  <div id="contenedor-centros">
+                    <div class="placeholder-glow">
+                      <span class="placeholder col-12 rounded"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="errorEditarFicha" class="text-danger mt-2"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" id="btnEditarFicha" class="btn btn-primary">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Importar fichas -->
+    <div class="modal fade" id="modalImportarFichas" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalImportarFichasLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
         <form id="formImportarFichas" enctype="multipart/form-data">
-        <div class="modal-content">
+          <div class="modal-content">
             <div class="modal-header">
-            <h5 class="modal-title" id="modalImportarFichasLabel">Importar fichas desde CSV</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              <h5 class="modal-title" id="modalImportarFichasLabel">Importar fichas desde CSV</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-            <div class="mb-3">
+              <div class="mb-3">
                 <label for="archivoFichas" class="form-label">Archivo CSV</label>
-                <input class="form-control" type="file" id="archivoFichas" name="archivo" accept=".csv" required>
-            </div>
-            <div id="erroresFichas" class="alert alert-danger d-none"></div>
-            <div id="resumenFichas" class="alert alert-success d-none"></div>
+                <input class="form-control" type="file" id="archivoFichas" name="archivo" accept=".csv" required />
+              </div>
+              <div id="erroresFichas" class="alert alert-danger d-none"></div>
+              <div id="resumenFichas" class="alert alert-success d-none"></div>
             </div>
             <div class="modal-footer">
-            <button id="btnImportar" type="submit" class="btn btn-primary">Importar</button>
+              <button id="btnImportar" type="submit" class="btn btn-primary">Importar</button>
             </div>
-        </div>
+          </div>
         </form>
+      </div>
     </div>
-</div>
 
-<!-- Modal: Asignar aprendices -->
-<div class="modal fade" id="modalAsignarAprendices" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAsignarAprendicesLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <!-- Modal: Asignar aprendices -->
+    <div class="modal fade" id="modalAsignarAprendices" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalAsignarAprendicesLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
         <form id="formAsignarAprendices" enctype="multipart/form-data">
-        <div class="modal-content">
+          <div class="modal-content">
             <div class="modal-header">
-            <h5 class="modal-title" id="modalAsignarAprendicesLabel">Asignar aprendices a fichas desde CSV</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              <h5 class="modal-title" id="modalAsignarAprendicesLabel">Asignar aprendices a fichas desde CSV</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-            <div class="mb-3">
+              <div class="mb-3">
                 <label for="archivoAprendices" class="form-label">Archivo CSV</label>
-                <input class="form-control" type="file" id="archivoAprendices" name="archivo" accept=".csv" required>
-            </div>
-            <div id="erroresAprendices" class="alert alert-danger d-none"></div>
-            <div id="resumenAprendices" class="alert alert-success d-none"></div>
+                <input class="form-control" type="file" id="archivoAprendices" name="archivo" accept=".csv" required />
+              </div>
+              <div id="erroresAprendices" class="alert alert-danger d-none"></div>
+              <div id="resumenAprendices" class="alert alert-success d-none"></div>
             </div>
             <div class="modal-footer">
-            <button id="btnAsignar" type="submit" class="btn btn-primary">Asignar</button>
+              <button id="btnAsignar" type="submit" class="btn btn-primary">Asignar</button>
             </div>
-        </div>
+          </div>
         </form>
-  </div>
-</div>
-
-
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}
-<script type ="module" src="{% static 'js/formacion/listar_fichas.js' %}"></script>
+  <script type="module" src="{% static 'js/formacion/listar_fichas.js' %}"></script>
 {% endblock %}

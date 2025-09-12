@@ -53,15 +53,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${centro.nom}</td>
                         <td>${centro.cod}</td>
                         <td>${centro.depa}</td>
-                        <td class="d-flex gap-1">
-                            <button 
+                        <td>
+                            ${centro.can_edit ? `<button 
                                 class="edit-btn btn btn-outline-warning btn-sm d-flex justify-content-center align-items-center px-2" 
                                 data-id="${centro.id}" 
                                 title="Editar" 
                                 data-bs-toggle="tooltip" 
                                 data-bs-placement="top">
                                 <i class="bi bi-pencil-square"></i>
-                            </button>
+                            </button>`:``}
                             ${deleteBtnHTML}
                         </td>
                     `;

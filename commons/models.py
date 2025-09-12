@@ -731,7 +731,6 @@ class T_contra(models.Model):
         return f"Contrato de {self.instru} - {self.oferta.cargo} ({self.estado})"
 
 
-
 class AuditLog(models.Model):
     ACTION_CHOICES = [
         ("create", "Crear"),
@@ -775,9 +774,9 @@ class AuditLog(models.Model):
         managed = True
         db_table = 't_auditlog'
 
-
     def __str__(self):
         return f"{self.user} realizó {self.get_action_display()} en {self.content_type} (ID {self.object_id})"
+
 
 class T_jui_eva_actu(models.Model):
     """
@@ -789,7 +788,8 @@ class T_jui_eva_actu(models.Model):
     ficha = models.ForeignKey("T_ficha", on_delete=models.CASCADE)  # FICHA
     apre = models.ForeignKey("T_apre", on_delete=models.CASCADE)
     rap = models.ForeignKey("T_raps", on_delete=models.CASCADE)  # RESULTADO_ID
-    instru = models.ForeignKey("T_instru", on_delete=models.SET_NULL, null=True)  # INTRUCT_RESPONSABLE
+    instru = models.ForeignKey(
+        "T_instru", on_delete=models.SET_NULL, null=True)  # INTRUCT_RESPONSABLE
 
     eva = models.CharField(max_length=20)  # EVALUACIÓN
     fecha_eva = models.DateField(null=True, blank=True)  # FCH_EVALUACION
@@ -800,6 +800,7 @@ class T_jui_eva_actu(models.Model):
             models.Index(fields=["ficha", "apre", "rap"]),
             models.Index(fields=["fecha_repor"]),
         ]
+
 
 class T_jui_eva_diff(models.Model):
     """
@@ -813,15 +814,18 @@ class T_jui_eva_diff(models.Model):
     ]
 
     ficha = models.ForeignKey("T_ficha", on_delete=models.CASCADE)
-    apre = models.ForeignKey("T_apre", on_delete=models.CASCADE, null=True, blank=True)
-    instru = models.ForeignKey("T_instru", on_delete=models.SET_NULL, null=True, blank=True)
+    apre = models.ForeignKey(
+        "T_apre", on_delete=models.CASCADE, null=True, blank=True)
+    instru = models.ForeignKey(
+        "T_instru", on_delete=models.SET_NULL, null=True, blank=True)
 
     tipo_cambi = models.CharField(max_length=20, choices=TIPO_CAMBIO_CHOICES)
-    descri = models.TextField(blank=True, null=True) 
+    descri = models.TextField(blank=True, null=True)
     fecha_diff = models.DateTimeField(auto_now_add=True)
 
     # Para enlazar con evaluaciones históricas si aplica
-    jui = models.ForeignKey("T_jui_eva_actu", on_delete=models.SET_NULL, null=True, blank=True)
+    jui = models.ForeignKey(
+        "T_jui_eva_actu", on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         db_table = "t_jui_eva_diff"
@@ -829,4 +833,43 @@ class T_jui_eva_diff(models.Model):
             models.Index(fields=["ficha", "apre", "tipo_cambi"]),
             models.Index(fields=["fecha_diff"]),
         ]
-        
+
+
+class T_permi(models.Model):
+    MODULO_CHOICES = [
+        ('departamentos', 'Departamentos'),
+        ('municipios', 'Municipios'),
+        ('usuarios', 'Usuarios'),
+        ('instructores', 'Instructores'),
+        ('aprendices', 'Aprendices'),
+        ('admin', 'Administradores'),
+        ('lideres', 'Lideres'),
+        ('cuentas', 'Cuentas'),
+        ('gestores', 'Gestores'),
+        ('fichas', 'Fichas'),
+        ('portafolios', 'Portafolios'),
+        ('instituciones', 'Instituciones'),
+        ('centros', 'Centros de Formacion'),
+        ('programas', 'Programas'),
+        ('competencias', 'Competencias'),
+        ('raps', 'Raps'),
+    ]
+
+    ACCION_CHOICES = [
+        ('ver', 'Ver'),
+        ('editar', 'Editar'),
+        ('eliminar', 'Eliminar'),
+    ]
+
+    perfil = models.ForeignKey(
+        "T_perfil", on_delete=models.CASCADE, related_name="permisos")
+    modu = models.CharField(max_length=100, choices=MODULO_CHOICES)
+    acci = models.CharField(max_length=50, choices=ACCION_CHOICES)
+    filtro = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        db_table = "t_permi"
+        unique_together = ("perfil", "modu", "acci")
+
+    def __str__(self):
+        return f"{self.perfil.nom} - {self.modulo}:{self.accion}"

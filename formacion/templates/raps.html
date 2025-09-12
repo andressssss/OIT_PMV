@@ -3,166 +3,177 @@
 {% load icons %}
 
 {% block content %}
-  <main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
-      <div class="row">
-        <div class="col-12">
-          <div class="d-flex justify-content-between align-items-center pb-4">
-            <h1 class="display-5">Gestión de RAP</h1>
-            <div>
-              <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear RAP" data-bs-toggle="modal" data-bs-target="#crearRAPModal">{% icon 'plus' %}</a>
-            </div>
-          </div>
-          <div id="contenedor-filtros">
-            <h5>Filtrar y organizar:</h5>
-            <form id="filtros-form" class="row mb-3">
-              <div class="col-md-3" id="contenedor-fase">
-                <div class="placeholder-glow">
-                  <span class="placeholder col-12 rounded"></span>
-                </div>
-              </div>
-              <div class="col-md-3" id="contenedor-competencia">
-                <div class="placeholder-glow">
-                  <span class="placeholder col-12 rounded"></span>
-                </div>
-              </div>
-              <div class="col-md-6" id="contenedor-programa">
-                <div class="placeholder-glow">
-                  <span class="placeholder col-12 rounded"></span>
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="table-responsive">
-            <table id="raps_table" class="table table-hover table-bordered align-middle">
-              <thead class="table-secondary text-center">
-                <tr>
-                  <th>RAP</th>
-                  <th>Código</th>
-                  <th>Competencia</th>
-                  <th>Programa</th>
-                  <th>Fase</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <td>
-                  <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
-                </td>
-                <td>
-                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span>
-                </td>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-  <!-- Modal para crear RAP -->
-  <div class="modal fade" id="crearRAPModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="crearRAPModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="crearRAPModalLabel">Crear RAP</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="formCrearRAP" autocomplete="off">
-          <div class="modal-body">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label for="nom_crear">Nombre:</label>
-              <input type="text" class="form-control" id="nom_crear" name="nom" required />
-            </div>
-            <div class="mb-3">
-              <label for="cod_crear">Código:</label>
-              <input type="number" name="cod" id="cod_crear" class="form-control" required />
-            </div>
-            <div class="mb-3">
-              <label for="fase_crear">Fases:</label>
-              <div id="contenedor-fases-crear"></div>
-            </div>
-            <div class="mb-3">
-              <label for="progra">Programa:</label>
-              <div id="contenedor-programas-crear"></div>
-            </div>
-
-            <div class="mb-3">
-              <label for="compe_crear" class="form-label">Competencia</label>
-              <div id="contenedor-competencias-crear">
-                <select id="compe_crear" name="compe" class="form-select" required disabled>
-                  <option value="">Seleccione una competencia</option>
-                </select>
-              </div>
-            </div>
-
-            <div id="errorCrearRAP" class="text-danger mt-2"></div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" id="btnCrearRAP" class="btn btn-primary">Crear RAP</button>
-          </div>
-        </form>
+  {% if not can_view %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
       </div>
     </div>
-  </div>
-  <!-- Modal para editar RAP -->
-  <div class="modal fade" id="editarRAPModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarRAPModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="editarRAPModalLabel">Editar RAP</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  {% else %}
+    <main class="container py-5">
+      <section class="card card-body shadow-sm p-4">
+        <div class="row">
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center pb-4">
+              <h1 class="display-5">Gestión de RAP</h1>
+              {% if can_edit%}
+                <div>
+                  <a class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear RAP" data-bs-toggle="modal" data-bs-target="#crearRAPModal">{% icon 'plus' %}</a>
+                </div>
+              {% endif %}
+            </div>
+            <div id="contenedor-filtros">
+              <h5>Filtrar y organizar:</h5>
+              <form id="filtros-form" class="row mb-3">
+                <div class="col-md-3" id="contenedor-fase">
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-12 rounded"></span>
+                  </div>
+                </div>
+                <div class="col-md-3" id="contenedor-competencia">
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-12 rounded"></span>
+                  </div>
+                </div>
+                <div class="col-md-6" id="contenedor-programa">
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-12 rounded"></span>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class="table-responsive">
+              <table id="raps_table" class="table table-hover table-bordered align-middle">
+                <thead class="table-secondary text-center">
+                  <tr>
+                    <th>RAP</th>
+                    <th>Código</th>
+                    <th>Competencia</th>
+                    <th>Programa</th>
+                    <th>Fase</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <td>
+                    <span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span>
+                  </td>
+                  <td>
+                    <span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span>
+                  </td>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="modal-body">
-          <form id="formEditarRAP">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label for="nom_editar">Nombre:</label>
-              <input type="text" class="form-control" id="nom_editar" name="nom" required />
-            </div>
-            <div class="mb-3">
-              <label for="cod_editar">Código:</label>
-              <input type="number" name="cod" id="cod_editar" class="form-control" required />
-            </div>
-            <div class="mb-3">
-              <label for="fase_editar">Fases:</label>
-              <div id="contenedor-fases-editar"></div>
-            </div>
-            <div class="mb-3">
-              <label for="progra">Programa:</label>
-              <div id="contenedor-programas-editar"></div>
-            </div>
-
-            <div class="mb-3">
-              <label for="compe_editar" class="form-label">Competencia</label>
-              <div id="contenedor-competencias-editar">
-                <select id="compe_editar" name="compe" class="form-select" required disabled>
-                  <option value="">Seleccione una competencia</option>
-                </select>
+      </section>
+    </main>
+    <!-- Modal para crear RAP -->
+    <div class="modal fade" id="crearRAPModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="crearRAPModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="crearRAPModalLabel">Crear RAP</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="formCrearRAP" autocomplete="off">
+            <div class="modal-body">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label for="nom_crear">Nombre:</label>
+                <input type="text" class="form-control" id="nom_crear" name="nom" required />
               </div>
-              <small class="form-text text-muted">Seleccione nuevamente el programa de ser necesario, si no encuentra el RAP.</small>
+              <div class="mb-3">
+                <label for="cod_crear">Código:</label>
+                <input type="number" name="cod" id="cod_crear" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label for="fase_crear">Fases:</label>
+                <div id="contenedor-fases-crear"></div>
+              </div>
+              <div class="mb-3">
+                <label for="progra">Programa:</label>
+                <div id="contenedor-programas-crear"></div>
+              </div>
+
+              <div class="mb-3">
+                <label for="compe_crear" class="form-label">Competencia</label>
+                <div id="contenedor-competencias-crear">
+                  <select id="compe_crear" name="compe" class="form-select" required disabled>
+                    <option value="">Seleccione una competencia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="errorCrearRAP" class="text-danger mt-2"></div>
             </div>
-            <div id="errorEditarRAP" class="text-danger mt-2"></div>
+            <div class="modal-footer">
+              <button type="submit" id="btnCrearRAP" class="btn btn-primary">Crear RAP</button>
+            </div>
           </form>
         </div>
-        <div class="modal-footer">
-          <button form="formEditarRAP" type="submit" id="btnEditarRAP" class="btn btn-primary">Editar</button>
+      </div>
+    </div>
+    <!-- Modal para editar RAP -->
+    <div class="modal fade" id="editarRAPModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarRAPModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editarRAPModalLabel">Editar RAP</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formEditarRAP">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label for="nom_editar">Nombre:</label>
+                <input type="text" class="form-control" id="nom_editar" name="nom" required />
+              </div>
+              <div class="mb-3">
+                <label for="cod_editar">Código:</label>
+                <input type="number" name="cod" id="cod_editar" class="form-control" required />
+              </div>
+              <div class="mb-3">
+                <label for="fase_editar">Fases:</label>
+                <div id="contenedor-fases-editar"></div>
+              </div>
+              <div class="mb-3">
+                <label for="progra">Programa:</label>
+                <div id="contenedor-programas-editar"></div>
+              </div>
+
+              <div class="mb-3">
+                <label for="compe_editar" class="form-label">Competencia</label>
+                <div id="contenedor-competencias-editar">
+                  <select id="compe_editar" name="compe" class="form-select" required disabled>
+                    <option value="">Seleccione una competencia</option>
+                  </select>
+                </div>
+                <small class="form-text text-muted">Seleccione nuevamente el programa de ser necesario, si no encuentra el RAP.</small>
+              </div>
+              <div id="errorEditarRAP" class="text-danger mt-2"></div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button form="formEditarRAP" type="submit" id="btnEditarRAP" class="btn btn-primary">Editar</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}

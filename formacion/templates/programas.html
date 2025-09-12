@@ -3,17 +3,27 @@
 {% load icons %}
 
 {% block content %}
+  {% if not can_view %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
+    </div>
+  {% else %}
 <main class="container py-5">
     <section class="card card-body shadow-sm p-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center pb-4">
                 <h1 class="display-5">Gestión de programas</h1>
-                <div>
-                    <a href="/programas/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear programa">
-                        {% icon 'plus' %}
-                    </a>
-                </div>
+                {% if can_edit %}
+                  <div>
+                      <a href="/programas/crear" class="btn btn-primary me-2" data-toggle="tooltip" data-placement="top" title="Crear programa">
+                          {% icon 'plus' %}
+                      </a>
+                  </div>
+                {% endif %}
             </div>
             <div class="table-responsive">
                 <table id="instructores_table" class="table table-hover table-bordered align-middle">
@@ -93,7 +103,7 @@
         </div>
     </div>
 </div>
-
+{% endif %}
 {% endblock %}
 
 
