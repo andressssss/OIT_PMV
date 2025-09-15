@@ -7,9 +7,12 @@ services:
     environment:
       - DJANGO_ENV=${DJANGO_ENV}
     volumes:
+      # Código fuente
       - .:/var/www/iotpmv
+      # Archivos estáticos
       - /var/www/iotpmv/static:/var/www/iotpmv/static
-      - /mnt/fileshare/media:/mnt/fileshare/media
+      # NFS completo
+      - /mnt/fileshare:/mnt/fileshare
     depends_on:
       - redis
 
