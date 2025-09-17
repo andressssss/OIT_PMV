@@ -78,10 +78,16 @@ class Command(BaseCommand):
             type=int,
             help="ID de un aprendiz específico para actualizar"
         )
+        
+        parser.add_argument(
+            "--id_ficha",
+            type=int,
+            help="ID de una ficha para actualizar"
+        )
 
     def handle(self, *args, **options):
         id_aprendiz = options.get("id_aprendiz")
-
+        id_ficha = options.get("id_ficha")
         if id_aprendiz:
             aprendices = T_apre.objects.filter(id=id_aprendiz)
             if not aprendices.exists():
@@ -89,8 +95,16 @@ class Command(BaseCommand):
                     f"No se encontró el aprendiz con id={id_aprendiz}"
                 ))
                 return
+        elif id_ficha:
+            aprendices = T_apre.objects.filter(ficha__id=id_ficha)
+            if not aprendices.exists():
+                self.stdout.write(self.style.ERROR(
+                    f"No se encontró el aprendiz con id={id_aprendiz}"
+                ))
+                return
         else:
-            aprendices = T_apre.objects.all()
+            self.stdout.write("Por seguridad esta función requiere objetivar la muestra de aprendices, use algún parámetro")
+            return
 
         for aprendiz in aprendices:
             if not aprendiz.ficha or not aprendiz.ficha.progra:
