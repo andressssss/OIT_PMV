@@ -252,10 +252,7 @@ document.addEventListener("DOMContentLoaded", function () {
           rar: "bi-file-earmark-zip-fill",
           "7z": "bi-file-earmark-zip-fill",
         };
-        icon.classList.add(
-          "bi",
-          extensionIcons[extension] || "bi-file-earmark"
-        );
+        icon.classList.add("bi", extensionIcons[extension] || "bi-file-earmark");
 
         const link = document.createElement("a");
 
