@@ -490,3 +490,52 @@ select.form-select.choices__input {
   align-items: center;
   justify-content: center;
 }
+
+.blink-highlight {
+  animation: blink 0.6s linear infinite alternate;
+  background-color: yellow;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+@keyframes blink {
+  from { background-color: yellow; }
+  to   { background-color: transparent; }
+}
+
+
+/* Estilo base para los ítems de alerta */
+.alerta-item {
+  background: #f9fafb; /* gris muy claro */
+  border: 1px solid #e5e7eb; /* gris sutil */
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 6px 0;
+  font-size: 14px;
+  color: #374151; /* gris oscuro */
+  display: flex;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+/* Hover para sensación moderna */
+.alerta-item:hover {
+  background: #f3f4f6;
+}
+
+/* Variante warning */
+.alerta-warning {
+  border-left: 4px solid #f59e0b; /* amarillo elegante */
+}
+
+/* Variante success */
+.alerta-success {
+  border-left: 4px solid #10b981; /* verde moderno */
+}
+
+
+#historial-tab-pane {
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
