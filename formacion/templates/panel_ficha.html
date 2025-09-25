@@ -12,40 +12,38 @@
     </div>
   {% else %}
     <main class="container py-5">
-      <section class="card card-body shadow-sm p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2 class="mb-0 display-5">
-            {% if ficha.num == '' %}
-              Panel de ficha sin numero - Fase
+      <section class="card card-body p-4">
+        <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-4 mb-4">
+          <div>
+            <h1 class="h3 mb-1">
+              Panel de la Ficha <span class="text-primary fw-bold">{% if ficha.num %}{{ ficha.num }}{% else %}(Sin numero){% endif %}</span> -
+              <small class="text-muted">Fase {{ fase }}</small>
+            </h1>
+            <span class="badge bg-secondary">Grupo {{ ficha.grupo.id }}</span>
+          </div>
+          <div class="text-end">
+            {% if ficha.instru %}
+              <div class="fw-semibold">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</div>
+              <span class="badge bg-info-subtle text-dark">Instructor</span>
             {% else %}
-              Panel de la ficha {{ ficha.num }} - Fase
+              <span class="badge bg-danger">Sin instructor</span>
             {% endif %}
-            {% if fase|lower == 'analisis' %}
-              análisis
-            {% else %}
-              {{ fase }}
-            {% endif %}- Grupo {{ ficha.grupo.id }}
-          </h2>
-          {% if ficha.instru %}
-            <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
-          {% else %}
-            <span class="h5 text-muted mb-0">Sin instructor</span>
-          {% endif %}
+          </div>
         </div>
 
-        <!-- NavPills -->
-        <ul class="nav nav-pills mb-4 nav-fill" id="instructorTab" role="tablist">
+        <!-- NavPills con íconos y borde -->
+        <ul class="nav nav-pills mb-4 nav-fill border rounded-3 p-2 bg-white" id="instructorTab" role="tablist">
           <li class="nav-item" role="presentation">
-            <a class="nav-link active" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true">Portafolio Ficha</a>
+            <a class="nav-link active d-flex align-items-center justify-content-center" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true"><i class="bi bi-folder-fill me-2"></i> Portafolio Ficha</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
+            <a class="nav-link d-flex align-items-center justify-content-center" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false"><i class="bi bi-people-fill me-2"></i> Aprendices</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="juicios-tab" data-bs-toggle="pill" href="#juicios" role="tab" aria-controls="juicios" aria-selected="false">RAPS</a>
+            <a class="nav-link d-flex align-items-center justify-content-center" id="juicios-tab" data-bs-toggle="pill" href="#juicios" role="tab" aria-controls="juicios" aria-selected="false"><i class="bi bi-journal-text me-2"></i> RAPS</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false">Historial</a>
+            <a class="nav-link d-flex align-items-center justify-content-center" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false"><i class="bi bi-clock-history me-2"></i> Historial</a>
           </li>
         </ul>
 
@@ -53,128 +51,153 @@
         <div class="tab-content" id="instructorTabContent">
           <!-- Portafolio Ficha -->
           <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
-            <div class="card shadow-sm">
+            <div class="card">
               <div class="card-body">
-                <div class="d-flex justify-content-end mb-3">
-                  <a href="{% url 'descargar_portafolio_zip' ficha.id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> Descargar portafolio</a>
+                <ul class="nav nav-tabs" id="portafolioTab" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="portafolio-tab" data-bs-toggle="tab" data-bs-target="#portafolio-tab-pane" type="button" role="tab" aria-controls="portafolio-tab-pane" aria-selected="true">Portafolio</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="alertas-tab" data-bs-toggle="tab" data-bs-target="#alertas-tab-pane" type="button" role="tab" aria-controls="alertas-tab-pane" aria-selected="false">Carpetas sin documentación</button>
+                  </li>
+                </ul>
+
+                <div class="tab-content" id="portafolioTabContent">
+                  <div class="tab-pane fade show active" id="portafolio-tab-pane" role="tabpanel" aria-labelledby="portafolio-tab" tabindex="0">
+                    <div class="d-flex justify-content-end mb-3 p-1">
+                      <a href="{% url 'descargar_portafolio_zip' ficha.id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i>Estructura del Portafolio</a>
+                    </div>
+                    <!-- Sección del árbol de carpetas -->
+                    <div class="mb-5">
+                      <div id="folderTree"></div>
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" id="alertas-tab-pane" role="tabpanel" aria-labelledby="alertas-tab" tabindex="0">
+                    <ul id="alertasList" class="list-group"></ul>
+                  </div>
                 </div>
-                <!-- Sección del árbol de carpetas -->
-                <div class="mb-5">
-                  <h5 class="mb-3">Estructura del Portafolio</h5>
-                  <div id="folderTree"></div>
-                </div>
+
                 <hr />
-                <!-- Sección del acordeón -->
-                <div class="accordion mt-4" id="formatosPlantillasAccordion">
-                  <h5 class="mb-3">Documentos del proceso</h5>
-                  <!-- 1. Plan de trabajo concertado -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading1"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1">1. Plan de Trabajo Concertado con sus Descriptores</button></h2>
-                    <div id="collapse1" class="accordion-collapse collapse" aria-labelledby="heading1" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <ul class="list-group list-group-flush">
-                          <li class="list-group-item">
-                            <a href="{% static '/documents/portafolio_ficha/1/DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX.docx' %}">DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX</a><br />
-                            <small>Debe subir el DESCRIPTOR de todos sus APRENDICES ACTIVOS unificados en un documento PDF. Para cada fase.</small>
-                          </li>
-                        </ul>
+                <ul class="nav nav-tabs" id="portafolioAnexTab" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="formatos-tab" data-bs-toggle="tab" data-bs-target="#formatos-tab-pane" type="button" role="tab" aria-controls="formatos-tab-pane" aria-selected="true">Documentos del proceso</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial-tab-pane" type="button" role="tab" aria-controls="historial-tab-pane" aria-selected="false">Historial de Acciones</button>
+                  </li>
+                </ul>
+                <div class="tab-content" id="portafolioAnexTabContent">
+                  <div class="tab-pane fade show active" id="formatos-tab-pane" role="tabpanel" aria-labelledby="formatos-tab" tabindex="0">
+                    <!-- Sección del acordeón -->
+                    <div class="accordion mt-4" id="formatosPlantillasAccordion">
+                      <!-- 1. Plan de trabajo concertado -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading1"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1">1. Plan de Trabajo Concertado con sus Descriptores</button></h2>
+                        <div id="collapse1" class="accordion-collapse collapse" aria-labelledby="heading1" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <ul class="list-group list-group-flush">
+                              <li class="list-group-item">
+                                <a href="{% static '/documents/portafolio_ficha/1/DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX.docx' %}">DESCRIPTORES DE LA RUTA DE APRENDIZAJE FASE [nombre de la fase] - FICHA XXXXXX</a><br />
+                                <small>Debe subir el DESCRIPTOR de todos sus APRENDICES ACTIVOS unificados en un documento PDF. Para cada fase.</small>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <!-- 2. Guía de Aprendizaje -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading2"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">2. GFPI-F-135 - Guía de Aprendizaje</button></h2>
-                    <div id="collapse2" class="accordion-collapse collapse" aria-labelledby="heading2" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <ul class="list-group list-group-flush">
-                          <li class="list-group-item">
-                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN  DEL TALLER.docx' %}">FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN DEL TALLER</a><br />
-                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO.docx' %}">FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO</a><br />
-                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO.docx' %}">FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO</a><br />
-                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO RUBRICA  CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE.docx' %}">FORMATO RUBRICA CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE</a><br />
-                            <a href="{% static '/documents/portafolio_ficha/2/FORMATO RÚBRICA CON EJEMPLO,  CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS.docx' %}">FORMATO RÚBRICA CON EJEMPLO, CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS</a><br />
-                            <small>Dados los ejemplos, unifique en un solo PDF, por cada formato escogido, los documentos diligenciados por todos sus APRENDICES ACTIVOS.</small>
-                          </li>
-                        </ul>
+                      <!-- 2. Guía de Aprendizaje -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading2"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">2. GFPI-F-135 - Guía de Aprendizaje</button></h2>
+                        <div id="collapse2" class="accordion-collapse collapse" aria-labelledby="heading2" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <ul class="list-group list-group-flush">
+                              <li class="list-group-item">
+                                <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN  DEL TALLER.docx' %}">FORMATO CON EJEMPLO LISTA DE VERIFICACIÓN DEL TALLER</a><br />
+                                <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO.docx' %}">FORMATO CON EJEMPLO PARA EVALUACION DE CONOCIMIENTO</a><br />
+                                <a href="{% static '/documents/portafolio_ficha/2/FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO.docx' %}">FORMATO CON VARIABLES EJEMPLO, LISTA DE CHEQUEO</a><br />
+                                <a href="{% static '/documents/portafolio_ficha/2/FORMATO RUBRICA  CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE.docx' %}">FORMATO RUBRICA CON EJEMPLO, PRODUCTO DE CONCEPTOS Y PRINCIPIOS PROGRAMACIÓN DE SOFTWARE</a><br />
+                                <a href="{% static '/documents/portafolio_ficha/2/FORMATO RÚBRICA CON EJEMPLO,  CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS.docx' %}">FORMATO RÚBRICA CON EJEMPLO, CONOCIMIENTOS DE CONCEPTOS Y PRINCIPIOS</a><br />
+                                <small>Dados los ejemplos, unifique en un solo PDF, por cada formato escogido, los documentos diligenciados por todos sus APRENDICES ACTIVOS.</small>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <!-- 3. Formato Acta V02 -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading3"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">3. GORF-084 - Formato Acta V02</button></h2>
-                    <div id="collapse3" class="accordion-collapse collapse" aria-labelledby="heading3" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <a href="{% static '/documents/portafolio_ficha/3/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a>
-                        <a href="{% static '/documents/portafolio_ficha/3/EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024 (2).pdf' %}">EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024</a>
+                      <!-- 3. Formato Acta V02 -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading3"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">3. GORF-084 - Formato Acta V02</button></h2>
+                        <div id="collapse3" class="accordion-collapse collapse" aria-labelledby="heading3" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <a href="{% static '/documents/portafolio_ficha/3/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a>
+                            <a href="{% static '/documents/portafolio_ficha/3/EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024 (2).pdf' %}">EJEMPLO - CERTIFICADO TRANSVERSALES COLEGIO PARROQUIAL ADVENIAT 2024</a>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <!-- 4. Planeación Etapa Productiva -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading4"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">4. GFPI-F-023 - Planeación Etapa Productiva</button></h2>
-                    <div id="collapse4" class="accordion-collapse collapse" aria-labelledby="heading4" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <a href="{% static '/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo.xlsx' %}">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo</a><br />
-                        <small>Subir el formato sin llenar</small>
+                      <!-- 4. Planeación Etapa Productiva -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading4"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">4. GFPI-F-023 - Planeación Etapa Productiva</button></h2>
+                        <div id="collapse4" class="accordion-collapse collapse" aria-labelledby="heading4" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <a href="{% static '/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo.xlsx' %}">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo</a><br />
+                            <small>Subir el formato sin llenar</small>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <!-- 5. Formato de Inasistencias -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading5"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">5. Formato de Inasistencias</button></h2>
-                    <div id="collapse5" class="accordion-collapse collapse" aria-labelledby="heading5" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <a href="{% static '/documents/portafolio_ficha/5/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx ' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
-                        <small>Mantenerlo ACTUALIZADO a la fecha.</small>
+                      <!-- 5. Formato de Inasistencias -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading5"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">5. Formato de Inasistencias</button></h2>
+                        <div id="collapse5" class="accordion-collapse collapse" aria-labelledby="heading5" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <a href="{% static '/documents/portafolio_ficha/5/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx ' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
+                            <small>Mantenerlo ACTUALIZADO a la fecha.</small>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <!-- 6. Acta Plan de Mejoramiento -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading6"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6" aria-expanded="false" aria-controls="collapse6">6. Acta Plan de Mejoramiento</button></h2>
-                    <div id="collapse6" class="accordion-collapse collapse" aria-labelledby="heading6" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <ul class="list-group list-group-flush">
-                          <li class="list-group-item">
-                            <a href="{% static '/documents/portafolio_ficha/6/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
-                            <small>Se deja constancia en un ACTA del PLAN DE MEJORAMIENTO definido o se registra en un ACTA que no se aplicó.</small>
-                          </li>
-                        </ul>
+                      <!-- 6. Acta Plan de Mejoramiento -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading6"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6" aria-expanded="false" aria-controls="collapse6">6. Acta Plan de Mejoramiento</button></h2>
+                        <div id="collapse6" class="accordion-collapse collapse" aria-labelledby="heading6" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <ul class="list-group list-group-flush">
+                              <li class="list-group-item">
+                                <a href="{% static '/documents/portafolio_ficha/6/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
+                                <small>Se deja constancia en un ACTA del PLAN DE MEJORAMIENTO definido o se registra en un ACTA que no se aplicó.</small>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <!-- 7. Evidencias Intensificación -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading7"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7" aria-expanded="false" aria-controls="collapse7">7. Evidencias de Estrategia de Intensificación</button></h2>
-                    <div id="collapse7" class="accordion-collapse collapse" aria-labelledby="heading7" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <a href="{% static '/documents/portafolio_ficha/7/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
-                        <a href="{% static '/documents/portafolio_ficha/7/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
+                      <!-- 7. Evidencias Intensificación -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading7"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7" aria-expanded="false" aria-controls="collapse7">7. Evidencias de Estrategia de Intensificación</button></h2>
+                        <div id="collapse7" class="accordion-collapse collapse" aria-labelledby="heading7" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <a href="{% static '/documents/portafolio_ficha/7/FORMATO DE INASISTENCIA A LA FORMACIÓN.xlsx' %}">FORMATO DE INASISTENCIA A LA FORMACIÓN</a><br />
+                            <a href="{% static '/documents/portafolio_ficha/7/GOR-F-084 Formato de Acta V02.docx' %}">GOR-F-084 Formato de Acta V02</a><br />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <!-- 8. Formato de Homologación -->
-                  <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading8"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse8" aria-expanded="false" aria-controls="collapse8">8. GFPI-F-035 - Formato de Homologación</button></h2>
-                    <div id="collapse8" class="accordion-collapse collapse" aria-labelledby="heading8" data-bs-parent="#formatosPlantillasAccordion">
-                      <div class="accordion-body">
-                        <a href="#">GFPI-F-035 Formato de Homologación Técnico.docx</a><br />
-                        <small>Del programa que le corresponde a la FICHA completamente diligenciado y con FIRMAS.</small>
+                      <!-- 8. Formato de Homologación -->
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading8"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse8" aria-expanded="false" aria-controls="collapse8">8. GFPI-F-035 - Formato de Homologación</button></h2>
+                        <div id="collapse8" class="accordion-collapse collapse" aria-labelledby="heading8" data-bs-parent="#formatosPlantillasAccordion">
+                          <div class="accordion-body">
+                            <a href="#">GFPI-F-035 Formato de Homologación Técnico.docx</a><br />
+                            <small>Del programa que le corresponde a la FICHA completamente diligenciado y con FIRMAS.</small>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <hr />
-                <div class="mt-4">
-                  <h5>Historial de Acciones</h5>
-                  <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
+                  <div class="tab-pane fade" id="historial-tab-pane" role="tabpanel" aria-labelledby="historial-tab" tabindex="0">
+                    <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
+                  </div>
                 </div>
               </div>
             </div>
