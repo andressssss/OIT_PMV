@@ -490,7 +490,7 @@ export async function crearSelect({
   contenedor,
 }) {
   const contenedorEl = document.querySelector(contenedor);
-  if(!contenedorEl){
+  if (!contenedorEl) {
     return;
   }
   contenedorEl.innerHTML = `
@@ -523,7 +523,7 @@ export async function crearSelect({
     contenedorEl.appendChild(select);
 
     // Inicializar TomSelect
-    new TomSelect(select, {
+    const ts = new TomSelect(select, {
       placeholder: placeholderTexto,
       allowEmptyOption: true,
       plugins: ["remove_button"],
@@ -535,6 +535,8 @@ export async function crearSelect({
         direction: "asc",
       },
     });
+
+    return ts;
   } catch (error) {
     console.error(`Error al cargar las opciones para ${id}`, error);
     contenedorEl.innerHTML = `<div class="text-danger small">Error al cargar opciones</div>`;

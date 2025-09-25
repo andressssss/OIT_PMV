@@ -2,245 +2,53 @@
 {% load static %}
 {% block content %}
   <main class="container py-5">
-    <section class="card card-body shadow-sm p-4">
-      <h1 class="text-center display-5">Gestión de entidades</h1>
+    {% for grupo in modulos %}
+      {% if grupo.tiene_visible %}
+        <section class="mb-5">
+          <!-- Encabezado del grupo -->
+          <h3 class="mb-4 pb-2 border-bottom">{{ grupo.grupo }}</h3>
 
-      <p class="text-center mb-4">En esta sección puedes crear nuevos usuarios y gestionar los actores del sistema.</p>
-
-      {% if acciones.departamentos.ver or acciones.municipios.ver or acciones.usuarios.ver or acciones.instructores.ver or acciones.aprendices.ver or acciones.administradores.ver or acciones.lideres.ver or acciones.cuentas.ver or acciones.gestores.ver or acciones.fichas.ver or acciones.instituciones.ver or acciones.centrosformacion.ver or acciones.programas.ver or acciones.competencias.ver or acciones.raps.ver %}
-        <!-- ======== SISTEMA / ENTIDADES GENERALES ======== -->
-        {% if acciones.departamentos.ver or acciones.municipios.ver or acciones.usuarios.ver %}
-          <h4 class="mt-5 mb-3 border-bottom pb-2">Sistema</h4>
-          <div class="row row-cols-1 row-cols-md-5">
-            {% if acciones.departamentos.ver %}
-              <div class="col">
-                <a href="{% url 'departamentos' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/departamentosIcon.png' %}" class="card-img-top p-4" alt="Departamentos" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Departamentos</h5>
-                      <p class="card-text">Administrar los departamentos del sistema.</p>
+          <div class="row g-3">
+            {% for item in grupo.items %}
+              {% if item.visible %}
+                <div class="col-md-3 col-sm-6">
+                  <a href="{% url item.url %}" class="menu-item text-decoration-none">
+                    <div class="menu-icon mb-3">
+                      <img src="{% static item.img %}" alt="{{ item.titulo }}" />
                     </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.municipios.ver %}
-              <div class="col">
-                <a href="{% url 'municipios' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/municipiosIcon.png' %}" class="card-img-top p-4" alt="Municipios" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Municipios</h5>
-                      <p class="card-text">Administrar los municipios del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.usuarios.ver %}
-              <div class="col">
-                <a href="{% url 'usuarios' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/usuario.png' %}" class="card-img-top p-4" alt="Usuarios" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Usuarios</h5>
-                      <p class="card-text">Administrar los usuarios del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
+                    <h5 class="fw-semibold">{{ item.titulo }}</h5>
+                    <p class="text-muted small">{{ item.desc }}</p>
+                  </a>
+                </div>
+              {% endif %}
+            {% endfor %}
           </div>
-        {% endif %}
-
-        <!-- ======== USUARIOS Y ROLES ======== -->
-        {% if acciones.instructores.ver or acciones.aprendices.ver or acciones.administradores.ver or acciones.lideres.ver or acciones.cuentas.ver or acciones.gestores.ver %}
-          <h4 class="mt-5 mb-3 border-bottom pb-2">Usuarios y roles</h4>
-          <div class="row row-cols-1 row-cols-md-5">
-            {% if acciones.instructores.ver %}
-              <div class="col">
-                <a href="{% url 'instructores' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/instructoricon2.png' %}" class="card-img-top p-4" alt="Instructores" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Instructores</h5>
-                      <p class="card-text">Administrar los instructores del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.aprendices.ver %}
-              <div class="col">
-                <a href="{% url 'aprendices' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/aprendizicon.png' %}" class="card-img-top p-4" alt="Aprendices" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Aprendices</h5>
-                      <p class="card-text">Administrar los aprendices del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.admin.ver %}
-              <div class="col">
-                <a href="{% url 'administradores' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/adminicon2.png' %}" class="card-img-top p-4" alt="Administradores" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Administradores</h5>
-                      <p class="card-text">Administrar los admins del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.lideres.ver %}
-              <div class="col">
-                <a href="{% url 'lideres' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/leadericon.png' %}" class="card-img-top p-4" alt="Líderes" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Equipo nacional</h5>
-                      <p class="card-text">Administrar el equipo nacional.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.cuentas.ver %}
-              <div class="col">
-                <a href="{% url 'cuentas' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/cuentasicon.png' %}" class="card-img-top p-4" alt="Cuentas" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Cuentas</h5>
-                      <p class="card-text">Administrar los perfiles de cuentas.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.gestores.ver %}
-              <div class="col">
-                <a href="{% url 'gestores' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/gestoricon.png' %}" class="card-img-top p-4" alt="Gestores" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Gestores</h5>
-                      <p class="card-text">Administrar los gestores del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-          </div>
-        {% endif %}
-
-        <!-- ======== CURRÍCULO Y ACTIVIDADES ======== -->
-        {% if acciones.fichas.ver or acciones.instituciones.ver or acciones.centrosformacion.ver or acciones.programas.ver or acciones.competencias.ver or acciones.raps.ver %}
-          <h4 class="mt-5 mb-3 border-bottom pb-2">Currículo y actividades</h4>
-          <div class="row row-cols-1 row-cols-md-5">
-            {% if acciones.fichas.ver %}
-              <div class="col">
-                <a href="{% url 'fichas' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/programasIcon.png' %}" class="card-img-top p-4" alt="Fichas" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Fichas</h5>
-                      <p class="card-text">Administrar fichas.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.instituciones.ver %}
-              <div class="col">
-                <a href="{% url 'instituciones' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/InstitucionesIcon.png' %}" class="card-img-top p-4" alt="Instituciones" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Instituciones</h5>
-                      <p class="card-text">Administrar las instituciones del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.centros.ver %}
-              <div class="col">
-                <a href="{% url 'centrosformacion' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/centroFormacionIcon.png' %}" class="card-img-top p-4" alt="Centros de formación" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Centros de formación</h5>
-                      <p class="card-text">Administrar los Centros de formación del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.programas.ver %}
-              <div class="col">
-                <a href="{% url 'programas' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/programasIcon.png' %}" class="card-img-top p-4" alt="Programas" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Programas</h5>
-                      <p class="card-text">Administrar los programas del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.competencias.ver %}
-              <div class="col">
-                <a href="{% url 'competencias' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/competenciaIcon.png' %}" class="card-img-top p-4" alt="Competencias" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">Competencias</h5>
-                      <p class="card-text">Administrar las competencias del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-
-            {% if acciones.raps.ver %}
-              <div class="col">
-                <a href="{% url 'raps' %}" class="btn">
-                  <div class="card shadow-sm card-anim h-100">
-                    <img src="{% static 'images/rapsIcon.png' %}" class="card-img-top p-4" alt="RAPS" />
-                    <div class="card-body text-center">
-                      <h5 class="card-title">RAPS</h5>
-                      <p class="card-text">Administrar los RAPS del sistema.</p>
-                    </div>
-                  </div>
-                </a>
-              </div>
-            {% endif %}
-          </div>
-        {% endif %}
-      {% else %}
-        <div class="alert alert-warning text-center mt-5" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          No tiene permisos para acceder a ningún módulo del sistema. Contacte al administrador para revisar sus accesos.
-        </div>
+        </section>
       {% endif %}
-    </section>
+    {% endfor %}
   </main>
+
+  <style>
+    .menu-item {
+      display: block;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      text-align: center;
+      background-color: #f8f9fa;
+      color: inherit;
+      transition: all 0.2s ease-in-out;
+      height: 100%;
+    }
+    
+    .menu-item:hover {
+      background-color: #e9f0ff;
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .menu-icon img {
+      max-height: 64px;
+      width: auto;
+    }
+  </style>
 {% endblock %}

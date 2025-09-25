@@ -26,21 +26,7 @@ import {
 
 document.addEventListener("DOMContentLoaded", () => {
   const userRole = document.body.dataset.userRole;
-
   const tableEl = document.getElementById("listado_fichas_table");
-  const table = new DataTable(tableEl, {
-    language: {
-      url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
-    },
-    deferRender: true,
-    ordering: false,
-    drawCallback: () => {
-      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
-        new bootstrap.Tooltip(el);
-      });
-    },
-  });
-
   cargarDatosTabla();
 
   async function cargarDatosTabla() {
@@ -49,119 +35,123 @@ document.addEventListener("DOMContentLoaded", () => {
         crearSelect({
           id: "estado",
           nombre: "estados",
-          url: "/api/fichas/estados/",
+          url: "/api/formacion/fichas/opciones-estados/",
           placeholderTexto: "Seleccione un estado",
           contenedor: "#contenedor-estado",
         }),
-        crearSelect({
+        crearSelectForm({
           id: "instructor",
           nombre: "instructores",
-          url: "/api/fichas/instructores/",
+          url: "/api/formacion/fichas/opciones-instructores/",
           placeholderTexto: "Seleccione un instructor",
           contenedor: "#contenedor-instructor",
         }),
-        crearSelect({
+        crearSelectForm({
           id: "programa",
           nombre: "programas",
-          url: "/api/fichas/programas/",
+          url: "/api/formacion/fichas/opciones-programas/",
           placeholderTexto: "Seleccione un programa",
           contenedor: "#contenedor-programa",
         }),
       ]);
 
+      const table = new DataTable(tableEl, {
+        serverSide: true,
+        processing: false,
+        ajax: {
+          url: "/api/formacion/fichas/filtrar/",
+          type: "GET",
+          data: function (d) {
+            d.estados = document.querySelector("#estado").value || "";
+            d.instructores = document.querySelector("#instructor").value || "";
+            d.programas = document.querySelector("#programa").value || "";
+          },
+        },
+        columns: [
+          { data: "num", render: (data) => data || "No registrado" , title: "Numero ficha"},
+          { data: "grupo_id", render: (data) => data || "No registrado", title: "Numero grupo" },
+          { data: "esta", title: "Estado" },
+          { data: "centro_nom", title: "Centro" },
+          { data: "insti_nom", title: "Institución" },
+          {
+            data: "instru_nom",
+            title: "Instructor",
+            render: (data) => data || "No asignado",
+          },
+          { data: "num_apre_proce", title: "Matriculados" },
+          { data: "progra_nom", title: "Programa" },
+          {
+            data: null,
+            orderable: false,
+            render: function (data, type, row) {
+              let botones = "";
+
+              if (data.can_view_p) {
+                botones += `
+              <a class="btn btn-outline-primary btn-sm mb-1" 
+                  href="/ficha/${row.id}/"
+                  title="Ver ficha"
+                  data-bs-toggle="tooltip" 
+                  data-bs-placement="top">
+                  <i class="bi bi-journals"></i>
+              </a>
+            `;
+              }
+              if (data.can_edit) {
+                botones += `
+              <a class="btn btn-outline-warning btn-sm mb-1 btnEditarFicha"
+                  data-id="${row.id}"
+                  title="Editar ficha"
+                  data-bs-toggle="tooltip" 
+                  data-bs-placement="top">
+                  <i class="bi bi-pencil-square"></i>
+              </a>
+            `;
+              }
+              return botones;
+            },
+          },
+        ],
+        language: {
+          url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+        },
+        drawCallback: () => {
+          document
+            .querySelectorAll('[data-bs-toggle="tooltip"]')
+            .forEach((el) => {
+              new bootstrap.Tooltip(el);
+            });
+        },
+      });
+      table.on("preXhr.dt", () => mostrarPlaceholdersTabla());
+
       document
         .querySelectorAll("#estado, #instructor, #programa")
-        .forEach((el) => el.addEventListener("change", aplicarFiltros));
-
-      const response = await fetch(`/api/fichas/filtrar/`);
-      const data = await response.json();
-      if (!response.ok) {
-        toastError(data.error || "No tiene permisos para ver este módulo.");
-        return;
-      }
-      renderTabla(data);
+        .forEach((el) =>
+          el.addEventListener("change", () => table.ajax.reload())
+        );
     } catch (error) {
       toastError(error);
     }
-  }
-
-  function renderTabla(data) {
-    table.clear();
-
-    data.forEach((el) => {
-      let botones = "";
-
-      if (el.can_view_p) {
-        botones += `
-        <a class="btn btn-outline-primary btn-sm mb-1" 
-            href="/ficha/${el.id}/"
-            title="Ver ficha"
-            data-bs-toggle="tooltip" 
-            data-bs-placement="top">
-            <i class="bi bi-journals"></i>
-        </a>
-      `;
-      }
-      if (el.can_edit) {
-        botones += `
-          <a class="btn btn-outline-warning btn-sm mb-1 btnEditarFicha" 
-              data-id="${el.id}"
-              title="Editar ficha"
-              data-bs-toggle="tooltip" 
-              data-bs-placement="top">
-              <i class="bi bi-pencil-square"></i>
-          </a>
-        `;
-      }
-
-      table.row.add([
-        el.num || "No registrado",
-        el.grupo ?? "No registrado",
-        el.estado,
-        el.fecha_aper,
-        el.centro,
-        el.institucion,
-        el.instru ?? "No asignado",
-        el.matricu,
-        el.progra,
-        botones,
-      ]);
-    });
-
-    table.draw();
   }
 
   function mostrarPlaceholdersTabla() {
     const tbody = document.querySelector("#listado_fichas_table tbody");
     tbody.innerHTML = "";
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-            <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
-            <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded d-block" style="height: 1.5rem;"></span></td>
-        `;
-    tbody.appendChild(tr);
-  }
+    const rows = 10;
+    const cols = 10;
 
-  async function aplicarFiltros() {
-    mostrarPlaceholdersTabla();
-    const formData = new FormData(document.getElementById("filtros-form"));
-    const params = new URLSearchParams(formData).toString();
-
-    try {
-      const response = await fetch(`/api/fichas/filtrar/?${params}`);
-      const data = await response.json();
-      renderTabla(data);
-    } catch (error) {
-      toastError(error);
+    for (let i = 0; i < rows; i++) {
+      const tr = document.createElement("tr");
+      for (let j = 0; j < cols; j++) {
+        tr.innerHTML += `
+        <td>
+          <span class="placeholder col-8 placeholder-glow rounded d-block" style="height: 1.2rem;"></span>
+        </td>
+      `;
+      }
+      tbody.appendChild(tr);
     }
   }
 

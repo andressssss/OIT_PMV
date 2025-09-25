@@ -9,159 +9,110 @@ import {
   csrfToken,
   showSuccessToast,
   showErrorToast,
+  crearSelect,
 } from "/static/js/utils.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const loadingDiv = document.getElementById("loading");
   const tableElement = document.getElementById("aprendices");
-  const selectElemento = document.getElementById("ordenar_por");
   const form = document.getElementById("formEditarAprendiz");
-  const contenedor = document.getElementById("contenedor");
+  let table;
+
   cargarDatosTabla();
 
-  // ======= Inicialización de DataTable =======
-  const table = new DataTable(tableElement, {
-    ajax: {
-      url: `/api/usuarios/aprendices/filtrar/`,
-      type: "GET",
-      data: function (d) {
-        const form = document.getElementById("filtros-form");
-        if (form) {
-          const formData = new FormData(form);
-          for (const [key, value] of formData.entries()) {
-            d[key] = value;
-          }
-        }
+  // ======== Funcion para llenar la tabla =========
+  async function cargarDatosTabla() {
+    
+    const estadosSelect = await crearSelect({
+      id: "estados",
+      nombre: "estados",
+      url: "/api/aprendices/estados/",
+      placeholderTexto: "Seleccione un estado",
+      contenedor: "#contenedor-estado",
+    })
+
+    // ======= Inicialización de DataTable =======
+    table = new DataTable(tableElement, {
+      serverSide: true,
+      processing: false,
+      ajax: {
+        url: `/api/usuarios/aprendices/filtrar/`,
+        type: "GET",
+        data: function (d) {
+            d.estados = estadosSelect ? estadosSelect.getValue() : [];
+        },
       },
-    },
-    columns: [
-      { data: "perfil.nom", title: "Nombre" },
-      { data: "perfil.apelli", title: "Apellido" },
-      { data: "perfil.tele", title: "Teléfono" },
-      { data: "perfil.dire", title: "Dirección" },
-      { data: "perfil.fecha_naci", title: "Fecha de nacimiento" },
-      { data: "perfil.tipo_dni", title: "Tipo de DNI" },
-      { data: "perfil.dni", title: "DNI" },
-      {
-        data: null,
-        orderable: false,
-        render: function (data, type, row) {
-          let botones = `<button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
-                    data-id="${row.id}"
+      columns: [
+        { data: "perfil.nom", title: "Nombre" },
+        { data: "perfil.apelli", title: "Apellido" },
+        { data: "perfil.tele", title: "Teléfono" },
+        { data: "perfil.dire", title: "Dirección" },
+        { data: "perfil.fecha_naci", title: "Fecha de nacimiento" },
+        { data: "perfil.tipo_dni", title: "Tipo de DNI" },
+        { data: "perfil.dni", title: "DNI" },
+        {
+          data: null,
+          orderable: false,
+          render: (_, __, row) => {
+            let botones = `<button class="btn btn-outline-primary btn-sm mb-1 perfil-btn" 
+                    data-id="${row.perfil.id}"
                     title="Ver Perfil"
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">
                     <i class="bi bi-plus-lg"></i>
                 </button>`;
-          if (row.can_edit) {
-            botones += `<button class="btn btn-outline-warning btn-sm mb-1 edit-btn" 
-                    data-id="${row.id}"
+            if (row.can_edit) {
+              botones += `<button class="btn btn-outline-warning btn-sm mb-1 edit-btn" 
+                    data-id="${row.perfil.id}"
                     title="Editar"
                     data-bs-toggle="tooltip" 
                     data-bs-placement="top">
                     <i class="bi bi-pencil-square"></i>
                 </button>`;
-          }
-          return botones;
+            }
+            return botones;
+          },
         },
+      ],
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
       },
-    ],
-    language: {
-      url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
-    },
-    deferRender: true,
-    ordering: false,
-    drawCallback: () => {
-      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
-        new bootstrap.Tooltip(el);
-      });
-    },
-  });
+      drawCallback: () => {
+        document
+          .querySelectorAll('[data-bs-toggle="tooltip"]')
+          .forEach((el) => {
+            new bootstrap.Tooltip(el);
+          });
+      },
+    });
 
-  // ======== Funcion para llenar la tabla =========
-  function cargarDatosTabla() {
-    if (contenedor) {
-      fadeIn(loadingDiv);
-      fadeOutElement(contenedor);
+    table.on("preXhr.dt", () => mostrarPlaceholdersTabla());
 
-      const promesasSelect2 = [
-        cargarOpciones(
-          "/api/aprendices/usuarios_crea/",
-          "#usuarios_creacion",
-          "Creado por"
-        ),
-        cargarOpciones(
-          "/api/aprendices/estados/",
-          "#estados",
-          "Seleccione un estado"
-        ),
-      ];
+    // Aplicar filtros al cambiar
+    document
+      .querySelector("#estados")
+      .addEventListener("change", () => table.ajax.reload());
+  }
 
-      // =======Iniciar select organizar ========
-      new TomSelect(selectElemento, {
-        placeholder: "Ordenar por...",
-        allowEmptyOption: true,
-        plugins: ["clear_button"],
-        controlInput: false,
-        render: {
-          option_create: null,
-        },
-      });
+  function mostrarPlaceholdersTabla() {
+    const tbody = document.querySelector("#aprendices tbody");
+    tbody.innerHTML = "";
 
-      Promise.all([...promesasSelect2]).finally(() => {
-        fadeOut(loadingDiv);
-        fadeInElement(contenedor);
-      });
+    const rows = 10;
+    const cols = 8;
+
+    for (let i = 0; i < rows; i++) {
+      const tr = document.createElement("tr");
+      for (let j = 0; j < cols; j++) {
+        tr.innerHTML += `
+        <td>
+          <span class="placeholder col-8 placeholder-glow rounded d-block" style="height: 1.2rem;"></span>
+        </td>
+      `;
+      }
+      tbody.appendChild(tr);
     }
   }
-
-  // ========= Funcion para filtrar la tabla =======
-  function aplicarFiltros() {
-    fadeIn(loadingDiv);
-    table.ajax.reload(() => fadeOut(loadingDiv));
-  }
-
-  // ======= Cargar opciones dinámicas para filtros =======
-  function cargarOpciones(url, elemento, placeholder) {
-    fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        const selectElement = document.querySelector(elemento);
-        selectElement.innerHTML = "";
-
-        data.forEach((item) => {
-          const optionElement = document.createElement("option");
-          optionElement.value = item;
-          optionElement.textContent = item;
-          selectElement.appendChild(optionElement);
-        });
-
-        new TomSelect(selectElement, {
-          placeholder: placeholder,
-          allowEmptyOption: true,
-          plugins: ["remove_button"],
-          persist: false,
-          create: false,
-          closeAfterSelect: true,
-          sortField: {
-            field: "text",
-            direction: "asc",
-          },
-        });
-      })
-      .catch((error) =>
-        console.error(`Error al cargar las opciones para ${elemento}`, error)
-      );
-  }
-
-  // Aplicar filtros al cambiar
-  document
-    .querySelectorAll(
-      "#usuarios_creacion, #estados, #ordenar_por, #fecha_creacion"
-    )
-    .forEach((select) => {
-      select.addEventListener("change", aplicarFiltros);
-    });
 
   // ======= Botón Editar Aprendiz =======
   document.addEventListener("click", function (e) {
@@ -299,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const modalInstance = bootstrap.Modal.getInstance(modalElement);
           modalInstance.hide();
 
-          aplicarFiltros();
+          table.ajax.reload();
         })
         .catch((error) => {
           showErrorToast(error.message);

@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.db.models import Q
 import csv
 from django.shortcuts import get_object_or_404
-from api.serializers.formacion import FaseSerializer, JuicioHistoSerializer, JuicioSerializer,  RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer, JuicioHistoSerializer
+from api.serializers.formacion import FaseSerializer, JuicioHistoSerializer, JuicioSerializer,  RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer, JuicioHistoSerializer, FichaFiltrarSerializer
 from commons.models import T_jui_eva_actu, T_fase, T_raps, AuditLog, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz, T_jui_eva_diff
 from django.contrib.auth.models import User
 from django.utils.timezone import localtime
@@ -94,8 +94,9 @@ class RapsViewSet(ModelViewSet):
             qs = qs.filter(compe__nom__in=competencias)
 
         data = self.get_serializer(qs, many=True).data
-        
-        can_edit = PermisosMixin().get_permission_actions_for(request, "raps").get("editar", False)
+
+        can_edit = PermisosMixin().get_permission_actions_for(
+            request, "raps").get("editar", False)
         for d in data:
             d["can_edit"] = can_edit
 
@@ -105,7 +106,7 @@ class RapsViewSet(ModelViewSet):
 class CompetenciasViewSet(ModelViewSet):
     queryset = T_compe.objects.all()
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
         programa_id = self.request.query_params.get('programa')
@@ -145,12 +146,13 @@ class CompetenciasViewSet(ModelViewSet):
         if programas:
             qs = qs.filter(progra__nom__in=programas)
 
-        can_edit = PermisosMixin().get_permission_actions_for(request, "competencias").get("editar", False)
-        
+        can_edit = PermisosMixin().get_permission_actions_for(
+            request, "competencias").get("editar", False)
+
         data = self.get_serializer(qs, many=True).data
-        
+
         for item in data:
-            item["can_edit"] = can_edit 
+            item["can_edit"] = can_edit
 
         return Response(data)
 
@@ -160,6 +162,7 @@ class FichasViewSet(ModelViewSet):
     serializer_class = FichaSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
+    pagination_class = DataTablesPagination
 
     def get_serializer_class(self):
         if self.action in ['list', 'fichas_por_programa']:
@@ -668,6 +671,165 @@ class FichasViewSet(ModelViewSet):
             for log in historial
         ]
         return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='filtrar')
+    def filtrar(self, request):
+        estado = self.request.query_params.get('estados')
+        instructores = self.request.query_params.get('instructores')
+        programas = self.request.query_params.get('programas')
+        search = request.GET.get("search[value]", "").strip()
+        order_col_index = request.GET.get("order[0][column]")
+        order_dir = request.GET.get("order[0][dir]")
+
+        fichas = T_ficha.objects.all()
+
+        perfil_logueado = T_perfil.objects.get(user=request.user)
+
+        if perfil_logueado.rol == "instructor":
+            instructor = T_instru.objects.get(perfil=perfil_logueado)
+            fichas = fichas.filter(instru=instructor)
+
+        elif perfil_logueado.rol == "gestor":
+            gestor = T_gestor.objects.get(perfil=perfil_logueado)
+            departamentos = T_gestor_depa.objects.filter(
+                gestor=gestor
+            ).values_list("depa__nom_departa", flat=True)
+
+            fichas = fichas.filter(
+                insti__muni__nom_departa__in=departamentos
+            )
+
+        if estado:
+            fichas = fichas.filter(esta=estado)
+
+        if instructores:
+            fichas = fichas.filter(instru_id__in=instructores)
+
+        if programas:
+            fichas = fichas.filter(progra_id__in=programas)
+
+        mixin = PermisosMixin()
+        mixin.modulo = "fichas"
+        fichas = mixin.apply_permission_filters(fichas, request)
+        acciones = mixin.get_permission_actions_for(request, "fichas")
+        mixinP = PermisosMixin()
+        accionesP = mixinP.get_permission_actions_for(request, "portafolios")
+
+        if search:
+            fichas = fichas.filter(
+                Q(num__icontains=search) |
+                Q(esta__icontains=search) |
+                Q(centro__nom__icontains=search) |
+                Q(insti__nom__icontains=search) |
+                Q(instru__perfil__dni__icontains=search) |
+                Q(instru__perfil__nom__icontains=search) |
+                Q(instru__perfil__apelli__icontains=search) |
+                Q(progra__nom__icontains=search)
+            )
+
+        column_map = {
+            "0": "num",
+            "1": "grupo__num",
+            "2": "esta",
+            "3": "fecha_aper",
+            "4": "centro__nom",
+            "5": "insti__nom",
+            "6": "instru__perfil__nom",
+            "7": "num_apre_proce",
+            "8": "progra__nom"
+        }
+
+        if order_col_index in column_map:
+            field_name = column_map[order_col_index]
+            if order_dir == "desc":
+                field_name = f"-{field_name}"
+            fichas = fichas.order_by(field_name)
+
+        paginated = self.paginate_queryset(fichas)
+
+        if paginated is not None:
+            serialized = FichaFiltrarSerializer(paginated, many=True).data
+            for d in serialized:
+                d["can_edit"] = acciones.get("editar", False)
+                d["can_delete"] = acciones.get("eliminar", False)
+                d["can_view"] = acciones.get("ver", False)
+                d["can_view_p"] = accionesP.get("ver", False)
+            return self.get_paginated_response(serialized)
+
+        # si no hay paginación
+        serialized = FichaFiltrarSerializer(fichas, many=True).data
+        for d in serialized:
+            d["can_edit"] = acciones.get("editar", False)
+            d["can_delete"] = acciones.get("eliminar", False)
+            d["can_view"] = acciones.get("ver", False)
+            d["can_view_p"] = accionesP.get("ver", False)
+        return Response(serialized)
+
+    @action(detail=False, methods=['get'], url_path='opciones-estados')
+    def opciones_estados(self, request):
+        perfil_logueado = T_perfil.objects.get(user=request.user)
+        fichas = T_ficha.objects.filter(esta__isnull=False)
+
+        if perfil_logueado.rol == "gestor":
+            gestor = T_gestor.objects.get(perfil=perfil_logueado)
+            departamentos = T_gestor_depa.objects.filter(
+                gestor=gestor
+            ).values_list('depa__nom_departa', flat=True)
+            fichas = fichas.filter(
+                insti__muni__nom_departa__nom_departa__in=departamentos
+            )
+
+        estados = fichas.distinct().values_list('esta', flat=True)
+        return Response(list(estados))
+
+    @action(detail=False, methods=['get'], url_path='opciones-instructores')
+    def opciones_instructores(self, request):
+        perfil_logueado = T_perfil.objects.get(user=request.user)
+
+        # Si es instructor, devolver solo su id y nombre
+        if perfil_logueado.rol == "instructor":
+            try:
+                instructor = T_instru.objects.get(perfil=perfil_logueado)
+                return Response([{"id": instructor.id, "nombre": perfil_logueado.nom}])
+            except T_instru.DoesNotExist:
+                return Response([])
+
+        fichas = T_ficha.objects.filter(instru__isnull=False)
+
+        if perfil_logueado.rol == "gestor":
+            gestor = T_gestor.objects.get(perfil=perfil_logueado)
+            departamentos = T_gestor_depa.objects.filter(
+                gestor=gestor
+            ).values_list('depa__nom_departa', flat=True)
+            fichas = fichas.filter(
+                insti__muni__nom_departa__nom_departa__in=departamentos
+            )
+
+        instructores = fichas.distinct().values_list(
+            'instru__id', 'instru__perfil__nom'
+        )
+        opciones = [{"id": None, "nombre": "Sin asignar"}] + [
+            {"id": i[0], "nom": i[1]} for i in instructores
+        ]
+        return Response(opciones)
+
+    @action(detail=False, methods=['get'], url_path='opciones-programas')
+    def opciones_programas(self, request):
+        perfil_logueado = T_perfil.objects.get(user=request.user)
+        fichas = T_ficha.objects.filter(progra__isnull=False)
+
+        if perfil_logueado.rol == "gestor":
+            gestor = T_gestor.objects.get(perfil=perfil_logueado)
+            departamentos = T_gestor_depa.objects.filter(
+                gestor=gestor
+            ).values_list('depa__nom_departa', flat=True)
+            fichas = fichas.filter(
+                insti__muni__nom_departa__nom_departa__in=departamentos
+            )
+
+        programas = fichas.distinct().values_list('progra__id', 'progra__nom')
+        opciones = [{"id": p[0], "nom": p[1]} for p in programas]
+        return Response(opciones)
 
 
 class ProgramasViewSet(ModelViewSet):

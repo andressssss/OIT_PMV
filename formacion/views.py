@@ -19,6 +19,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from django.db.models import Q, Count, Value
 from django.db.models.functions import Coalesce
+from django.db.models.expressions import RawSQL
 import logging
 from django.http import FileResponse
 from django.template.loader import get_template
@@ -43,189 +44,18 @@ logger = logging.getLogger('django')
 #        VISTAS FICHA
 ###############################################################################################################
 
+
 @login_required
 def fichas(request):
     mixin = PermisosMixin()
     mixin.modulo = "fichas"
-    
+
     acciones = mixin.get_permission_actions(request)
     puede_ver = acciones.get("ver", False)
     return render(request, 'listar_fichas.html', {
-      "puede_ver": puede_ver,
-      "acciones": acciones
+        "puede_ver": puede_ver,
+        "acciones": acciones
     })
-
-
-@require_GET
-@login_required
-def obtener_opciones_fichas_estados(request):
-    perfil_logueado = T_perfil.objects.get(user=request.user)
-
-    fichas = T_ficha.objects.filter(esta__isnull=False)
-
-    if perfil_logueado.rol == "gestor":
-        gestor = T_gestor.objects.get(perfil=perfil_logueado)
-        departamentos = T_gestor_depa.objects.filter(
-            gestor=gestor).values_list('depa__nom_departa', flat=True)
-        fichas = fichas.filter(
-            insti__muni__nom_departa__nom_departa__in=departamentos)
-
-    estados = fichas.distinct().values_list('esta', flat=True)
-    return JsonResponse(list(estados), safe=False)
-
-
-@require_GET
-@login_required
-def obtener_opciones_fichas_instructores(request):
-    perfil_logueado = T_perfil.objects.get(user=request.user)
-
-    if perfil_logueado.rol == "instructor":
-        return JsonResponse([perfil_logueado.nom], safe=False)
-
-    fichas = T_ficha.objects.filter(instru__isnull=False)
-
-    if perfil_logueado.rol == "gestor":
-        gestor = T_gestor.objects.get(perfil=perfil_logueado)
-        departamentos = T_gestor_depa.objects.filter(
-            gestor=gestor).values_list('depa__nom_departa', flat=True)
-        fichas = fichas.filter(
-            insti__muni__nom_departa__nom_departa__in=departamentos)
-
-    instructores = fichas.distinct().values_list('instru__perfil__nom', flat=True)
-    opciones = ['Sin asignar'] + list(instructores)
-    return JsonResponse(opciones, safe=False)
-
-
-@require_GET
-@login_required
-def obtener_opciones_fichas_programas(request):
-    perfil_logueado = T_perfil.objects.get(user=request.user)
-
-    fichas = T_ficha.objects.filter(progra__isnull=False)
-
-    if perfil_logueado.rol == "gestor":
-        gestor = T_gestor.objects.get(perfil=perfil_logueado)
-        departamentos = T_gestor_depa.objects.filter(
-            gestor=gestor).values_list('depa__nom_departa', flat=True)
-        fichas = fichas.filter(
-            insti__muni__nom_departa__nom_departa__in=departamentos)
-
-    programas = fichas.distinct().values_list('progra__nom', flat=True)
-    return JsonResponse(list(programas), safe=False)
-
-
-@require_GET
-@login_required
-def filtrar_fichas(request):
-    perfil_logueado = T_perfil.objects.get(user=request.user)
-    estados = request.GET.getlist('estados', [])
-    instructores = request.GET.getlist('instructores', [])
-    programas = request.GET.getlist('programas', [])
-
-    fichas = T_ficha.objects.all()
-
-    if perfil_logueado.rol == "instructor":
-        instructor = T_instru.objects.get(perfil=perfil_logueado)
-        fichas = fichas.filter(instru=instructor)
-    elif perfil_logueado.rol == "gestor":
-        gestor = T_gestor.objects.get(perfil=perfil_logueado)
-        departamentos = T_gestor_depa.objects.filter(
-            gestor=gestor).values_list('depa__nom_departa', flat=True)
-        fichas = fichas.filter(
-            insti__muni__nom_departa__nom_departa__in=departamentos)
-    
-    # Consulta de permisos sobre fichas
-    mixin = PermisosMixin()
-    mixin.modulo = "fichas"
-    fichas = mixin.apply_permission_filters(fichas, request)
-
-    if estados:
-        fichas = fichas.filter(esta__in=estados)
-    if instructores:
-        incluir_null = 'Sin asignar' in instructores
-        nombres_validos = [i for i in instructores if i != 'Sin asignar']
-
-        if incluir_null and nombres_validos:
-            fichas = fichas.filter(
-                Q(instru__perfil__nom__in=nombres_validos) |
-                Q(instru__isnull=True)
-            )
-        elif incluir_null:
-            fichas = fichas.filter(instru__isnull=True)
-        else:
-            fichas = fichas.filter(instru__perfil__nom__in=nombres_validos)
-
-    if programas:
-        fichas = fichas.filter(progra__nom__in=programas)
-    acciones = mixin.get_permission_actions(request)
-    
-    # Consulta de permisos sobre portafolios
-    mixinP = PermisosMixin()
-    mixinP.modulo = "portafolios"
-    accionesP = mixinP.get_permission_actions(request)
-
-    data = [
-        {
-            'id': f.id,
-            'num': f.num,
-            'grupo': f.grupo.id,
-            'estado': f.esta,
-            'fecha_aper': f.fecha_aper.strftime('%d/%m/%Y') if f.fecha_aper else None,
-            'fecha_cierre': f.fecha_cierre.strftime('%d/%m/%Y') if f.fecha_cierre else None,
-            'centro': f.centro.nom,
-            'institucion': f.insti.nom,
-            'instru': f.instru.perfil.nom if f.instru else None,
-            'matricu': f.num_apre_proce,
-            'progra': f.progra.nom,
-            'can_edit': acciones.get("editar", False),
-            'can_delete': acciones.get("eliminar", False),
-            'can_view': acciones.get("ver", False),
-            'can_view_p': accionesP.get("ver", False)
-        } for f in fichas
-    ]
-    return JsonResponse(data, safe=False)
-
-
-@require_POST
-@login_required
-@bloquear_si_consulta
-def cambiar_numero_ficha(request, ficha_id):
-    nuevo_num = request.POST.get('nuevo_num', '').strip()
-
-    # Validación básica: campo vacío
-    if not nuevo_num:
-        return JsonResponse({'status': 'error', 'message': 'Número de ficha inválido.'}, status=400)
-
-    # Validación: solo números
-    if not nuevo_num.isdigit():
-        return JsonResponse({'status': 'error', 'message': 'El número de ficha debe contener solo dígitos.'}, status=400)
-
-    # Validación: número duplicado (excluyendo el actual)
-    if T_ficha.objects.filter(num=nuevo_num).exclude(id=ficha_id).exists():
-        return JsonResponse({'status': 'error', 'message': 'Ya existe una ficha con ese número.'}, status=400)
-
-    ficha = get_object_or_404(T_ficha, id=ficha_id)
-    ficha.num = nuevo_num
-    ficha.save()
-
-    return JsonResponse({'status': 'success', 'message': 'Número de ficha actualizado correctamente.'}, status=200)
-
-
-@login_required
-def listar_fichas(request):
-    perfil = getattr(request.user, 't_perfil', None)
-    if perfil is None or perfil.rol != 'instructor':
-        return render(request, 'fichas.html', {'mensaje': 'No tienes permisos para acceder a esta página.'})
-
-    instructor = T_instru.objects.filter(perfil=perfil).first()
-
-    if not instructor:
-        return render(request, 'fichas.html', {'mensaje': 'No se encontraron fichas asociadas a este instructor.'})
-
-    fichas = T_ficha.objects.filter(instru=instructor)
-
-    print(fichas)
-    return render(request, 'fichas.html', {'fichas': fichas})
 
 
 @login_required
@@ -234,7 +64,7 @@ def panel_ficha(request, ficha_id):
     fase = T_fase_ficha.objects.filter(ficha_id=ficha_id, vige=1).first()
     mixin = PermisosMixin()
     mixin.modulo = "portafolios"
-    
+
     acciones = mixin.get_permission_actions(request)
     puede_ver = acciones.get("ver", False)
     puede_editar = acciones.get("editar", False)
@@ -253,7 +83,7 @@ def obtener_carpetas(request, ficha_id):
     nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values(
         "id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi"
     )
-    
+
     mixin = PermisosMixin()
 
     acciones = mixin.get_permission_actions_for(request, "portafolios")
@@ -293,9 +123,9 @@ def obtener_carpetas(request, ficha_id):
             root_nodes.append(nodo)
 
     return JsonResponse({
-      'can_edit': can_edit,
-      'nodos': root_nodes
-      }, safe=False)
+        'can_edit': can_edit,
+        'nodos': root_nodes
+    }, safe=False)
 
 
 @login_required
@@ -350,7 +180,7 @@ def descargar_portafolio_zip(request, ficha_id):
             agregar_a_zip(zip_file, nodo, "")
 
     buffer.seek(0)
-    
+
     AuditLog.objects.create(
         user=request.user,
         action="download",
@@ -359,7 +189,7 @@ def descargar_portafolio_zip(request, ficha_id):
         related_id=ficha_id,
         related_type="ficha",
         extra_data=f"Descargó el portafolio completo de la ficha {ficha_id} "
-                   f"con {nodos.count()} nodos (documentos y carpetas)."
+        f"con {nodos.count()} nodos (documentos y carpetas)."
     )
 
     response = HttpResponse(buffer, content_type="application/zip")
@@ -374,7 +204,7 @@ def cargar_documento(request):
             return JsonResponse({'status': 'error', 'message': 'Debe cargar un documento'}, status=400)
 
         file = request.FILES["file"]
-        
+
         if file.size == 0:
             return JsonResponse({'status': 'error', 'message': 'El archivo está vacío o la carga falló'}, status=400)
 
@@ -401,8 +231,8 @@ def cargar_documento(request):
         # Guardar el archivo
         ruta_guardada = default_storage.save(ruta, file)
 
-        size_kb = max(1, file.size // 1024) if file.size >= 1024 else f"{file.size} B"
-
+        size_kb = max(1, file.size //
+                      1024) if file.size >= 1024 else f"{file.size} B"
 
         # Crear registro en T_docu
         new_docu = T_docu.objects.create(
@@ -428,29 +258,28 @@ def cargar_documento(request):
                 documento=new_docu,
                 **extra_kwargs
             )
-            
+
             if contexto == "ficha":
                 related_id = document_node.ficha_id
             elif contexto == "aprendiz":
                 related_id = document_node.aprendiz_id
             else:
                 related_id = None
-                
+
             extra_data = (
                 f"Se cargó el documento '{document_node.name}' "
                 f"en la carpeta {folder.id} "
             )
-            
-            AuditLog.objects.create(
-              user= request.user,
-              action="create",
-              content_type= ContentType.objects.get_for_model(document_node),
-              object_id= document_node.id,
-              related_id = related_id,
-              related_type = contexto,
-              extra_data=extra_data
-            )
 
+            AuditLog.objects.create(
+                user=request.user,
+                action="create",
+                content_type=ContentType.objects.get_for_model(document_node),
+                object_id=document_node.id,
+                related_id=related_id,
+                related_type=contexto,
+                extra_data=extra_data
+            )
 
         return JsonResponse({
             'status': 'success',
@@ -506,7 +335,7 @@ def mover_documento(request):
                     'message': 'No se puede mover un documento dentro de sí mismo.'
                 }, status=400)
 
-            carpeta_origen = documento_node.parent  
+            carpeta_origen = documento_node.parent
 
             # Actualizar la carpeta padre
             documento_node.parent = carpeta_destino
@@ -524,8 +353,8 @@ def mover_documento(request):
                 user=request.user,
                 action="update",
                 content_object=documento_node,
-                related_id = related_id,
-                related_type = contexto,
+                related_id=related_id,
+                related_type=contexto,
                 extra_data=(
                     f"Se movió el documento '{documento_node.name}' "
                     f"de la carpeta {carpeta_origen.id} a la carpeta {carpeta_destino.id} "
@@ -555,12 +384,13 @@ def eliminar_documento_portafolio_ficha(request, documento_id):
 
     documento = get_object_or_404(T_DocumentFolder, id=documento_id)
 
-    nombre_doc = documento.name if (documento.name) else "Documento sin archivo"
+    nombre_doc = documento.name if (
+        documento.name) else "Documento sin archivo"
     extra_data = (
         f"Se elimino el documento '{nombre_doc}' "
         f"en la carpeta {documento.parent_id} "
     )
-    
+
     # Si hay un archivo relacionado, eliminarlo manualmente
     if documento.documento and documento.documento.archi:
         archivo_a_eliminar = documento.documento.archi.name
@@ -569,14 +399,14 @@ def eliminar_documento_portafolio_ficha(request, documento_id):
         documento.documento.delete()
 
     documento.delete()
-    
+
     AuditLog.objects.create(
         user=request.user,
         content_type=ContentType.objects.get_for_model(documento),
         object_id=documento.id,
         action="delete",
-        related_id = documento.ficha_id,
-        related_type = "ficha",
+        related_id=documento.ficha_id,
+        related_type="ficha",
         extra_data=extra_data
     )
 
@@ -619,7 +449,11 @@ def obtener_hijos_carpeta(request, carpeta_id):
 @login_required
 def obtener_carpetas_aprendiz(request, aprendiz_id):
     # Obtener todas las carpetas y documentos asociados a la ficha
-    nodos = T_DocumentFolderAprendiz.objects.filter(aprendiz_id=aprendiz_id).values(
+    nodos = T_DocumentFolderAprendiz.objects.filter(
+        aprendiz_id=aprendiz_id
+    ).annotate(
+        orden=RawSQL("CAST(SUBSTRING_INDEX(name, '.', 1) AS UNSIGNED)", [])
+    ).order_by("orden").values(
         "id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi"
     )
 
@@ -659,15 +493,15 @@ def obtener_carpetas_aprendiz(request, aprendiz_id):
                 folder_map[parent_id]["children"].append(nodo)
         else:
             root_nodes.append(nodo)
-            
+
     mixin = PermisosMixin()
     acciones = mixin.get_permission_actions_for(request, "portafolios")
     can_edit = acciones.get("editar", False)
 
     return JsonResponse({
-      'nodos': root_nodes,
-      'can_edit': can_edit
-      }, safe=False)
+        'nodos': root_nodes,
+        'can_edit': can_edit
+    }, safe=False)
 
 
 @login_required
@@ -725,23 +559,25 @@ def descargar_portafolio_aprendiz_zip(request, aprendiz_id):
     AuditLog.objects.create(
         user=request.user,
         action="download",
-        content_type=ContentType.objects.get_for_model(T_DocumentFolderAprendiz),
+        content_type=ContentType.objects.get_for_model(
+            T_DocumentFolderAprendiz),
         object_id=None,
         related_id=aprendiz_id,
         related_type="aprendiz",
         extra_data=f"Descargó el portafolio completo del aprendiz {aprendiz_id} "
-                   f"con {nodos.count()} nodos (documentos y carpetas)."
+        f"con {nodos.count()} nodos (documentos y carpetas)."
     )
-    
+
     AuditLog.objects.create(
         user=request.user,
         action="download",
-        content_type=ContentType.objects.get_for_model(T_DocumentFolderAprendiz),
+        content_type=ContentType.objects.get_for_model(
+            T_DocumentFolderAprendiz),
         object_id=None,
         related_id=nodos[0].aprendiz.ficha_id,
         related_type="ficha",
         extra_data=f"Descargó el portafolio completo del aprendiz {aprendiz_id} "
-                   f"con {nodos.count()} nodos (documentos y carpetas)."
+        f"con {nodos.count()} nodos (documentos y carpetas)."
     )
 
     response = HttpResponse(buffer, content_type='application/zip')
@@ -806,16 +642,17 @@ def descargar_portafolios_ficha_zip(request, ficha_id):
                 agregar_a_zip(zip_file, nodo, carpeta_aprendiz)
 
     buffer.seek(0)
-    
+
     AuditLog.objects.create(
         user=request.user,
         action="download",
-        content_type=ContentType.objects.get_for_model(T_DocumentFolderAprendiz),
+        content_type=ContentType.objects.get_for_model(
+            T_DocumentFolderAprendiz),
         object_id=None,
         related_id=ficha_id,
         related_type="ficha",
         extra_data=f"Descargó el portafolio completo de todos los aprendices para la ficha {ficha_id} "
-                   f"con {nodos.count()} nodos (documentos y carpetas)."
+        f"con {nodos.count()} nodos (documentos y carpetas)."
     )
 
     response = HttpResponse(buffer, content_type='application/zip')
@@ -830,7 +667,8 @@ def eliminar_documento_portafolio_aprendiz(request, documento_id):
 
     documento = get_object_or_404(T_DocumentFolderAprendiz, id=documento_id)
 
-    nombre_doc = documento.name if (documento.name) else "Documento sin archivo"
+    nombre_doc = documento.name if (
+        documento.name) else "Documento sin archivo"
     extra_data = (
         f"Se elimino el documento '{nombre_doc}' "
         f"en la carpeta {documento.parent_id} "
@@ -843,17 +681,16 @@ def eliminar_documento_portafolio_aprendiz(request, documento_id):
         documento.documento.delete()
 
     documento.delete()
-    
+
     AuditLog.objects.create(
         user=request.user,
         content_type=ContentType.objects.get_for_model(documento),
         object_id=documento.id,
         action="delete",
-        related_id = documento.aprendiz_id,
-        related_type = "aprendiz",
+        related_id=documento.aprendiz_id,
+        related_type="aprendiz",
         extra_data=extra_data
     )
-
 
     return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status=200)
 
@@ -1597,10 +1434,10 @@ def listar_programas(request):
     can_edit = acciones.get("editar", False)
     can_view = acciones.get("ver", False)
     return render(request, 'programas.html', {
-      'programas': programas,
-      'can_edit': can_edit,
-      'can_view': can_view
-      })
+        'programas': programas,
+        'can_edit': can_edit,
+        'can_view': can_view
+    })
 
 
 @login_required
@@ -1625,9 +1462,9 @@ def competencias(request):
     acciones = PermisosMixin().get_permission_actions_for(request, "competencias")
     can_view = acciones.get("ver", False)
     can_edit = acciones.get("editar", False)
-    return render(request, 'competencias.html',{
-      'can_view': can_view,
-      'can_edit': can_edit
+    return render(request, 'competencias.html', {
+        'can_view': can_view,
+        'can_edit': can_edit
     })
 
 
@@ -1640,10 +1477,11 @@ def listar_raps(request):
     acciones = PermisosMixin().get_permission_actions_for(request, "raps")
     can_edit = acciones.get("editar", False)
     can_view = acciones.get("ver", False)
-    return render(request, 'raps.html',{
-      'can_view': can_view,
-      'can_edit': can_edit
+    return render(request, 'raps.html', {
+        'can_view': can_view,
+        'can_edit': can_edit
     })
+
 
 @login_required
 def obtener_opciones_fases_raps(request):
@@ -1770,11 +1608,13 @@ def get_instituciones(request, municipio_id):
 
 # Vista para cargar los municipios según el departamento
 
+
 @login_required
 def get_centros(request, departamento_id):
     centro_qs = T_centro_forma.objects.filter(depa_id=departamento_id)
     centros = list(centro_qs.values('id', 'nom'))
     return JsonResponse(centros, safe=False)
+
 
 @login_required
 def detalle_programa(request, programa_id):
@@ -1805,11 +1645,13 @@ def detalle_programa(request, programa_id):
         'raps': raps,
     })
 
+
 def link_callback(uri, rel):
     result = finders.find(uri.replace(settings.STATIC_URL, ""))
     if result:
         return result
     raise Exception(f"Media URI must start with {settings.STATIC_URL}")
+
 
 @login_required
 def generar_acta_asistencia(request):
@@ -1993,6 +1835,7 @@ def generar_acta_asistencia(request):
 
     return HttpResponse("Formato no válido", status=400)
 
+
 @login_required
 def generar_acta_asistencia_aprendiz(request):
     aprendiz_id = request.GET.get('aprendiz_id')
@@ -2014,6 +1857,7 @@ def generar_acta_asistencia_aprendiz(request):
     pisa.CreatePDF(html, dest=buffer)
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=f"Acta_Asistencia_{aprendiz.perfil.nom}_{aprendiz.perfil.apelli}.pdf")
+
 
 @login_required
 def detalle_encuentro(request, encuentro_id):
@@ -2051,19 +1895,21 @@ def detalle_encuentro(request, encuentro_id):
 #        VISTAS INFORMES
 ###############################################################################################################
 
+
 @login_required
 def informe_usuarios_x_rol(request):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Usuarios"
 
-    ws.append(["Nombre", "Apellido", "Tipo DNI", "DNI", "Ultimo ingreso", "Rol"])
+    ws.append(["Nombre", "Apellido", "Tipo DNI",
+              "DNI", "Ultimo ingreso", "Rol"])
 
     perfiles = T_perfil.objects.all()
 
-    for perfil in perfiles:  
+    for perfil in perfiles:
         last_login = perfil.user.last_login
-        if last_login:  
+        if last_login:
             last_login = last_login.replace(tzinfo=None)  # quitar timezone
         else:
             last_login = ""
@@ -2085,6 +1931,7 @@ def informe_usuarios_x_rol(request):
 
     wb.save(response)
     return response
+
 
 @login_required
 def informe_fichas_x_instructor(request):
@@ -2119,6 +1966,7 @@ def informe_fichas_x_instructor(request):
     wb.save(response)
     return response
 
+
 @login_required
 def informe_fichas_x_aprendiz(request):
     wb = openpyxl.Workbook()
@@ -2131,7 +1979,7 @@ def informe_fichas_x_aprendiz(request):
 
     for a in aprendices:
         ws.append([
-            a.id ,
+            a.id,
             a.perfil.nom,
             a.perfil.apelli,
             a.perfil.dni,
@@ -2147,35 +1995,38 @@ def informe_fichas_x_aprendiz(request):
     wb.save(response)
     return response
 
+
 @login_required
 def informe_documentos_x_instructor_ficha(request):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Documentos"
-    
+
     ws.append(["Ficha", "Grupo", "Nombre", "Apelli", "DNI", "Total documentos"])
-    
+
     qs = (
-      T_DocumentFolder.objects.filter(tipo="documento")
-      .values("ficha__num", "ficha__grupo__id")
-      .annotate(
-          nombre = Coalesce("ficha__instru__perfil__nom", Value("Sin registro")),
-          apellido = Coalesce("ficha__instru__perfil__apelli", Value("Sin registro")),
-          dni = Coalesce("ficha__instru__perfil__dni", Value(None)),
-          total_documentos=Count("id")
-      )
-      .order_by("ficha__instru__id")
+        T_DocumentFolder.objects.filter(tipo="documento")
+        .values("ficha__num", "ficha__grupo__id")
+        .annotate(
+            nombre=Coalesce("ficha__instru__perfil__nom",
+                            Value("Sin registro")),
+            apellido=Coalesce("ficha__instru__perfil__apelli",
+                              Value("Sin registro")),
+            dni=Coalesce("ficha__instru__perfil__dni", Value(None)),
+            total_documentos=Count("id")
+        )
+        .order_by("ficha__instru__id")
     )
-    
+
     for i in qs:
-      ws.append([
-        i["ficha__num"],
-        i["ficha__grupo__id"],
-        i["nombre"],
-        i["apellido"],
-        i["dni"],
-        i["total_documentos"]
-      ])
+        ws.append([
+            i["ficha__num"],
+            i["ficha__grupo__id"],
+            i["nombre"],
+            i["apellido"],
+            i["dni"],
+            i["total_documentos"]
+        ])
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -2185,27 +2036,31 @@ def informe_documentos_x_instructor_ficha(request):
 
     wb.save(response)
     return response
-  
+
+
 @login_required
 def informe_documentos_x_instructor_aprendiz(request):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Documentos Aprendices"
-    
-    ws.append(["Ficha", "Grupo", "Nombre Instructor", "Apellido", "DNI", "Total documentos aprendices"])
-    
+
+    ws.append(["Ficha", "Grupo", "Nombre Instructor",
+              "Apellido", "DNI", "Total documentos aprendices"])
+
     qs = (
         T_DocumentFolderAprendiz.objects.filter(tipo="documento")
         .values("aprendiz__ficha__num", "aprendiz__ficha__grupo__id")
         .annotate(
-            nombre=Coalesce("aprendiz__ficha__instru__perfil__nom", Value("Sin registro")),
-            apellido=Coalesce("aprendiz__ficha__instru__perfil__apelli", Value("Sin registro")),
+            nombre=Coalesce(
+                "aprendiz__ficha__instru__perfil__nom", Value("Sin registro")),
+            apellido=Coalesce(
+                "aprendiz__ficha__instru__perfil__apelli", Value("Sin registro")),
             dni=Coalesce("aprendiz__ficha__instru__perfil__dni", Value(None)),
             total_documentos=Count("id")
         )
         .order_by("aprendiz__ficha__instru__id")
     )
-    
+
     for i in qs:
         ws.append([
             i["aprendiz__ficha__num"],
@@ -2223,4 +2078,3 @@ def informe_documentos_x_instructor_aprendiz(request):
 
     wb.save(response)
     return response
-

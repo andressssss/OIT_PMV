@@ -379,7 +379,51 @@ def signout(request):
 def dashboard_admin(request):
     mixin = PermisosMixin()
     acciones = mixin.get_all_permissions(request)
-    return render(request, 'admin_dashboard.html', {'acciones': acciones})
+    
+    modulos = [
+        {
+            "grupo": "Sistema",
+            "items": [
+                {"perm": "departamentos", "url": "departamentos", "img": "images/departamentosIcon.webp", "titulo": "Departamentos", "desc": "Administrar los departamentos del sistema."},
+                {"perm": "municipios", "url": "municipios", "img": "images/municipiosIcon.png", "titulo": "Municipios", "desc": "Administrar los municipios del sistema."},
+                {"perm": "usuarios", "url": "usuarios", "img": "images/usuario.webp", "titulo": "Usuarios", "desc": "Administrar los usuarios del sistema."},
+            ],
+        },
+        {
+            "grupo": "Usuarios y roles",
+            "items": [
+                {"perm": "instructores", "url": "instructores", "img": "images/instructoricon2.webp", "titulo": "Instructores", "desc": "Administrar los instructores del sistema."},
+                {"perm": "aprendices", "url": "aprendices", "img": "images/aprendizicon.webp", "titulo": "Aprendices", "desc": "Administrar los aprendices del sistema."},
+                {"perm": "admin", "url": "administradores", "img": "images/adminicon2.webp", "titulo": "Administradores", "desc": "Administrar los administradores del sistema."},
+                {"perm": "lideres", "url": "lideres", "img": "images/leadericon.webp", "titulo": "Equipo nacional", "desc": "Administrar el equipo nacional."},
+                {"perm": "cuentas", "url": "cuentas", "img": "images/cuentasicon.png", "titulo": "Cuentas", "desc": "Administrar los perfiles de cuentas."},
+                {"perm": "gestores", "url": "gestores", "img": "images/gestoricon.webp", "titulo": "Gestores", "desc": "Administrar los gestores del sistema."},
+            ],
+        },
+        {
+            "grupo": "Currículo y actividades",
+            "items": [
+                {"perm": "fichas", "url": "fichas", "img": "images/programasIcon.png", "titulo": "Fichas", "desc": "Administrar fichas."},
+                {"perm": "instituciones", "url": "instituciones", "img": "images/InstitucionesIcon.png", "titulo": "Instituciones", "desc": "Administrar las instituciones del sistema."},
+                {"perm": "centros", "url": "centrosformacion", "img": "images/centroFormacionIcon.png", "titulo": "Centros de formación", "desc": "Administrar los Centros de formación del sistema."},
+                {"perm": "programas", "url": "programas", "img": "images/programasIcon.png", "titulo": "Programas", "desc": "Administrar los programas del sistema."},
+                {"perm": "competencias", "url": "competencias", "img": "images/competenciaIcon.png", "titulo": "Competencias", "desc": "Administrar las competencias del sistema."},
+                {"perm": "raps", "url": "raps", "img": "images/rapsIcon.png", "titulo": "RAPS", "desc": "Administrar los RAPS del sistema."},
+            ],
+        },
+    ]
+
+    
+    for grupo in modulos:
+        visible_items = 0
+        for item in grupo["items"]:
+            perm = acciones.get(item["perm"], {})
+            item["visible"] = perm.get("ver", False)
+            if item["visible"]:
+                visible_items += 1
+        grupo["tiene_visible"] = visible_items > 0
+
+    return render(request, 'admin_dashboard.html', {'modulos': modulos})
 
 ### INSTRUCTORES ###
 

@@ -56,6 +56,19 @@ class FichaSerializer(serializers.ModelSerializer):
         model = T_ficha
         fields = ['id', 'num']
 
+class FichaFiltrarSerializer(FichaSerializer):
+    centro_nom = serializers.CharField(source="centro.nom")
+    insti_nom = serializers.CharField(source="insti.nom")
+    instru_nom = serializers.SerializerMethodField()
+    progra_nom = serializers.CharField(source="progra.nom")
+    fecha_aper = serializers.DateTimeField(format="%d/%m/%Y")
+    class Meta:
+      model = T_ficha
+      fields = FichaSerializer.Meta.fields + ['grupo_id', 'esta', 'fecha_aper', 'fecha_cierre', 'centro_nom', 'insti_nom', 'instru_nom', 'num_apre_proce', 'progra_nom']
+      
+      
+    def get_instru_nom(self, value):
+        return value.instru.perfil.nom if value.instru else None
 
 class FichaEditarSerializer(FichaSerializer):
 
