@@ -27,6 +27,7 @@ import {
 document.addEventListener("DOMContentLoaded", () => {
   const userRole = document.body.dataset.userRole;
   const tableEl = document.getElementById("listado_fichas_table");
+  let table;
   cargarDatosTabla();
 
   async function cargarDatosTabla() {
@@ -55,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }),
       ]);
 
-      const table = new DataTable(tableEl, {
+      table = new DataTable(tableEl, {
         serverSide: true,
         processing: false,
         ajax: {
@@ -324,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const modalEl = document.getElementById("editarFichaModal");
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         modalInstance.hide();
-        aplicarFiltros();
+        table.ajax.reload();
       } catch (error) {
         toastError(error);
       } finally {
