@@ -13,40 +13,38 @@
     </div>
   {% else %}
     <main class="container py-5">
-      <section class="card card-body shadow-sm p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2 class="mb-0 display-5">
-            {% if ficha.num == '' %}
-              Panel de ficha sin numero - Fase
+      <section class="card card-body p-4">
+        <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-4 mb-4">
+          <div>
+            <h1 class="h3 mb-1">
+              Panel de la Ficha <span class="text-primary fw-bold">{% if ficha.num %}{{ ficha.num }}{% else %}(Sin numero){% endif %}</span> -
+              <small class="text-muted">Fase {{ fase }}</small>
+            </h1>
+            <span class="badge bg-secondary">Grupo {{ ficha.grupo.id }}</span>
+          </div>
+          <div class="text-end">
+            {% if ficha.instru %}
+              <div class="fw-semibold">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</div>
+              <span class="badge bg-info-subtle text-dark">Instructor</span>
             {% else %}
-              Panel de la ficha <span id="fichaNumActual">{{ ficha.num }}</span> - Fase
+              <span class="badge bg-danger">Sin instructor</span>
             {% endif %}
-            {% if fase|lower == 'analisis' %}
-              análisis
-            {% else %}
-              {{ fase }}
-            {% endif %}- Grupo {{ ficha.grupo.id }}
-          </h2>
-          {% if ficha.instru %}
-            <span class="h5 text-muted mb-0">{{ ficha.instru.perfil.nom }} {{ ficha.instru.perfil.apelli }}</span>
-          {% else %}
-            <span class="h5 text-muted mb-0">Sin instructor</span>
-          {% endif %}
+          </div>
         </div>
 
-        <!-- NavPills -->
-        <ul class="nav nav-pills mb-4 nav-fill" id="instructorTab" role="tablist">
+        <!-- NavPills con íconos y borde -->
+        <ul class="nav nav-pills mb-4 nav-fill border rounded-3 p-2 bg-white" id="instructorTab" role="tablist">
           <li class="nav-item" role="presentation">
-            <a class="nav-link active" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true">Portafolio Ficha</a>
+            <a class="nav-link active d-flex align-items-center justify-content-center" id="portfolioFicha-tab" data-bs-toggle="pill" href="#portfolioFicha" role="tab" aria-controls="portfolioFicha" aria-selected="true"><i class="bi bi-folder-fill me-2"></i> Portafolio Ficha</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false">Aprendices</a>
+            <a class="nav-link d-flex align-items-center justify-content-center" id="aprendices-tab" data-bs-toggle="pill" href="#aprendicespes" role="tab" aria-controls="aprendices" aria-selected="false"><i class="bi bi-people-fill me-2"></i> Aprendices</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="juicios-tab" data-bs-toggle="pill" href="#juicios" role="tab" aria-controls="juicios" aria-selected="false">RAPS</a>
+            <a class="nav-link d-flex align-items-center justify-content-center" id="juicios-tab" data-bs-toggle="pill" href="#juicios" role="tab" aria-controls="juicios" aria-selected="false"><i class="bi bi-journal-text me-2"></i> RAPS</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false">Historial</a>
+            <a class="nav-link d-flex align-items-center justify-content-center" id="historial-tab" data-bs-toggle="pill" href="#historial" role="tab" aria-controls="historial" aria-selected="false"><i class="bi bi-clock-history me-2"></i> Historial</a>
           </li>
         </ul>
 
@@ -54,7 +52,7 @@
         <div class="tab-content" id="instructorTabContent">
           <!-- Portafolio Ficha -->
           <div class="tab-pane fade show active" id="portfolioFicha" role="tabpanel" aria-labelledby="portfolioFicha-tab">
-            <div class="card shadow-sm">
+            <div class="card">
               <div class="card-body">
                 <ul class="nav nav-tabs" id="portafolioTab" role="tablist">
                   <li class="nav-item" role="presentation">
@@ -199,7 +197,7 @@
                     </div>
                   </div>
                   <div class="tab-pane fade" id="historial-tab-pane" role="tabpanel" aria-labelledby="historial-tab" tabindex="0">
-                      <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
+                    <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
                   </div>
                 </div>
               </div>

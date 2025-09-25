@@ -155,6 +155,23 @@ class AprendizPanelFSerializer(serializers.ModelSerializer):
         model = T_apre
         fields = ["id", "nombre", "apellido", "dni", "estado"]
 
+class AprendizFiltrarSerializer(serializers.ModelSerializer):
+  perfil = serializers.SerializerMethodField()
+  class Meta:
+      model = T_apre
+      fields = ["perfil"]
+      
+  def get_perfil(self, obj):
+      return{
+        "id": obj.id,
+        "nom": obj.perfil.nom,
+        "apelli": obj.perfil.apelli,
+        "tele": obj.perfil.tele,
+        "dire": obj.perfil.dire,
+        "fecha_naci": obj.perfil.fecha_naci,
+        "tipo_dni": obj.perfil.tipo_dni,
+        "dni": obj.perfil.dni,
+      }
 
 class PermisoSerializer(serializers.ModelSerializer):
     class Meta:

@@ -156,9 +156,6 @@ urlpatterns = [
     # ROL Instructores
     path('gestion_instructor/', gestion_instructores_views.gestion_instructor,name='gestion_instructor'),
 
-    # Panel instructor
-    path('fichas_inst/', formacion_views.listar_fichas, name='listar_fichas'),
-
     # Tree
     path("api/tree/obtener_carpetas/<int:ficha_id>/", formacion_views.obtener_carpetas, name="api_obtener_carpetas"),
     path("api/tree/cargar_doc/", formacion_views.cargar_documento, name="api_cargar_documento"),
@@ -191,12 +188,7 @@ urlpatterns = [
 
     # Fichas
     path('fichas/', formacion_views.fichas, name='fichas'), 
-    path('api/formalizar_ficha/', matricula_views.formalizar_ficha, name='api_formalizar_ficha'), 
-    path('api/fichas/estados/', formacion_views.obtener_opciones_fichas_estados, name='api_obtener_opciones_fichas_estados'), 
-    path('api/fichas/instructores/', formacion_views.obtener_opciones_fichas_instructores, name='api_obtener_opciones_fichas_instructores'), 
-    path('api/fichas/programas/', formacion_views.obtener_opciones_fichas_programas, name='api_obtener_opciones_fichas_programas'), 
-    path('api/fichas/filtrar/', formacion_views.filtrar_fichas, name='api_filtrar_fichas'), 
-    path('api/ficha/cambiar_num/<int:ficha_id>/', formacion_views.cambiar_numero_ficha, name='api_cambiar_numero_ficha'), 
+    path('api/formalizar_ficha/', matricula_views.formalizar_ficha, name='api_formalizar_ficha'),
 
     # Fichas masivo
     path('fichas/crear_masivo/', formacion_views.cargar_fichas_masivo, name='fichas_crear_masivo'),

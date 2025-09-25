@@ -17,7 +17,7 @@ from django.db.models import Subquery, OuterRef, Exists
 import csv
 from django.contrib.auth.models import User
 from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal, AuditLog, T_permi
-from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer, AprendizPanelFSerializer, PermisoSerializer
+from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer,AprendizFiltrarSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer, AprendizPanelFSerializer, PermisoSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, DateField
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
@@ -173,42 +173,16 @@ class AprendizViewSet(PermisosMixin, ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='filtrar')
     def filtrar(self, request):
-        usuarios = request.GET.getlist('usuario_creacion', [])
-        fecha = request.GET.get('fecha_creacion_', [])
-        estado = request.GET.getlist('estado', [])
-        ordenar = request.GET.get('ordenar_por', [])
-        search = request.GET.get('search[value]', '').strip()
-
+        estados = self.request.query_params.getlist('estados[]', [])
+        search = request.GET.get("search[value]", "").strip()
+        order_col_index = request.GET.get("order[0][column]")
+        order_dir = request.GET.get("order[0][dir]")
+        
         aprendices = T_apre.objects.all()
 
-        if usuarios:
-            filtros = Q()
-
-            for usuario in usuarios:
-                nombre, *apellido = usuario.split(" ")
-                apellido = " ".join(apellido)
-
-                filtros |= Q(usu_crea__t_perfil__nom__icontains=nombre,
-                             usu_crea__t_perfil__apelli__icontains=apellido)
-
-            aprendices = aprendices.filter(filtros)
-        if fecha:
-            fecha_creacion = datetime.strptime(fecha, '%Y-%m-%d').date()
-
-            aprendices = aprendices.annotate(fecha_sin_hora=Cast(
-                'perfil__user__date_joined', output_field=DateField()))
-
-            aprendices = aprendices.filter(fecha_sin_hora=fecha_creacion)
-
-        if estado:
-            aprendices = aprendices.filter(esta__in=estado)
-
-        if ordenar:
-            if ordenar == 'fecha_desc':
-                aprendices = aprendices.order_by('-perfil__user__date_joined')
-            elif ordenar == 'fecha_asc':
-                aprendices = aprendices.order_by('perfil__user__date_joined')
-
+        if estados:
+            aprendices = aprendices.filter(esta__in=estados)
+            
         if search:
             aprendices = aprendices.filter(
                 Q(perfil__nom__icontains=search) |
@@ -217,30 +191,37 @@ class AprendizViewSet(PermisosMixin, ModelViewSet):
                 Q(perfil__mail__icontains=search) |
                 Q(perfil__dni__icontains=search)
             )
-
-        total = T_apre.objects.count()
-        filtrados = aprendices.count()
+            
+        column_map = {
+            "0": "perfil__nom",
+            "1": "perfil__apelli",
+            "2": "perfil__tele",
+            "3": "perfil__dire",
+            "4": "perfil__fecha_naci",
+            "5": "perfil__tipo_dni",
+            "6": "perfil__dni"
+        }
+        
+        if order_col_index in column_map:
+          field_name = column_map[order_col_index]
+          if order_dir == "desc":
+              field_name = f"-{field_name}"
+          aprendices = aprendices.order_by(field_name)
 
         paginated = self.paginate_queryset(aprendices)
+        
+        can_edit = PermisosMixin().get_permission_actions_for(request, "aprendices").get("editar", False)
 
         if paginated is not None:
-            serializer = AprendizSerializer(paginated, many=True)
-            return Response({
-                "recordsTotal": total,
-                "recordsFiltered": filtrados,
-                "data": serializer.data
-            })
-
-        data = AprendizSerializer(aprendices, many=True).data
-        can_edit = PermisosMixin().get_permission_actions_for(request, "aprendices").get("editar", False)
-        
-        for d in data:
+            serialized = AprendizFiltrarSerializer(paginated, many=True).data
+            for d in serialized:
+                d["can_edit"] = can_edit
+            return self.get_paginated_response(serialized)
+          
+        serialized = AprendizFiltrarSerializer(aprendices, many = True).data
+        for d in serialized:
             d["can_edit"] = can_edit
-        return Response({
-            "recordsTotal": total,
-            "recordsFiltered": filtrados,
-            "data": data,
-        })
+        return Response(serialized)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
