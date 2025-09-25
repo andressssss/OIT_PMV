@@ -675,8 +675,8 @@ class FichasViewSet(ModelViewSet):
     @action(detail=False, methods=['get'], url_path='filtrar')
     def filtrar(self, request):
         estado = self.request.query_params.get('estados')
-        instructores = self.request.query_params.get('instructores')
-        programas = self.request.query_params.get('programas')
+        instructor = self.request.query_params.get('instructores')
+        programa = self.request.query_params.get('programas')
         search = request.GET.get("search[value]", "").strip()
         order_col_index = request.GET.get("order[0][column]")
         order_dir = request.GET.get("order[0][dir]")
@@ -702,11 +702,11 @@ class FichasViewSet(ModelViewSet):
         if estado:
             fichas = fichas.filter(esta=estado)
 
-        if instructores:
-            fichas = fichas.filter(instru_id__in=instructores)
+        if instructor:
+            fichas = fichas.filter(instru_id=instructor)
 
-        if programas:
-            fichas = fichas.filter(progra_id__in=programas)
+        if programa:
+            fichas = fichas.filter(progra_id=programa)
 
         mixin = PermisosMixin()
         mixin.modulo = "fichas"
