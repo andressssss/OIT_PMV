@@ -69,6 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Agregar listeners después de renderizar el árbol
       addEventListeners(data.can_edit);
+      renderAlertas();
       cargarHistorial("fichaG", fichaId);
       cargarHistorial("ficha", fichaId);
     } catch (error) {
@@ -90,7 +91,8 @@ document.addEventListener("DOMContentLoaded", function () {
     container.innerHTML = "";
 
     if (contexto === "fichaG") {
-      historialTitle.textContent = "Historial";
+      historialTitle.innerHTML =
+        '<i class="bi bi-clock-history me-2"></i> Historial';
 
       const spinner = document.createElement("span");
       spinner.className = "spinner-border spinner-border-sm ms-2";
@@ -187,6 +189,10 @@ document.addEventListener("DOMContentLoaded", function () {
         // Configuración para carpetas
         icon.classList.add("bi", "bi-folder2");
 
+        if (node.name === "LINK DE PORTAFOLIO APRENDICES 2024") {
+          span.dataset.portafolioLink = "true";
+        }
+
         // Contenedor de subelementos (solo para carpetas)
         const subFolderContainer = document.createElement("ul");
         subFolderContainer.classList.add("folder-children");
@@ -252,7 +258,10 @@ document.addEventListener("DOMContentLoaded", function () {
           rar: "bi-file-earmark-zip-fill",
           "7z": "bi-file-earmark-zip-fill",
         };
-        icon.classList.add("bi", extensionIcons[extension] || "bi-file-earmark");
+        icon.classList.add(
+          "bi",
+          extensionIcons[extension] || "bi-file-earmark"
+        );
 
         const link = document.createElement("a");
 
@@ -266,7 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
         link.appendChild(span);
         li.appendChild(link);
 
-        if (can_edit) {
+        if (can_edit && userRole != "instructor") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
@@ -944,8 +953,116 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
       renderHistorial();
+      if (contexto === "ficha") {
+        renderAlertas();
+      }
     } catch (error) {
       console.error("Error al actualizar la carpeta:", error);
+    }
+  }
+
+  function findEmptyFolders(nodes, path = []) {
+    let emptyNodes = [];
+
+    nodes.forEach((n) => {
+      if (n.tipo === "carpeta") {
+        const newPath = [...path, n.name];
+
+        if (!n.children || n.children.length === 0) {
+          // Carpeta sin nada → final y vacía
+          emptyNodes.push({ id: n.id, path: newPath });
+        } else {
+          // Revisar si tiene subcarpetas
+          const hasChildFolders = n.children.some((c) => c.tipo === "carpeta");
+
+          if (hasChildFolders) {
+            // Recorremos hijos
+            const childEmpty = findEmptyFolders(n.children, newPath);
+            if (childEmpty.length > 0) {
+              emptyNodes = emptyNodes.concat(childEmpty);
+            }
+          } else {
+            // No tiene subcarpetas, pero sí podría tener documentos
+            const hasDocuments = n.children.some((c) => c.tipo === "documento");
+            if (!hasDocuments) {
+              // Es carpeta final y está vacía
+              emptyNodes.push({ id: n.id, path: newPath });
+            }
+          }
+        }
+      }
+    });
+
+    return emptyNodes;
+  }
+
+  let alertasEnProceso = false;
+  async function renderAlertas() {
+    if (alertasEnProceso) return;
+
+    alertasEnProceso = true;
+
+    const alertasList = document.getElementById("alertasList");
+    const alertasTab = document.getElementById("alertas-tab");
+
+    // limpiar contenido previo
+    alertasList.innerHTML = "";
+    alertasTab.querySelectorAll(".badge").forEach((b) => b.remove());
+
+    // crear spinner
+    const spinner = document.createElement("span");
+    spinner.className = "spinner-border spinner-border-sm ms-2";
+    spinner.role = "status";
+    spinner.style.width = "1rem";
+    spinner.style.height = "1rem";
+    spinner.innerHTML = `<span class="visually-hidden">Loading...</span>`;
+    spinner.id = "spinner-alertas"; // id único
+
+    alertasTab.appendChild(spinner);
+
+    try {
+      const response = await fetch(`/api/tree/obtener_carpetas/${fichaId}/`);
+      const data = await response.json();
+
+      // calcular carpetas vacías
+      const emptyNodes = findEmptyFolders(data.nodos);
+
+      // quitar spinner al terminar
+      const removeSpinner = () => {
+        const sp = document.getElementById("spinner-alertas");
+        if (sp) sp.remove();
+      };
+
+      if (emptyNodes.length > 0) {
+        emptyNodes.forEach((n) => {
+          const li = document.createElement("li");
+          li.classList.add("alerta-item", "alerta-warning");
+          li.innerHTML = `
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      La carpeta <strong>"${n.path.join(" > ")}"</strong> no tiene documentación
+    `;
+          alertasList.appendChild(li);
+        });
+
+        removeSpinner();
+
+        const badge = document.createElement("span");
+        badge.classList.add("badge", "bg-danger", "ms-2");
+        badge.textContent = emptyNodes.length;
+        alertasTab.appendChild(badge);
+      } else {
+        removeSpinner();
+
+        const li = document.createElement("li");
+        li.classList.add("alerta-item", "alerta-success");
+        li.innerHTML = `
+    <i class="bi bi-check-circle-fill me-2"></i>
+    Todas las carpetas tienen documentación
+  `;
+        alertasList.appendChild(li);
+      }
+    } finally {
+      alertasEnProceso = false;
     }
   }
 
@@ -1620,8 +1737,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Función recursiva para verificar si hay documentos en la carpeta o en cualquier subcarpeta
+  function tieneDocumentos(node) {
+    if (!node.children || node.children.length === 0) return false;
+
+    return node.children.some((child) => {
+      if (child.tipo === "documento") return true;
+      if (child.tipo === "carpeta") return tieneDocumentos(child);
+      return false;
+    });
+  }
+
   // Función de renderizado optimizada para portafolios
-  function renderPortafolioTree(nodes, can_edit) {
+  function renderPortafolioTree(nodes, can_edit, ruta = "") {
     if (!nodes || nodes.length === 0) return null;
 
     const ul = document.createElement("ul");
@@ -1635,6 +1763,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const span = document.createElement("span");
       span.textContent = node.name;
 
+      const rutaActual = ruta ? `${ruta} > ${node.name}` : node.name;
+
       // Usamos dataset para almacenar el ID según el tipo
       const dataId = node.tipo === "carpeta" ? "folderId" : "documentId";
       icon.dataset[dataId] = node.id;
@@ -1647,6 +1777,80 @@ document.addEventListener("DOMContentLoaded", function () {
         const subFolderContainer = document.createElement("ul");
         subFolderContainer.classList.add("folder-children");
         subFolderContainer.id = `portafolio-folder-${node.id}`;
+
+        const rutaRestrictiva = [
+          "4. EVIDENCIAS DE APRENDIZAJE > 1. ANÁLISIS",
+          "4. EVIDENCIAS DE APRENDIZAJE > 2. PLANEACIÓN",
+        ];
+
+        if (
+          userRole.trim() === "consulta" &&
+          rutaRestrictiva.includes(rutaActual)
+        ) {
+          const tieneDocs = tieneDocumentos(node);
+
+          if (!tieneDocs) {
+            // 🔹 Solo en este caso aplicamos el cursor tipo pointer
+            span.style.cursor = "pointer";
+
+            span.addEventListener("click", () => {
+              // 🔹 Cerrar modal aprendiz
+              const modalAprendiz = bootstrap.Modal.getInstance(
+                document.getElementById("portafolioAprendizModal")
+              );
+              if (modalAprendiz) modalAprendiz.hide();
+
+              // 🔹 Cambiar a tab ficha
+              const tabFicha = document.querySelector("#portfolioFicha-tab");
+              if (tabFicha) new bootstrap.Tab(tabFicha).show();
+
+              // 🔹 Cambiar al subtab "Portafolio" dentro de portfolioFicha
+              const subTabPortafolio =
+                document.querySelector("#portafolio-tab");
+              if (subTabPortafolio) new bootstrap.Tab(subTabPortafolio).show();
+
+              Toastify({
+                text:
+                  "Las evidencias de formación de las etapas de análisis y planeación, " +
+                  "para las fichas de cohorte 1, se alojan en la carpeta 'LINK DE PORTAFOLIO APRENDICES 2024' " +
+                  "dentro del portafolio general de la ficha.",
+                duration: 6000,
+                close: true,
+                gravity: "top",
+                position: "center",
+                stopOnFocus: true,
+                style: {
+                  background: "#1E2DBE",
+                  color: "#fff",
+                  fontSize: "14px",
+                  lineHeight: "1.5",
+                  padding: "12px 20px",
+                  borderRadius: "8px",
+                  maxWidth: "500px",
+                  whiteSpace: "pre-line",
+                },
+              }).showToast();
+
+              // 🔹 Resaltar carpeta especial
+              setTimeout(() => {
+                const carpetaSpan = document.querySelector(
+                  'span[data-portafolio-link="true"]'
+                );
+                if (carpetaSpan) {
+                  carpetaSpan.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+                  carpetaSpan.classList.add("blink-highlight");
+                  setTimeout(
+                    () => carpetaSpan.classList.remove("blink-highlight"),
+                    3000
+                  );
+                }
+              }, 2000);
+            });
+          }
+        }
 
         if (
           can_edit &&
@@ -1675,7 +1879,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         if (node.children && node.children.length > 0) {
           subFolderContainer.appendChild(
-            renderPortafolioTree(node.children, can_edit)
+            renderPortafolioTree(node.children, can_edit, rutaActual)
           );
         }
 
@@ -1724,7 +1928,7 @@ document.addEventListener("DOMContentLoaded", function () {
         link.append(icon, span);
         li.appendChild(link);
 
-        if (can_edit) {
+        if (can_edit && userRole != "instructor") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
