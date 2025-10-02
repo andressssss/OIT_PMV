@@ -16,7 +16,13 @@
         <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-4 mb-4">
           <div>
             <h1 class="h3 mb-1">
-              Panel de la Ficha <span class="text-primary fw-bold">{% if ficha.num %}{{ ficha.num }}{% else %}(Sin numero){% endif %}</span> -
+              Panel de la Ficha <span class="text-primary fw-bold">
+                {% if ficha.num %}
+                  {{ ficha.num }}
+                {% else %}
+                  (Sin numero)
+                {% endif %}
+              </span> -
               <small class="text-muted">Fase {{ fase }}</small>
             </h1>
             <span class="badge bg-secondary">Grupo {{ ficha.grupo.id }}</span>
@@ -85,6 +91,11 @@
                   <li class="nav-item" role="presentation">
                     <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial-tab-pane" type="button" role="tab" aria-controls="historial-tab-pane" aria-selected="false">Historial de Acciones</button>
                   </li>
+                  {% if perfil.rol == 'admin' %}
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link" id="archivo-tab" data-bs-toggle="tab" data-bs-target="#archivo-tab-pane" type="button" role="tab" aria-controls="archivo-tab-pane" aria-selected="false">Archivo</button>
+                    </li>
+                  {% endif %}
                 </ul>
                 <div class="tab-content" id="portafolioAnexTabContent">
                   <div class="tab-pane fade show active" id="formatos-tab-pane" role="tabpanel" aria-labelledby="formatos-tab" tabindex="0">
@@ -197,6 +208,13 @@
                   </div>
                   <div class="tab-pane fade" id="historial-tab-pane" role="tabpanel" aria-labelledby="historial-tab" tabindex="0">
                     <ul id="historialFicha" class="list-group list-group-flush text-start"></ul>
+                  </div>
+                  <div class="tab-pane fade" id="archivo-tab-pane" role="tabpanel" aria-labelledby="archivo-tab" tabindex="0">
+                    {% if perfil.rol == 'admin' %}
+                      <div class="table-responsive mt-2">
+                        <table class="table table-hover table-striped w-100" id="tabla-archivo"></table>
+                      </div>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -327,16 +345,25 @@
           <div class="modal-body">
             <!-- Árbol de carpetas -->
             <div id="folderTreeAprendiz"></div>
-
             <hr />
-
-            <!-- Historial -->
-            <div class="mt-4">
-              <h5>Historial de Acciones</h5>
-              <ul id="historialAprendiz" class="list-group list-group-flush text-start"></ul>
+            <ul class="nav nav-tabs" id="portafolioApreAnexTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="historial-apre-tab" data-bs-toggle="tab" data-bs-target="#historial-apre-tab-pane" type="button" role="tab" aria-controls="historial-apre-tab-pane" aria-selected="false">Historial de Acciones</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="alertas-apre-tab" data-bs-toggle="tab" data-bs-target="#alertas-apre-tab-pane" type="button" role="tab" aria-controls="archivo-apre-tab-pane" aria-selected="false">Carpetas sin documentación</button>
+              </li>
+            </ul>
+            <div class="tab-content" id="portafolioApreAnexTabContent">
+              <div class="tab-pane fade show active" id="historial-apre-tab-pane" role="tabpanel" aria-labelledby="historial-apre-tab" tabindex="0">
+                <!-- Historial -->
+                  <ul id="historialAprendiz" class="list-group list-group-flush text-start"></ul>
+              </div>
+              <div class="tab-pane fade" id="alertas-apre-tab-pane" role="tabpanel" aria-labelledby="alertas-apre-tab" tabindex="0">
+                <ul id="alertasApreList" class="list-group"></ul>
+              </div>
             </div>
           </div>
-
           <!-- Footer -->
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

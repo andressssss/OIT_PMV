@@ -32,7 +32,8 @@ from commons.models import (
     T_departa,
     T_insti_edu,
     T_centro_forma,
-    T_progra
+    T_progra,
+    T_permi
 )
 from commons.mixins import PermisosMixin
 from .forms import InstructorForm, PerfilEForm, CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
@@ -379,41 +380,57 @@ def signout(request):
 def dashboard_admin(request):
     mixin = PermisosMixin()
     acciones = mixin.get_all_permissions(request)
-    
+
     modulos = [
         {
             "grupo": "Sistema",
             "items": [
-                {"perm": "departamentos", "url": "departamentos", "img": "images/departamentosIcon.webp", "titulo": "Departamentos", "desc": "Administrar los departamentos del sistema."},
-                {"perm": "municipios", "url": "municipios", "img": "images/municipiosIcon.png", "titulo": "Municipios", "desc": "Administrar los municipios del sistema."},
-                {"perm": "usuarios", "url": "usuarios", "img": "images/usuario.webp", "titulo": "Usuarios", "desc": "Administrar los usuarios del sistema."},
+                {"perm": "departamentos", "url": "departamentos", "img": "images/departamentosIcon.webp",
+                    "titulo": "Departamentos", "desc": "Administrar los departamentos del sistema."},
+                {"perm": "municipios", "url": "municipios", "img": "images/municipiosIcon.png",
+                    "titulo": "Municipios", "desc": "Administrar los municipios del sistema."},
+                {"perm": "usuarios", "url": "usuarios", "img": "images/usuario.webp",
+                    "titulo": "Usuarios", "desc": "Administrar los usuarios del sistema."},
+                {"perm": "dashboard", "url": "dashboard", "img": "images/kpi.png",
+                    "titulo": "Indicadores", "desc": "Indicadores y métricas del sistema."},
             ],
         },
         {
             "grupo": "Usuarios y roles",
             "items": [
-                {"perm": "instructores", "url": "instructores", "img": "images/instructoricon2.webp", "titulo": "Instructores", "desc": "Administrar los instructores del sistema."},
-                {"perm": "aprendices", "url": "aprendices", "img": "images/aprendizicon.webp", "titulo": "Aprendices", "desc": "Administrar los aprendices del sistema."},
-                {"perm": "admin", "url": "administradores", "img": "images/adminicon2.webp", "titulo": "Administradores", "desc": "Administrar los administradores del sistema."},
-                {"perm": "lideres", "url": "lideres", "img": "images/leadericon.webp", "titulo": "Equipo nacional", "desc": "Administrar el equipo nacional."},
-                {"perm": "cuentas", "url": "cuentas", "img": "images/cuentasicon.png", "titulo": "Cuentas", "desc": "Administrar los perfiles de cuentas."},
-                {"perm": "gestores", "url": "gestores", "img": "images/gestoricon.webp", "titulo": "Gestores", "desc": "Administrar los gestores del sistema."},
+                {"perm": "instructores", "url": "instructores", "img": "images/instructoricon2.webp",
+                    "titulo": "Instructores", "desc": "Administrar los instructores del sistema."},
+                {"perm": "aprendices", "url": "aprendices", "img": "images/aprendizicon.webp",
+                    "titulo": "Aprendices", "desc": "Administrar los aprendices del sistema."},
+                {"perm": "admin", "url": "administradores", "img": "images/adminicon2.webp",
+                    "titulo": "Administradores", "desc": "Administrar los administradores del sistema."},
+                {"perm": "lideres", "url": "lideres", "img": "images/leadericon.webp",
+                    "titulo": "Equipo nacional", "desc": "Administrar el equipo nacional."},
+                {"perm": "cuentas", "url": "cuentas", "img": "images/cuentasicon.png",
+                    "titulo": "Cuentas", "desc": "Administrar los perfiles de cuentas."},
+                {"perm": "gestores", "url": "gestores", "img": "images/gestoricon.webp",
+                    "titulo": "Gestores", "desc": "Administrar los gestores del sistema."},
             ],
         },
         {
             "grupo": "Currículo y actividades",
             "items": [
-                {"perm": "fichas", "url": "fichas", "img": "images/programasIcon.png", "titulo": "Fichas", "desc": "Administrar fichas."},
-                {"perm": "instituciones", "url": "instituciones", "img": "images/InstitucionesIcon.png", "titulo": "Instituciones", "desc": "Administrar las instituciones del sistema."},
-                {"perm": "centros", "url": "centrosformacion", "img": "images/centroFormacionIcon.png", "titulo": "Centros de formación", "desc": "Administrar los Centros de formación del sistema."},
-                {"perm": "programas", "url": "programas", "img": "images/programasIcon.png", "titulo": "Programas", "desc": "Administrar los programas del sistema."},
-                {"perm": "competencias", "url": "competencias", "img": "images/competenciaIcon.png", "titulo": "Competencias", "desc": "Administrar las competencias del sistema."},
-                {"perm": "raps", "url": "raps", "img": "images/rapsIcon.png", "titulo": "RAPS", "desc": "Administrar los RAPS del sistema."},
+                {"perm": "fichas", "url": "fichas", "img": "images/programasIcon.png",
+                    "titulo": "Fichas", "desc": "Administrar fichas."},
+                {"perm": "instituciones", "url": "instituciones", "img": "images/InstitucionesIcon.png",
+                    "titulo": "Instituciones", "desc": "Administrar las instituciones del sistema."},
+                {"perm": "centros", "url": "centrosformacion", "img": "images/centroFormacionIcon.png",
+                    "titulo": "Centros de formación", "desc": "Administrar los Centros de formación del sistema."},
+                {"perm": "programas", "url": "programas", "img": "images/programasIcon.png",
+                    "titulo": "Programas", "desc": "Administrar los programas del sistema."},
+                {"perm": "competencias", "url": "competencias", "img": "images/competenciaIcon.png",
+                    "titulo": "Competencias", "desc": "Administrar las competencias del sistema."},
+                {"perm": "raps", "url": "raps", "img": "images/rapsIcon.png",
+                    "titulo": "RAPS", "desc": "Administrar los RAPS del sistema."},
             ],
         },
     ]
 
-    
     for grupo in modulos:
         visible_items = 0
         for item in grupo["items"]:
@@ -435,7 +452,7 @@ def instructores(request):
     programas = T_progra.objects.all()
     perfil_form = PerfilForm()
     instructor_form = InstructorForm()
-    
+
     acciones = PermisosMixin().get_permission_actions_for(request, "instructores")
     can_view = acciones.get("ver", False)
     can_edit = acciones.get("editar", False)
@@ -478,8 +495,6 @@ def crear_instructor(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            # contraseña = generar_contraseña()
-
             new_user = User.objects.create_user(
                 username=username,
                 password=str(dni),
@@ -496,6 +511,21 @@ def crear_instructor(request):
             new_instructor.perfil = new_perfil
             new_instructor.esta = "Activo"
             new_instructor.save()
+
+            PERMISOS_INSTRUCTOR = [
+                ("fichas", "ver"),
+                ("fichas", "editar"),
+                ("portafolios", "ver"),
+                ("portafolios", "editar"),
+            ]
+
+            for modu, acci in PERMISOS_INSTRUCTOR:
+                T_permi.objects.get_or_create(
+                    modu=modu,
+                    acci=acci,
+                    filtro=None,
+                    perfil=new_perfil
+                )
 
             for ficha_id in ficha_ids:
                 try:
@@ -842,6 +872,21 @@ def cargar_instructores_masivo(request):
                         instructor.full_clean()
                         instructor.save()
 
+                        PERMISOS_INSTRUCTOR = [
+                            ("fichas", "ver"),
+                            ("fichas", "editar"),
+                            ("portafolios", "ver"),
+                            ("portafolios", "editar"),
+                        ]
+
+                        for modu, acci in PERMISOS_INSTRUCTOR:
+                            T_permi.objects.get_or_create(
+                                modu=modu,
+                                acci=acci,
+                                filtro=None,
+                                perfil=perfil
+                            )
+
                         resumen["insertados"] += 1
 
                 messages.success(
@@ -966,10 +1011,6 @@ def cuentas_detalle(request, cuentas_id):
 
 @login_required
 def aprendices(request):
-    perfil = getattr(request.user, 't_perfil', None)
-    rol = perfil.rol
-    aprendices = T_apre.objects.select_related('perfil__user').all()
-
     perfil_form_data = request.session.pop('perfil_form_data', None)
     representante_form_data = request.session.pop(
         'representante_form_data', None)
@@ -984,8 +1025,6 @@ def aprendices(request):
     can_view = acciones.get("ver", False)
 
     return render(request, 'aprendiz.html', {
-        'aprendices': aprendices,
-        'rol': rol,
         'perfil_form': perfil_form,
         'representante_form': representante_form,
         'can_edit': can_edit,
@@ -1171,8 +1210,6 @@ def crear_aprendices(request):
                     username = f"{base_username}{i}"
                     i += 1
 
-                # contraseña = generar_contraseña()
-
                 new_user = User.objects.create_user(
                     username=username,
                     password=str(dni),
@@ -1270,7 +1307,7 @@ def eliminar_aprendiz(request, aprendiz_id):  # funcion para eliminar aprendiz
 def lideres(request):
     lideres = T_lider.objects.select_related('perfil__user').all()
     perfil_form = PerfilForm()
-    
+
     acciones = PermisosMixin().get_permission_actions_for(request, "lideres")
     can_view = acciones.get("ver", False)
     can_edit = acciones.get("editar", False)
@@ -1306,8 +1343,6 @@ def crear_lider(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            # contraseña = generar_contraseña()
-
             new_user = User.objects.create_user(
                 username=username,
                 password=str(dni),
@@ -1325,6 +1360,29 @@ def crear_lider(request):
                 esta="Activo",
                 perfil=new_perfil
             )
+
+            PERMISOS_LIDER = [
+                ("aprendices", "ver"),
+                ("aprendices", "editar"),
+                ("gestores", "ver"),
+                ("gestores", "editar"),
+                ("fichas", "ver"),
+                ("fichas", "editar"),
+                ("portafolios", "ver"),
+                ("portafolios", "editar"),
+                ("instituciones", "ver"),
+                ("instituciones", "editar"),
+                ("centros", "ver"),
+                ("centros", "editar")
+            ]
+
+            for modu, acci in PERMISOS_LIDER:
+                T_permi.objects.get_or_create(
+                    modu=modu,
+                    acci=acci,
+                    filtro=None,
+                    perfil=new_perfil
+                )
             return JsonResponse({'status': 'success', 'message': 'Lider creado con exito.'})
         else:
             errores_dict = {perfil_form.errors.get_json_data()}
@@ -1409,10 +1467,10 @@ def administradores(request):
     administradores = T_admin.objects.select_related('perfil__user').all()
     perfil_form = PerfilForm()
     admin_form = AdministradoresForm()
-    
+
     acciones = PermisosMixin().get_permission_actions_for(request, "admin")
     can_view = acciones.get("ver", False)
-    can_edit = acciones.get("editar", False) 
+    can_edit = acciones.get("editar", False)
     return render(request, 'administradores.html', {
         'administradores': administradores,
         'perfil_form': perfil_form,
@@ -1447,8 +1505,6 @@ def crear_administrador(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            # contraseña = generar_contraseña()
-
             new_user = User.objects.create_user(
                 username=username,
                 password=str(dni),
@@ -1461,12 +1517,54 @@ def crear_administrador(request):
             new_perfil.mail = new_user.email
             new_perfil.save()
 
-            perfil = getattr(request.user, 't_perfil', None)
-
             new_admin = admin_form.save(commit=False)
             new_admin.perfil = new_perfil
             new_admin.esta = "Activo"
             new_admin.save()
+
+            PERMISOS_ADM = [
+                ("departamentos", "ver"),
+                ("departamentos", "editar"),
+                ("municipios", "ver"),
+                ("municipios", "editar"),
+                ("usuarios", "ver"),
+                ("usuarios", "editar"),
+                ("instructores", "ver"),
+                ("instructores", "editar"),
+                ("aprendices", "ver"),
+                ("aprendices", "editar"),
+                ("admin", "ver"),
+                ("admin", "editar"),
+                ("lideres", "ver"),
+                ("lideres", "editar"),
+                ("cuentas", "ver"),
+                ("cuentas", "editar"),
+                ("gestores", "ver"),
+                ("gestores", "editar"),
+                ("fichas", "ver"),
+                ("fichas", "editar"),
+                ("portafolios", "ver"),
+                ("portafolios", "editar"),
+                ("instituciones", "ver"),
+                ("instituciones", "editar"),
+                ("centros", "ver"),
+                ("centros", "editar"),
+                ("programas", "ver"),
+                ("programas", "editar"),
+                ("competencias", "ver"),
+                ("competencias", "editar"),
+                ("raps", "ver"),
+                ("raps", "editar"),
+            ]
+
+            for modu, acci in PERMISOS_ADM:
+                T_permi.objects.get_or_create(
+                    modu=modu,
+                    acci=acci,
+                    filtro=None,
+                    perfil=new_perfil
+                )
+
             return JsonResponse({'status': 'success', 'message': 'Administrador creado con exito.'})
         else:
             errores_dict = {
@@ -1561,7 +1659,7 @@ def departamentos(request):
     acciones = PermisosMixin().get_permission_actions_for(request, "departamentos")
     can_view = acciones.get("ver", False)
     can_edit = acciones.get("editar", False)
-    
+
     return render(request, 'departamentos.html', {
         'departamentos': departamentos,
         'can_view': can_view,
@@ -1637,7 +1735,7 @@ def municipios(request):
     acciones = PermisosMixin().get_permission_actions_for(request, "municipios")
     can_view = acciones.get("ver", False)
     can_edit = acciones.get("editar", False)
-    
+
     return render(request, 'municipios.html', {
         'municipios': municipios,
         'can_view': can_view,
@@ -1917,7 +2015,8 @@ def crear_centro(request):
 def listar_centros_formacion_json(request):
     centros = T_centro_forma.objects.all()
     data = []
-    can_edit = PermisosMixin().get_permission_actions_for(request, "centros").get("editar", False)
+    can_edit = PermisosMixin().get_permission_actions_for(
+        request, "centros").get("editar", False)
     for centro in centros:
         data.append({
             'id': centro.id,
@@ -2001,13 +2100,6 @@ def obtener_municipios(request):
 def obtener_departamentos(request):
     departamentos = T_departa.objects.all().values('id', 'nom_departa')
     return JsonResponse(list(departamentos), safe=False)
-
-# Función para generar contraseña aleatoria
-
-
-def generar_contraseña(length=8):
-    caracteres = string.ascii_letters + string.digits
-    return ''.join(random.choice(caracteres) for _ in range(length))
 
 
 @login_required
@@ -2104,9 +2196,6 @@ def cargar_aprendices_masivo(request):
                                 username = f"{base_username}{i}"
                                 i += 1
 
-                            # Generar contraseña aleatoria
-                            # contraseña = generar_contraseña()
-
                             # Crear el usuario
                             user = User.objects.create_user(
                                 username=username,
@@ -2165,17 +2254,6 @@ def cargar_aprendices_masivo(request):
                                 repre_legal=repre_legal,
                                 usu_crea=perfil_crea.user
                             )
-
-                            # # Enviar el correo con la contraseña
-                            # asunto = "Bienvenido a la plataforma"
-                            # mensaje = f"Hola {fila['nom']} {fila['apelli']},\n\nTu cuenta ha sido creada con éxito. A continuación se encuentran tus credenciales:\n\nUsuario: {username}\nContraseña: {contraseña}\n\nRecuerda cambiar tu contraseña después de iniciar sesión."
-                            # send_mail(
-                            #     asunto,
-                            #     mensaje,
-                            #     settings.DEFAULT_FROM_EMAIL,
-                            #     [fila['email']],
-                            #     fail_silently=False,
-                            # )
 
                             resumen["insertados"] += 1
                             messages.success(
@@ -2385,8 +2463,7 @@ def gestores(request):
         gestor.departamentos = ', '.join(
             [depa.depa.nom_departa for depa in gestor.t_gestor_depa_set.all()]
         )
-        
-    
+
     acciones = PermisosMixin().get_permission_actions_for(request, "gestores")
     can_edit = acciones.get("editar", False)
     can_view = acciones.get("ver", False)
@@ -2427,8 +2504,6 @@ def crear_gestor(request):
                 username = f"{base_username}{i}"
                 i += 1
 
-            # contraseña = generar_contraseña()
-
             # Crear el usuario con los datos generados
             new_user = User.objects.create_user(username=username, password=str(
                 dni), email=perfil_form.cleaned_data['mail'])
@@ -2456,22 +2531,18 @@ def crear_gestor(request):
                 )
                 new_gestor_depa.save()
 
-            # # Enviar correo de bienvenida
-            # asunto = "Credenciales de acceso"
-            # mensaje = (
-            #     f"Hola {new_perfil.nom},\n\n"
-            #     f"Su cuenta ha sido creada exitosamente.\n"
-            #     f"Usuario: {username}\n"
-            #     f"Contraseña: {password}\n\n"
-            #     f"Por favor cambie su contraseña después de iniciar sesión."
-            # )
-            # send_mail(
-            #     asunto,
-            #     mensaje,
-            #     settings.DEFAULT_FROM_EMAIL,
-            #     [new_perfil.mail],
-            #     fail_silently=False,
-            # )
+            PERMISOS_GESTOR = [
+                ("aprendices", "ver"),
+                ("aprendices", "editar")
+            ]
+
+            for modu, acci in PERMISOS_GESTOR:
+                T_permi.objects.get_or_create(
+                    modu=modu,
+                    acci=acci,
+                    filtro=None,
+                    perfil=new_perfil
+                )
 
             return JsonResponse({'status': 'success', 'message': 'Gestor creado con exito.'})
         else:

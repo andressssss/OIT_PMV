@@ -69,13 +69,53 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Agregar listeners después de renderizar el árbol
       addEventListeners(data.can_edit);
-      renderAlertas();
+      renderAlertas("ficha", fichaId);
       cargarHistorial("fichaG", fichaId);
       cargarHistorial("ficha", fichaId);
+      if (userRole.trim() === "admin") {
+        cargarArchivo(fichaId);
+      }
     } catch (error) {
       console.error("Error al cargar la estructura del árbol:", error);
       container.innerHTML = "<p>Error al cargar el árbol</p>";
     }
+  }
+
+  let tablaArchivo;
+  async function cargarArchivo(id) {
+    const tablaArchivoEl = document.getElementById("tabla-archivo");
+
+    tablaArchivo = new DataTable(tablaArchivoEl, {
+      serverSide: false,
+      processing: true,
+      ajax: {
+        url: `/api/formacion/parchivo/?id=${id}`,
+        type: "GET",
+        dataSrc: "",
+      },
+      columns: [
+        { data: "docu", title: "Documento" },
+        { data: "ubi", title: "Ubicación original" },
+        { data: "obser", title: "Observación" },
+        { data: "eli_en", title: "Fecha eliminación" },
+        { data: "eli_por", title: "Eliminado por" },
+        {
+          data: "url",
+          render: function (data, type, row) {
+            if (!data) return "";
+            return `
+            <a href="${data}" target="_blank" class="btn btn-sm btn-primary">
+              Ver documento
+            </a>
+          `;
+          },
+        },
+      ],
+      order: [[3, "desc"]],
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+      },
+    });
   }
 
   async function cargarHistorial(contexto, id) {
@@ -337,7 +377,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const folderId = li?.dataset.folderId;
         if (!docId) return;
         const confirmed = await confirmDeletion("¿Eliminar este documento?");
-        if (confirmed) deleteFile(docId, folderId, can_edit);
+        if (confirmed) deleteFile(docId, folderId, can_edit, "ficha");
         return;
       }
 
@@ -862,24 +902,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function deleteFile(fileId, folderId, can_edit) {
+  async function deleteFile(fileId, folderId, can_edit, contexto) {
     try {
-      const response = await fetch(`/api/tree/eliminar_documento/${fileId}`, {
-        method: "DELETE",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `/api/formacion/fichas/eliminar_documento_portafolio/${fileId}/${contexto}/`,
+        {
+          method: "DELETE",
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         toastSuccess("Documento eliminado.");
-
-        if (folderId) {
+        if (contexto === "ficha") {
           await actualizarCarpeta(folderId, "ficha", can_edit);
-        } else {
-          verTree();
+        } else if (contexto === "aprendiz") {
+          await actualizarCarpeta(folderId, "aprendiz", can_edit);
         }
+        tablaArchivo.ajax.reload()
       } else {
         toastError("Error al eliminar el archivo");
       }
@@ -954,7 +997,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       renderHistorial();
       if (contexto === "ficha") {
-        renderAlertas();
+        renderAlertas("ficha", fichaId);
+      } else if (contexto === "aprendiz"){
+        renderAlertas("aprendiz", aprendizId);
       }
     } catch (error) {
       console.error("Error al actualizar la carpeta:", error);
@@ -997,13 +1042,31 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let alertasEnProceso = false;
-  async function renderAlertas() {
+  async function renderAlertas(contexto, id) {
     if (alertasEnProceso) return;
-
     alertasEnProceso = true;
 
-    const alertasList = document.getElementById("alertasList");
-    const alertasTab = document.getElementById("alertas-tab");
+    const config = {
+      ficha: {
+        list: "alertasList",
+        tab: "alertas-tab",
+        url: `/api/tree/obtener_carpetas/${id}/`,
+      },
+      aprendiz: {
+        list: "alertasApreList",
+        tab: "alertas-apre-tab",
+        url: `/api/tree/obtener_carpetas_aprendiz/${id}/`,
+      }
+    };
+    if (!config[contexto]) {
+      alertasEnProceso = false;
+      return;
+    }
+
+    const { list, tab, url } = config[contexto];
+    const alertasList = document.getElementById(list);
+    const alertasTab = document.getElementById(tab);
+
 
     // limpiar contenido previo
     alertasList.innerHTML = "";
@@ -1016,12 +1079,13 @@ document.addEventListener("DOMContentLoaded", function () {
     spinner.style.width = "1rem";
     spinner.style.height = "1rem";
     spinner.innerHTML = `<span class="visually-hidden">Loading...</span>`;
-    spinner.id = "spinner-alertas"; // id único
+    spinner.id = `spinner-alertas-${contexto}`;
+
 
     alertasTab.appendChild(spinner);
 
     try {
-      const response = await fetch(`/api/tree/obtener_carpetas/${fichaId}/`);
+      const response = await fetch(url);
       const data = await response.json();
 
       // calcular carpetas vacías
@@ -1029,7 +1093,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // quitar spinner al terminar
       const removeSpinner = () => {
-        const sp = document.getElementById("spinner-alertas");
+        const sp = document.getElementById(`spinner-alertas-${contexto}`);
         if (sp) sp.remove();
       };
 
@@ -1728,6 +1792,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       agregarEventListenersPortafolio(data.can_edit);
       cargarHistorial("aprendiz", aprendizId);
+      renderAlertas("aprendiz", aprendizId);
     } catch (error) {
       console.error("Error cargando los nodos:", error);
       document.getElementById("folderTreeAprendiz").innerHTML =
@@ -1991,7 +2056,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (!docId) return;
 
           const confirmed = await confirmToast("¿Eliminar este documento?");
-          if (confirmed) deleteFileAprendiz(docId, folderId, can_edit);
+          if (confirmed) deleteFile(docId, folderId, can_edit, "aprendiz");
           return;
         }
 
@@ -2090,35 +2155,6 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("uploadModalAprendiz")
     );
     modal.show();
-  }
-
-  async function deleteFileAprendiz(fileId, folderId, can_edit) {
-    try {
-      const response = await fetch(
-        `/api/tree/eliminar_documento_aprendiz/${fileId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.ok) {
-        toastSuccess("Documento eliminado.");
-
-        if (folderId) {
-          await actualizarCarpeta(folderId, "aprendiz", can_edit);
-        } else {
-          verTree();
-        }
-      } else {
-        toastError("Error al eliminar el archivo");
-      }
-    } catch (error) {
-      console.error("Error al borrar el archivo:", error);
-    }
   }
 
   // *******************************************************************

@@ -53,7 +53,7 @@ def crear_permisos(perfil):
     permisos = PERMISOS_ROL.get(perfil.rol, [])
 
     for modu, acci in permisos:
-        T_permi.objects.create(
+        T_permi.objects.get_or_create(
             modu=modu,
             acci=acci,
             filtro=None,
@@ -95,6 +95,7 @@ PERMISOS_ROL = {
         ("competencias", "editar"),
         ("raps", "ver"),
         ("raps", "editar"),
+        ("dashboard", "ver")
     ],
     "instructor": [
         ("fichas", "ver"),

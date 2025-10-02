@@ -19,8 +19,8 @@
             <h1 class="display-5">Gestión de Usuarios</h1>
           </div>
           <div class="table-responsive">
-            <table id="usuarios_table" class="table table-hover table-bordered align-middle">
-              <thead class="table-secondary text-center">
+            <table id="usuarios_table" class="table table-hover align-middle table-striped w-100">
+              <thead>
                 <tr>
                   <th>Nombre</th>
                   <th>Apellido</th>
@@ -156,6 +156,14 @@
                 <label class="form-check-label">Editar Usuarios</label>
               </div>
               <input type="text" class="form-control my-2" name="usuarios_filtro" placeholder='{"rol": "admin"}' />
+            </div>
+            <!-- METRICAS -->
+            <div class="col-12 col-md-3 mb-3">
+              <h5>Indicadores</h5>
+              <div class="form-check">
+                <input class="form-check-input" name="dashboard_ver" type="checkbox" />
+                <label class="form-check-label">Ver Métricas</label>
+              </div>
             </div>
           </div>
 

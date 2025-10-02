@@ -15,8 +15,8 @@ from django.utils import timezone
 from django.db.models import Q
 import csv
 from django.shortcuts import get_object_or_404
-from api.serializers.formacion import FaseSerializer, JuicioHistoSerializer, JuicioSerializer,  RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer, JuicioHistoSerializer, FichaFiltrarSerializer
-from commons.models import T_jui_eva_actu, T_fase, T_raps, AuditLog, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz, T_jui_eva_diff
+from api.serializers.formacion import FaseSerializer, JuicioHistoSerializer, JuicioSerializer,  RapSerializer, RapWriteSerializer, RapTablaSerializer, RapDetalleSerializer, CompetenciaTablaSerializer, CompetenciaWriteSerializer, CompetenciaSerializer, CompetenciaDetalleSerializer, FichaSerializer, FichaEditarSerializer, ProgramaSerializer, JuicioHistoSerializer, FichaFiltrarSerializer, PortaArchiSerializer
+from commons.models import T_jui_eva_actu, T_fase, T_raps, AuditLog, T_compe, T_ficha, T_prematri_docu, T_DocumentFolder, T_docu, T_apre, T_centro_forma, T_progra, T_insti_edu, T_perfil, T_instru, T_gestor_grupo, T_grupo, T_fase_ficha, T_gestor_depa, T_gestor, T_DocumentFolderAprendiz, T_jui_eva_diff, T_porta_archi
 from django.contrib.auth.models import User
 from django.utils.timezone import localtime
 from matricula.scripts.cargar_tree import crear_datos_prueba
@@ -478,68 +478,13 @@ class FichasViewSet(ModelViewSet):
             return Response({"detail": "Contexto no válido"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            extensiones_permitidas = [
-                "pdf",
-                "jpg",
-                "jpeg",
-                "png",
-                "ppt",
-                "pptx",
-                "mp3",
-                "mp4",
-                "xls",
-                "psc",
-                "sql",
-                "zip",
-                "rar",
-                "7z",
-                "docx",
-                "doc",
-                "dotx",
-                "dotm",
-                "docm",
-                "dot",
-                "htm",
-                "html",
-                "mht",
-                "mhtml",
-                "xlt",
-                "xltx",
-                "xltm",
-                "xml",
-                "xlsb",
-                "xlsx",
-                "csv",
-                "pptm",
-                "pps",
-                "ppsx",
-                "ppsm",
-                "pot",
-                "potx",
-                "potm",
-                "sldx",
-                "sldm",
-                "pst",
-                "ost",
-                "msg",
-                "eml",
-                "mdb",
-                "accdb",
-                "accde",
-                "accdt",
-                "accdr",
-                "one",
-                "pub",
-                "vsd",
-                "vsdx",
-                "xps",
-                "txt",
-                "gif",
-                "svg",
-                "avi",
-                "wav",
-                "flac",
-            ]
+            extensiones_permitidas = ["pdf", "jpg", "jpeg", "png", "ppt", "pptx", "mp3", "mp4", "xls", "psc", "sql", "zip",
+                                      "rar", "7z", "docx", "doc", "dotx", "dotm", "docm", "dot", "htm", "html", "mht", "mhtml",
+                                      "xlt", "xltx", "xltm", "xml", "xlsb", "xlsx", "csv", "pptm", "pps", "ppsx", "ppsm",
+                                      "pot", "potx", "potm", "sldx", "sldm", "pst", "ost", "msg", "eml", "mdb", "accdb",
+                                      "accde", "accdt", "accdr", "one", "pub", "vsd", "vsdx", "xps", "txt", "gif", "svg",
+                                      "avi", "wav", "flac",
+                                      ]
 
             extension = archivo.name.split('.')[-1].lower()
 
@@ -631,6 +576,72 @@ class FichasViewSet(ModelViewSet):
                 "message": "Error inesperado al cargar el documento",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['delete'], url_path='eliminar_documento_portafolio/(?P<doc_id>\d+)/(?P<contexto>[^/]+)')
+    def eliminar_documento_portafolio(self, request, doc_id=None, contexto=None):
+        if not doc_id or not contexto:
+            return Response({"error": "Se requieren los parametros"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if contexto == "ficha":
+            model = T_DocumentFolder
+        elif contexto == "aprendiz":
+            model = T_DocumentFolderAprendiz
+        else:
+            return Response({"detail": "Contexto no válido"}, status=status.HTTP_400_BAD_REQUEST)
+
+        documento = get_object_or_404(model, id=doc_id)
+        
+        ancestros = documento.get_ancestors(include_self=False)
+        prefijo = "PF" if contexto == "ficha" else "PA"
+
+        ubicacion = " > ".join([
+            f"{prefijo} {a.name}" if i == 0 else a.name
+            for i, a in enumerate(ancestros)
+        ])
+        
+        if contexto == "ficha":
+            observacion = f"Documento asociado al portafolio de la ficha {documento.ficha.num}"
+            ficha = documento.ficha
+            related_type = "ficha"
+            related_id = documento.ficha_id
+        elif contexto == "aprendiz":
+            observacion = f"Documento asociado al portafolio del aprendiz {documento.aprendiz.perfil.nom} con dni:{documento.aprendiz.perfil.dni}"
+            ficha = documento.aprendiz.ficha
+            related_type = "aprendiz"
+            related_id = documento.aprendiz_id
+        else:
+            return Response({"detail": "Contexto no válido"}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        archivo_eliminado = T_porta_archi.objects.create(
+          ficha = ficha,
+          docu = documento.documento,
+          eli_por = request.user,
+          obser = observacion,
+          ubi = ubicacion
+        )
+        
+        if documento.documento:
+          documento.documento = None
+
+        documento.delete()
+
+        extra_data = (
+            f"Se elimino el documento '{archivo_eliminado.docu.nom}' "
+            f"en la carpeta {documento.parent_id}"
+        )
+
+        AuditLog.objects.create(
+            user=request.user,
+            content_type=ContentType.objects.get_for_model(documento),
+            object_id=documento.id,
+            action="delete",
+            related_id=related_id,
+            related_type=related_type,
+            extra_data=extra_data
+        )
+
+        return Response({"status": "success", "message": "Eliminado correctamente"}, status=200)
 
     @action(detail=False, methods=['get'], url_path='historial')
     def historial(self, request):
@@ -950,3 +961,16 @@ class JuiciosHistoViewSet(ModelViewSet):
 
         serializer = JuicioHistoSerializer(historial, many=True)
         return Response(serializer.data)
+
+class PortaArchiViewSet(ModelViewSet):
+    queryset = T_porta_archi.objects.all().order_by('-eli_en')
+    serializer_class = PortaArchiSerializer
+    pagination_class = DataTablesPagination
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = T_porta_archi.objects.all()
+        ficha_id = self.request.query_params.get("id")
+        if ficha_id:
+            queryset = queryset.filter(ficha_id=ficha_id)
+        return queryset

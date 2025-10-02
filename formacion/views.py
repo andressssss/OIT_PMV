@@ -378,42 +378,6 @@ def mover_documento(request):
 
 
 @login_required
-def eliminar_documento_portafolio_ficha(request, documento_id):
-    if request.method != "DELETE":
-        return JsonResponse({"status": "error", "error": "Método no permitido"}, status=405)
-
-    documento = get_object_or_404(T_DocumentFolder, id=documento_id)
-
-    nombre_doc = documento.name if (
-        documento.name) else "Documento sin archivo"
-    extra_data = (
-        f"Se elimino el documento '{nombre_doc}' "
-        f"en la carpeta {documento.parent_id} "
-    )
-
-    # Si hay un archivo relacionado, eliminarlo manualmente
-    if documento.documento and documento.documento.archi:
-        archivo_a_eliminar = documento.documento.archi.name
-        if archivo_a_eliminar:
-            default_storage.delete(archivo_a_eliminar)
-        documento.documento.delete()
-
-    documento.delete()
-
-    AuditLog.objects.create(
-        user=request.user,
-        content_type=ContentType.objects.get_for_model(documento),
-        object_id=documento.id,
-        action="delete",
-        related_id=documento.ficha_id,
-        related_type="ficha",
-        extra_data=extra_data
-    )
-
-    return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status=200)
-
-
-@login_required
 def obtener_hijos_carpeta(request, carpeta_id):
     try:
         nodos = T_DocumentFolder.objects.filter(parent_id=carpeta_id).values(
@@ -658,41 +622,6 @@ def descargar_portafolios_ficha_zip(request, ficha_id):
     response = HttpResponse(buffer, content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename=portafolios_ficha_{ficha_id}.zip'
     return response
-
-
-@login_required
-def eliminar_documento_portafolio_aprendiz(request, documento_id):
-    if request.method != "DELETE":
-        return JsonResponse({"status": "error", "error": "Método no permitido"}, status=405)
-
-    documento = get_object_or_404(T_DocumentFolderAprendiz, id=documento_id)
-
-    nombre_doc = documento.name if (
-        documento.name) else "Documento sin archivo"
-    extra_data = (
-        f"Se elimino el documento '{nombre_doc}' "
-        f"en la carpeta {documento.parent_id} "
-    )
-
-    if documento.documento and documento.documento.archi:
-        archivo_a_eliminar = documento.documento.archi.name
-        if archivo_a_eliminar:
-            default_storage.delete(archivo_a_eliminar)
-        documento.documento.delete()
-
-    documento.delete()
-
-    AuditLog.objects.create(
-        user=request.user,
-        content_type=ContentType.objects.get_for_model(documento),
-        object_id=documento.id,
-        action="delete",
-        related_id=documento.aprendiz_id,
-        related_type="aprendiz",
-        extra_data=extra_data
-    )
-
-    return JsonResponse({"status": "success", "message": "Eliminado correctamente"}, status=200)
 
 
 @login_required

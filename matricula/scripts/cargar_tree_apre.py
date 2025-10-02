@@ -3,7 +3,13 @@ from commons.models import T_DocumentFolderAprendiz, T_apre, T_fase, T_compe, T_
 estructura_documental_aprendiz = {
     "1. ACTA PLAN DE MEJORAMIENTO": {
         "1. ANÁLISIS": {},
-        "2. PLANEACIÓN": {},
+        "2. PLANEACIÓN": {
+            "EVIDENCIAS PROYECTO PRODUCTIVO": {},
+            "GFPI-F-023-PLANEACIÓN, SEGUIMIENTO Y EVALUACIÓN ETAPA PRODUCTIVA": {},
+            "GFPI-F-147-BITÁCORAS SEGUIMIENTO ETAPA PRODUCTIVA": {},
+            "GFPI-F-165-V3-INSCRIPCIÓN A ETAPA PRODUCTIVA": {},
+            "PROCESO DE CERTIFICACIÓN": {}
+        },
         "3. EJECUCIÓN": {},
         "4. EVALUACIÓN": {},
     },
