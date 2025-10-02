@@ -1,64 +1,68 @@
 from django.core.management.base import BaseCommand
-from commons.models import T_apre, T_DocumentFolderAprendiz, T_fase, T_raps
-import unicodedata
+from commons.models import T_apre, T_DocumentFolderAprendiz
 
 
-def actualizar_carpeta_planeacion(aprendiz, estructura, parent=None):
-    for nombre, hijos in estructura.items():
-        carpeta, _ = T_DocumentFolderAprendiz.objects.get_or_create(
-            name=nombre,
+def actualizar_carpeta(aprendiz):
+    # Crear la carpeta padre si no existe
+    carpeta_padre, _ = T_DocumentFolderAprendiz.objects.get_or_create(
+        name="2. PLANEACION SEGUIMIENTO Y EVALUACION ETAPA PRODUCTIVA",
+        tipo="carpeta",
+        aprendiz=aprendiz,
+        parent=None
+    )
+
+    nuevas_carpetas = {
+        "EVIDENCIAS PROYECTO PRODUCTIVO": {},
+        "GFPI-F-023-PLANEACIÓN, SEGUIMIENTO Y EVALUACIÓN ETAPA PRODUCTIVA": {},
+        "GFPI-F-147-BITÁCORAS SEGUIMIENTO ETAPA PRODUCTIVA": {},
+        "GFPI-F-165-V3-INSCRIPCIÓN A ETAPA PRODUCTIVA": {},
+        "PROCESO DE CERTIFICACIÓN": {}
+    }
+
+    for sub_nombre in nuevas_carpetas:
+        T_DocumentFolderAprendiz.objects.get_or_create(
+            name=sub_nombre,
             tipo="carpeta",
             aprendiz=aprendiz,
-            parent=parent
+            parent=carpeta_padre
         )
-
-        if hijos:
-            for sub_nom, _ in hijos.items():
-                T_DocumentFolderAprendiz.objects.get_or_create(
-                    name=sub_nom,
-                    tipo="carpeta",
-                    aprendiz=aprendiz,
-                    parent=carpeta
-                )
 
 
 class Command(BaseCommand):
-    help = "Actualiza la carpeta 2. del portafolio aprendiz con las fichas del cohorte 1"
+    help = "Actualiza la carpeta 2. del portafolio aprendiz. Puede ser por FICHAS o por id_aprendiz específico."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--id_aprendiz",
+            type=int,
+            help="ID del aprendiz específico a actualizar"
+        )
 
     def handle(self, *args, **options):
-        aprendices = T_apre.objects.filter(ficha__num__in=FICHAS)
+        id_aprendiz = options.get("id_aprendiz")
 
-        for a in aprendices:
-            if not a.ficha or not a.ficha.num:
-                self.stdout.write(
-                    f"el aprendiz {a.id} no tiene ficha asociada")
-                continue
-
-            carpeta_padre, _ = T_DocumentFolderAprendiz.objects.get_or_create(
-                name="2. PLANEACION SEGUIMIENTO Y EVALUACION ETAPA PRODUCTIVA",
-                tipo="carpeta",
-                aprendiz=a,
-                parent=None
-            )
-
-            nuevas_carpetas = {
-                "EVIDENCIAS PROYECTO PRODUCTIVO": {},
-                "GFPI-F-023-PLANEACIÓN, SEGUIMIENTO Y EVALUACIÓN ETAPA PRODUCTIVA": {},
-                "GFPI-F-147-BITÁCORAS SEGUIMIENTO ETAPA PRODUCTIVA": {},
-                "GFPI-F-165-V3-INSCRIPCIÓN A ETAPA PRODUCTIVA": {},
-                "PROCESO DE CERTIFICACIÓN": {}
-            }
-
-            for sub_nombre in nuevas_carpetas:
-                T_DocumentFolderAprendiz.objects.get_or_create(
-                    name=sub_nombre,
-                    tipo="carpeta",
-                    aprendiz=a,
-                    parent=carpeta_padre
-                )
-
-            self.stdout.write(self.style.SUCCESS(
-                f"[{a.id}] actualizado correctamente"))
+        if id_aprendiz:
+            try:
+                aprendiz = T_apre.objects.get(id=id_aprendiz)
+                actualizar_carpeta(aprendiz)
+                self.stdout.write(self.style.SUCCESS(
+                    f"[{aprendiz.id}] actualizado correctamente (individual)"
+                ))
+            except T_apre.DoesNotExist:
+                self.stdout.write(self.style.ERROR(
+                    f"No existe aprendiz con id {id_aprendiz}"
+                ))
+        else:
+            aprendices = T_apre.objects.filter(ficha__num__in=FICHAS)
+            for a in aprendices:
+                if not a.ficha or not a.ficha.num:
+                    self.stdout.write(
+                        f"el aprendiz {a.id} no tiene ficha asociada")
+                    continue
+                actualizar_carpeta(a)
+                self.stdout.write(self.style.SUCCESS(
+                    f"[{a.id}] actualizado correctamente"
+                ))
 
 
 FICHAS = {3018230,

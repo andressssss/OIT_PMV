@@ -1,19 +1,3 @@
-"""
-URL configuration for IOTPMV project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
 from usuarios import views as usuarios_views
@@ -21,6 +5,7 @@ from formacion import views as formacion_views
 from matricula import views as matricula_views
 from administracion import views as admin_views
 from gestion_instructores import views as gestion_instructores_views
+from dashboard import views as dashboard_views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
@@ -160,13 +145,11 @@ urlpatterns = [
     path("api/tree/obtener_carpetas/<int:ficha_id>/", formacion_views.obtener_carpetas, name="api_obtener_carpetas"),
     path("api/tree/cargar_doc/", formacion_views.cargar_documento, name="api_cargar_documento"),
     path("api/tree/mover_documento/", formacion_views.mover_documento, name="api_mover_documento"),
-    path('api/tree/eliminar_documento/<int:documento_id>', formacion_views.eliminar_documento_portafolio_ficha, name='api_eliminar_documento_portafolio_ficha'),
     path('api/tree/obtener_hijos_carpeta/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta, name='api_obtener_hijos_carpeta'),
     path('tree/descargar_portafolio/<int:ficha_id>', formacion_views.descargar_portafolio_zip, name='descargar_portafolio_zip'),
 
     # Tree aprendiz
     path("api/tree/obtener_carpetas_aprendiz/<int:aprendiz_id>/", formacion_views.obtener_carpetas_aprendiz, name="api_obtener_carpetas_aprendiz"),
-    path('api/tree/eliminar_documento_aprendiz/<int:documento_id>', formacion_views.eliminar_documento_portafolio_aprendiz, name='api_eliminar_documento_portafolio_aprendiz'),
     path('api/tree/obtener_hijos_carpeta_aprendiz/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta_aprendiz, name='api_obtener_hijos_carpeta_aprendiz'),
     path('tree/descargar_portafolio_aprendiz/<int:aprendiz_id>', formacion_views.descargar_portafolio_aprendiz_zip, name='descargar_portafolio_aprendiz_zip'),
     path('tree/descargar_portafolios_ficha/<int:ficha_id>', formacion_views.descargar_portafolios_ficha_zip, name='descargar_portafolios_ficha_zip'),
@@ -329,6 +312,9 @@ urlpatterns = [
     path('formacion/informe_fichas_x_aprendiz/', formacion_views.informe_fichas_x_aprendiz, name='informe_fichas_x_aprendiz'),
     path('formacion/informe_documentos_x_instructor_ficha/', formacion_views.informe_documentos_x_instructor_ficha, name='informe_documentos_x_instructor_ficha'),
     path('formacion/informe_documentos_x_instructor_aprendiz/', formacion_views.informe_documentos_x_instructor_aprendiz, name='informe_documentos_x_instructor_aprendiz'),
+
+    # Dashboard
+    path('dashboard/', dashboard_views.dashboard, name='dashboard'),
 
 ]  
 

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  {% if not puede_ver %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
+    </div>
+  {% else %}
+    <div class="container py-5">
+      <!-- ====== Encabezado ====== -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <h2 class="fw-bold">Dashboard de Indicadores</h2>
+          <p class="text-muted">Vista general de métricas, gráficas y registros.</p>
+        </div>
+      </div>
+
+      <!-- ====== KPIs / Métricas rápidas ====== -->
+      <div class="row g-4 mb-5" id="kpi-cards">
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+            <h6 class="text-muted">Total Fichas</h6>
+            <h2 class="fw-bold" id="kpi-total-fichas">--</h2>
+            <div class="d-flex justify-content-around mt-2">
+              <div>
+                <small class="text-primary">Con juicios</small>
+                <h6 id="kpi-fichas-con-juicios">--</h6>
+              </div>
+              <div>
+                <small class="text-secondary">Sin juicios</small>
+                <h6 id="kpi-fichas-sin-juicios">--</h6>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+            <h6 class="text-muted">Total usuarios</h6>
+            <h2 class="fw-bold" id="kpi-total-usuarios">--</h2>
+            <div class="d-flex justify-content-around mt-2">
+              <div>
+                <small class="text-primary">Activos</small>
+                <h6 id="kpi-usuarios-activos">--</h6>
+              </div>
+              <div>
+                <small class="text-secondary">Inactivos</small>
+                <h6 id="kpi-usuarios-inactivos">--</h6>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+            <h6 class="text-muted">Documentos subidos</h6>
+            <h2 class="fw-bold" id="kpi-documentos-total">--</h2>
+            <div class="d-flex justify-content-around mt-2">
+              <div>
+                <small class="text-primary">Fichas</small>
+                <h6 id="kpi-documentos-fichas">--</h6>
+              </div>
+              <div>
+                <small class="text-secondary">Aprendices</small>
+                <h6 id="kpi-documentos-aprendices">--</h6>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+            <h6 class="text-muted">Carpetas vacías</h6>
+            <h2 class="fw-bold" id="kpi-carpetas-vacias-total">--</h2>
+            <div class="d-flex justify-content-around mt-2">
+              <div>
+                <small class="text-primary">Fichas</small>
+                <h6 id="kpi-carpetas-vacias-fichas">--</h6>
+              </div>
+              <div>
+                <small class="text-secondary">Aprendices</small>
+                <h6 id="kpi-carpetas-vacias-aprendices">--</h6>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== Gráficas ====== -->
+      <div class="row g-4 mb-5">
+        <div class="col-md-4">
+          <div class="card shadow-sm border-0 rounded-3 p-3">
+            <h6 class="fw-bold mb-3">Fichas por programa</h6>
+            <div id="chart-fichas" style="height:300px;"></div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card shadow-sm border-0 rounded-3 p-3">
+            <h6 class="fw-bold mb-3">Usuarios por rol</h6>
+            <div id="chart-usuarios" style="height:300px;"></div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card shadow-sm border-0 rounded-3 p-3">
+            <h6 class="fw-bold mb-3">Fichas por juicios</h6>
+            <div id="chart-raps" style="height:300px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+  <script type="module" src="{% static 'js/dashboard/dashboard.js' %}"></script>
+{% endblock %}

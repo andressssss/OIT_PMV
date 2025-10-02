@@ -31,7 +31,7 @@ class T_perfil(models.Model):
         ('ce', 'Cédula de extranjería'),
         ('ppt', 'Permiso por protección temporal'),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil")
     nom = models.CharField(max_length=200)
     apelli = models.CharField(max_length=200)
     tipo_dni = models.CharField(max_length=50, choices=DNI_CHOICES)
@@ -853,6 +853,7 @@ class T_permi(models.Model):
         ('programas', 'Programas'),
         ('competencias', 'Competencias'),
         ('raps', 'Raps'),
+        ('dashboard', 'Dashboard'),
     ]
 
     ACCION_CHOICES = [
@@ -873,3 +874,17 @@ class T_permi(models.Model):
 
     def __str__(self):
         return f"{self.perfil.nom} - {self.modulo}:{self.accion}"
+
+class T_porta_archi(models.Model):
+  
+    ficha = models.ForeignKey("T_ficha", on_delete=models.DO_NOTHING, related_name ="archivos_eliminados")
+    docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True, blank=True)
+    eli_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null = True)
+    eli_en = models.DateTimeField(auto_now_add=True)
+    obser = models.CharField(max_length=500)
+    ubi = models.CharField(max_length=500)
+    class Meta:
+      db_table = "t_porta_archi"
+
+    def __str__(self):
+        return f"{self.docu.nom} (Archivo eliminado)"

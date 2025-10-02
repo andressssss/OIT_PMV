@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'formacion',
     'gestion_instructores',
     'commons',
+    'dashboard',
     'mptt',
     'matricula',
     'rest_framework',

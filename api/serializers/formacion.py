@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha, T_insti_edu, T_centro_forma, T_jui_eva_actu, T_jui_eva_diff
+from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha, T_insti_edu, T_centro_forma, T_jui_eva_actu, T_jui_eva_diff, T_porta_archi
 import logging
+from django.utils.timezone import localtime
 
 logger = logging.getLogger(__name__)
 
@@ -248,3 +249,24 @@ class JuicioHistoSerializer(serializers.ModelSerializer):
       
     def get_tipo_cambi(self, obj):
         return obj.tipo_cambi.capitalize()
+
+
+class PortaArchiSerializer(serializers.ModelSerializer):
+    eli_por = serializers.SerializerMethodField()
+    docu = serializers.CharField(source="docu.nom")
+    url = serializers.SerializerMethodField()
+    eli_en = serializers.SerializerMethodField()
+
+    class Meta:
+        model = T_porta_archi
+        fields = ['eli_en', 'obser', 'ubi', 'docu', 'eli_por', 'url']
+        
+    def get_eli_por(self, obj):
+        return f"{obj.eli_por.perfil.nom} {obj.eli_por.perfil.apelli} - {obj.eli_por.perfil.dni}"
+    
+    def get_url(self, obj):
+        return obj.docu.archi.url
+
+    def get_eli_en(self, obj):
+        fecha_local = localtime(obj.eli_en)
+        return fecha_local.strftime("%d/%m/%Y %H:%M")
