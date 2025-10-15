@@ -23,8 +23,9 @@ Diseñado para atender más de **1.500 usuarios concurrentes**, con infraestruct
 ```mermaid
 graph TD
     A[Cliente Web] -->|HTTPS| B[NGINX - Load Balancer]
-    B --> C[Daphne (ASGI)]
-    C --> D[Django App - Docker Container]
+    B --> C[Daphne ASGI]
+    C --> D[Django App (Docker Container)]
     D --> E[(MySQL Cluster via ProxySQL)]
-    D --> G[SMTP Relay - SPF/DKIM/DMARC]
-    D --> H[ReportLab / PyPDF2 - PDF Generator]
+    D --> F[Redis Cache]
+    D --> G[SMTP Relay SPF/DKIM/DMARC]
+    D --> H[PDF Generator - ReportLab y PyPDF2]
