@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     nodes.forEach((node) => {
       if (
-        userRole === "instructor" &&
+        userRole.trim() === "instructor" &&
         node.name === "LINK DE PORTAFOLIO APRENDICES 2024"
       )
         return null;
