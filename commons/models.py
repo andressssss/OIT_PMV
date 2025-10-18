@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from mptt.models import MPTTModel, TreeForeignKey
@@ -31,7 +31,8 @@ class T_perfil(models.Model):
         ('ce', 'Cédula de extranjería'),
         ('ppt', 'Permiso por protección temporal'),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="perfil")
     nom = models.CharField(max_length=200)
     apelli = models.CharField(max_length=200)
     tipo_dni = models.CharField(max_length=50, choices=DNI_CHOICES)
@@ -875,16 +876,109 @@ class T_permi(models.Model):
     def __str__(self):
         return f"{self.perfil.nom} - {self.modulo}:{self.accion}"
 
+
 class T_porta_archi(models.Model):
-  
-    ficha = models.ForeignKey("T_ficha", on_delete=models.DO_NOTHING, related_name ="archivos_eliminados")
-    docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True, blank=True)
-    eli_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null = True)
+
+    ficha = models.ForeignKey(
+        "T_ficha", on_delete=models.DO_NOTHING, related_name="archivos_eliminados")
+    docu = models.ForeignKey(
+        T_docu, on_delete=models.SET_NULL, null=True, blank=True)
+    eli_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     eli_en = models.DateTimeField(auto_now_add=True)
     obser = models.CharField(max_length=500)
     ubi = models.CharField(max_length=500)
+
     class Meta:
       db_table = "t_porta_archi"
 
     def __str__(self):
         return f"{self.docu.nom} (Archivo eliminado)"
+
+
+class T_nove(models.Model):
+    ESTA_CHOICES = [
+      ("nuevo", "Nuevo"),
+      ("en_curso", "En_curso"),
+      ("pendiente", "Pendiente"),
+      ("planificacion", "Planificacion"),
+      ("terminado", "Terminado"),
+      ("rechazado", "Rechazado"),
+      ("cerrado", "Cerrado"),
+      ("reabierto", "Reabierto"),
+    ]
+
+    SOLUCION_CHOICES = [
+      ("exito", "Exito"),
+      ("cierre_cliente", "Cierre_cliente"),
+      ("exito_problemas", "Exito_problemas"),
+      ("cancelado_soporte", "Cancelado_soporte"),
+      ("accion_otro_proveedor", "Accion_otro_proveedor"),
+      ("accion_solicitante", "Accion_solicitante"),
+      ("cronograma", "Cronograma"),
+      ("en_curso", "En_curso"),
+    ]
+
+    TIPO_CHOICES = [
+      ("incidencia", "Incidencia"),
+      ("requerimiento", "Requerimiento"),
+      ("consulta", "Consulta"),
+      ("sugerencia", "Sugerencia"),
+    ]
+    num = models.PositiveIntegerField(
+        unique=True, null=True, blank=True, db_index=True)
+    esta = models.CharField(
+        max_length=50, choices=ESTA_CHOICES, default="nuevo")
+    motivo_solucion = models.CharField(
+        max_length=50, choices=SOLUCION_CHOICES, null=True, blank=True)
+    descri = models.TextField()
+    soli = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="novedades_solicitadas")
+    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, null=True, blank=True)
+    fecha_regi = models.DateTimeField(auto_now_add=True)
+    fecha_venci = models.DateTimeField(null=True, blank=True)
+    fecha_ulti_acci = models.DateTimeField(null=True, blank=True)
+    respo = models.ForeignKey(User, on_delete=models.SET_NULL,
+                              related_name="novedades_responsable", blank=True, null=True)
+    respo_group = models.ForeignKey(
+        Group, on_delete=models.SET_NULL, related_name="novedades_group", blank=True, null=True)
+    cie_ace_por_soli = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-fecha_venci']
+        managed = True
+        db_table = 't_nove'
+        
+    def __str__(self):
+        return f"N{self.num or 'NN'} - {self.tipo} - {self.soli}"
+
+
+class T_acci_nove(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_acci_nove'
+    nove = models.ForeignKey(
+        T_nove, on_delete=models.CASCADE, related_name="acciones")
+    crea_por = models.ForeignKey(
+        User, on_delete=models.DO_NOTHING, related_name="acciones_creadas", null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    descri = models.TextField()
+
+
+class T_nove_docu(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_nove_docu'
+    nove = models.ForeignKey(T_nove, on_delete=models.CASCADE)
+    docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True)
+    def __str__(self):
+        return f"{self.docu}"
+
+class T_acci_nove_docu(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_acci_nove_docu'
+    acci_nove = models.ForeignKey(T_acci_nove, on_delete=models.CASCADE)
+    docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True)
+    def __str__(self):
+        return f"{self.docu}"

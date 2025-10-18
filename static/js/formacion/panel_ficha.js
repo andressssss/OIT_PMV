@@ -206,11 +206,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ul.classList.add("folder-list");
 
     nodes.forEach((node) => {
-      if (
-        userRole === "instructor" &&
-        node.name === "LINK DE PORTAFOLIO APRENDICES 2024"
-      )
-        return null;
+      if (userRole.trim() === "instructor" && node.name === "LINK DE PORTAFOLIO APRENDICES 2024") return null;
 
       const li = document.createElement("li");
       li.classList.add("folder-item");

@@ -99,7 +99,7 @@ class Command(BaseCommand):
             aprendices = T_apre.objects.filter(ficha__id=id_ficha)
             if not aprendices.exists():
                 self.stdout.write(self.style.ERROR(
-                    f"No se encontró el aprendiz con id={id_aprendiz}"
+                    f"No se encontraron aprendices relacionados a la ficha={id_ficha}"
                 ))
                 return
         else:

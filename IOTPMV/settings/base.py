@@ -59,9 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'usuarios.middleware.ExpiredSessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'usuarios.middleware.TemplateDebugMiddleware'
+    'corsheaders.middleware.CorsMiddleware'
 ]
 
 ROOT_URLCONF = 'IOTPMV.urls'
@@ -173,3 +171,8 @@ DJANGO_ICONS = {
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1048576000
 
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'commons.pagination.DataTablesPagination',
+    'PAGE_SIZE': 10,
+}

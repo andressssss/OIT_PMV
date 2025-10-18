@@ -18,7 +18,6 @@ import csv
 from django.contrib.auth.models import User
 from commons.models import T_perfil, T_centro_forma, T_departa, T_munici, T_insti_edu, T_apre, T_ficha, T_prematri_docu, T_repre_legal, AuditLog, T_permi
 from api.serializers.usuarios import PerfilSerializer, DepartamentoSerializer,AprendizFiltrarSerializer, InstitucionSerializer, MunicipioSerializer, CentroFormacionSerializer, AprendizSerializer, AprendizPanelFSerializer, PermisoSerializer
-from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, DateField
 from matricula.scripts.cargar_tree_apre import crear_datos_prueba_aprendiz
 from commons.permisos import DenegarConsulta
@@ -40,33 +39,10 @@ def comparar_diccionarios(before, after, prefix=""):
     return cambios
 
 
-class DataTablesPagination(PageNumberPagination):
-    page_size_query_param = 'length'
-    page_query_param = 'start'
-
-    def paginate_queryset(self, queryset, request, view=None):
-        try:
-            self.offset = int(request.query_params.get('start', 0))
-            self.limit = int(request.query_params.get(
-                'length', self.page_size))
-            self.count = queryset.count()
-            self.request = request
-            return list(queryset[self.offset:self.offset + self.limit])
-        except (ValueError, TypeError):
-            return None
-
-    def get_paginated_response(self, data):
-        return Response({
-            'recordsTotal': self.count,
-            'recordsFiltered': self.count,
-            'data': data
-        })
-
 class PerfilViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = T_perfil.objects.all()
     serializer_class = PerfilSerializer
-    pagination_class = DataTablesPagination
 
     @action(detail=False, methods=['get'], url_path='filtrar')
     def filtrar(self, request):
@@ -144,7 +120,6 @@ class AprendizViewSet(PermisosMixin, ModelViewSet):
     queryset = T_apre.objects.all()
     serializer_class = AprendizSerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = DataTablesPagination
     modulo = "aprendices"
 
     @action(detail=False, methods=['get'], url_path='por_ficha')

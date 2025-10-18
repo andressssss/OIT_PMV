@@ -4,8 +4,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     fichasChart: "/api/dashboard/fichas/",
     usuariosChart: "/api/dashboard/usuarios-rol/",
     rapsChart: "/api/dashboard/juicios/",
-  };
-
+  }; no 
   async function fetchData(url) {
     try {
       const response = await fetch(url);

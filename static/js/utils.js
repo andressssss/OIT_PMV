@@ -690,3 +690,57 @@ export function resetForm(element) {
     }
   });
 }
+
+
+
+
+/**
+ * @description
+ * @author Andrés Sanabria
+ * @date 17-10-2025
+ * @export
+ * @param {*} url
+ * @param {*} [{ method = "GET", body = null, headers = {} }={}]
+ * @returns {*}  
+ */
+export async function fetchData(
+  url,
+  { method = "GET", body = null, headers = {} } = {}
+) {
+  try {
+    const options = {
+      method,
+      headers: { ...headers },
+    };
+
+    if (body) {
+      if (body instanceof FormData) {
+        options.body = body;
+      } else if (typeof body === "string") {
+        options.body = body;
+        options.headers["Content-Type"] = "text/plain";
+      } else {
+        options.body = JSON.stringify(body);
+        options.headers["Content-Type"] = "application/json";
+      }
+    }
+
+    const response = await fetch(url, options);
+
+    const data = response.status !== 204 ? await response.json() : null;
+
+    if (validarErrorDRF(response, data)) {
+      throw new Error("Error en el request");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("❌ Error al cargar:", url, error);
+    return null;
+  }
+}
+
+export function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}

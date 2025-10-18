@@ -1,11 +1,16 @@
 from django.db.models import Exists, OuterRef
 from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet, ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from django.db.models import Count
 from django.contrib.auth import get_user_model
-from commons.models import T_ficha, T_docu, T_apre, T_perfil, T_DocumentFolder, T_DocumentFolderAprendiz, T_jui_eva_actu
+from commons.models import T_ficha, T_docu, T_apre, T_perfil, T_DocumentFolder, T_DocumentFolderAprendiz, T_jui_eva_actu, T_nove
+from django.db.models import Q, DateField
+from api.serializers.dashboard import NovedadFiltrarSerializer
+
 User = get_user_model()
 
 
@@ -84,7 +89,7 @@ class DashboardKpisView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class DashboardFichasView(APIView): 
+class DashboardFichasView(APIView):
     def get(self, request):
         fichas = (
             T_ficha.objects.values("progra__nom")
@@ -147,3 +152,30 @@ class DashboardRapsView(APIView):
         ]
 
         return Response(resultado, status=status.HTTP_200_OK)
+
+
+class NovedadesViewSet(ModelViewSet):
+    queryset = T_apre.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='filtrar')
+    def filtrar(self, request):
+        search = request.GET.get("search[value]", "").strip()
+        order_col_index = request.GET.get("order[0][column]")
+        order_dir = request.GET.get("order[0][dir]")
+
+        novedades = T_nove.objects.all()
+        
+        if search:
+            novedades = novedades.filter(
+                Q(num__icontains=search) |
+                Q(descri__icontains=search) |
+                Q(tipo__icontains=search) |
+                Q(esta__icontains=search) |
+                Q(fecha__icontains=search)
+            )
+            
+        paginated = self.paginate_queryset(novedades)
+        
+        data = NovedadFiltrarSerializer(paginated, many=True).data
+        return self.get_paginated_response(data)

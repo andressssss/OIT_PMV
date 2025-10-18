@@ -124,6 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         },
       });
+      
       table.on("preXhr.dt", () => mostrarPlaceholdersTabla());
 
       document

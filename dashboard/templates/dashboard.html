@@ -11,106 +11,106 @@
     </div>
   {% else %}
     <div class="container py-5">
-      <!-- ====== Encabezado ====== -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h2 class="fw-bold">Dashboard de Indicadores</h2>
-          <p class="text-muted">Vista general de métricas, gráficas y registros.</p>
-        </div>
-      </div>
+      <section class="card card-body p-4">
+        <!-- ====== Encabezado ====== -->
 
-      <!-- ====== KPIs / Métricas rápidas ====== -->
-      <div class="row g-4 mb-5" id="kpi-cards">
-        <div class="col-md-3">
-          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-            <h6 class="text-muted">Total Fichas</h6>
-            <h2 class="fw-bold" id="kpi-total-fichas">--</h2>
-            <div class="d-flex justify-content-around mt-2">
-              <div>
-                <small class="text-primary">Con juicios</small>
-                <h6 id="kpi-fichas-con-juicios">--</h6>
+        <div class="d-flex justify-content-between align-items-center pb-4">
+          <h1 class="display-5">Dashboard de indicadores</h1>
+        </div>
+
+        <!-- ====== KPIs / Métricas rápidas ====== -->
+        <div class="row g-4 mb-5" id="kpi-cards">
+          <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+              <h6 class="text-muted">Total Fichas</h6>
+              <h2 class="fw-bold" id="kpi-total-fichas">--</h2>
+              <div class="d-flex justify-content-around mt-2">
+                <div>
+                  <small class="text-primary">Con juicios</small>
+                  <h6 id="kpi-fichas-con-juicios">--</h6>
+                </div>
+                <div>
+                  <small class="text-secondary">Sin juicios</small>
+                  <h6 id="kpi-fichas-sin-juicios">--</h6>
+                </div>
               </div>
-              <div>
-                <small class="text-secondary">Sin juicios</small>
-                <h6 id="kpi-fichas-sin-juicios">--</h6>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+              <h6 class="text-muted">Total usuarios</h6>
+              <h2 class="fw-bold" id="kpi-total-usuarios">--</h2>
+              <div class="d-flex justify-content-around mt-2">
+                <div>
+                  <small class="text-primary">Activos</small>
+                  <h6 id="kpi-usuarios-activos">--</h6>
+                </div>
+                <div>
+                  <small class="text-secondary">Inactivos</small>
+                  <h6 id="kpi-usuarios-inactivos">--</h6>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+              <h6 class="text-muted">Documentos subidos</h6>
+              <h2 class="fw-bold" id="kpi-documentos-total">--</h2>
+              <div class="d-flex justify-content-around mt-2">
+                <div>
+                  <small class="text-primary">Fichas</small>
+                  <h6 id="kpi-documentos-fichas">--</h6>
+                </div>
+                <div>
+                  <small class="text-secondary">Aprendices</small>
+                  <h6 id="kpi-documentos-aprendices">--</h6>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+              <h6 class="text-muted">Carpetas vacías</h6>
+              <h2 class="fw-bold" id="kpi-carpetas-vacias-total">--</h2>
+              <div class="d-flex justify-content-around mt-2">
+                <div>
+                  <small class="text-primary">Fichas</small>
+                  <h6 id="kpi-carpetas-vacias-fichas">--</h6>
+                </div>
+                <div>
+                  <small class="text-secondary">Aprendices</small>
+                  <h6 id="kpi-carpetas-vacias-aprendices">--</h6>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="col-md-3">
-          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-            <h6 class="text-muted">Total usuarios</h6>
-            <h2 class="fw-bold" id="kpi-total-usuarios">--</h2>
-            <div class="d-flex justify-content-around mt-2">
-              <div>
-                <small class="text-primary">Activos</small>
-                <h6 id="kpi-usuarios-activos">--</h6>
-              </div>
-              <div>
-                <small class="text-secondary">Inactivos</small>
-                <h6 id="kpi-usuarios-inactivos">--</h6>
-              </div>
+        <!-- ====== Gráficas ====== -->
+        <div class="row g-4 mb-5">
+          <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 p-3">
+              <h6 class="fw-bold mb-3">Fichas por programa</h6>
+              <div id="chart-fichas" style="height:300px;"></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 p-3">
+              <h6 class="fw-bold mb-3">Usuarios por rol</h6>
+              <div id="chart-usuarios" style="height:300px;"></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 p-3">
+              <h6 class="fw-bold mb-3">Fichas por juicios</h6>
+              <div id="chart-raps" style="height:300px;"></div>
             </div>
           </div>
         </div>
-
-        <div class="col-md-3">
-          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-            <h6 class="text-muted">Documentos subidos</h6>
-            <h2 class="fw-bold" id="kpi-documentos-total">--</h2>
-            <div class="d-flex justify-content-around mt-2">
-              <div>
-                <small class="text-primary">Fichas</small>
-                <h6 id="kpi-documentos-fichas">--</h6>
-              </div>
-              <div>
-                <small class="text-secondary">Aprendices</small>
-                <h6 id="kpi-documentos-aprendices">--</h6>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-            <h6 class="text-muted">Carpetas vacías</h6>
-            <h2 class="fw-bold" id="kpi-carpetas-vacias-total">--</h2>
-            <div class="d-flex justify-content-around mt-2">
-              <div>
-                <small class="text-primary">Fichas</small>
-                <h6 id="kpi-carpetas-vacias-fichas">--</h6>
-              </div>
-              <div>
-                <small class="text-secondary">Aprendices</small>
-                <h6 id="kpi-carpetas-vacias-aprendices">--</h6>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ====== Gráficas ====== -->
-      <div class="row g-4 mb-5">
-        <div class="col-md-4">
-          <div class="card shadow-sm border-0 rounded-3 p-3">
-            <h6 class="fw-bold mb-3">Fichas por programa</h6>
-            <div id="chart-fichas" style="height:300px;"></div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card shadow-sm border-0 rounded-3 p-3">
-            <h6 class="fw-bold mb-3">Usuarios por rol</h6>
-            <div id="chart-usuarios" style="height:300px;"></div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card shadow-sm border-0 rounded-3 p-3">
-            <h6 class="fw-bold mb-3">Fichas por juicios</h6>
-            <div id="chart-raps" style="height:300px;"></div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   {% endif %}
 {% endblock %}
