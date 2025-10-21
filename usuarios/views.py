@@ -169,7 +169,7 @@ def check_authentication(request):
 
 @login_required
 def perfil(request):
-    perfil = getattr(request.user, 't_perfil', None)
+    perfil = T_perfil.objects.get(user=request.user)
     usuario = None
 
     if perfil.rol == 'instructor':
@@ -185,16 +185,7 @@ def perfil(request):
     elif perfil.rol == 'cuentas':
         usuario = T_cuentas.objects.get(perfil=perfil)
 
-    documentos = T_docu_labo.objects.filter(usu=request.user, tipo='laboral')
-
-    documentos_aca = T_docu_labo.objects.filter(
-        usu=request.user, tipo='academico')
-
-    hoja_vida = T_docu_labo.objects.filter(usu=request.user, tipo='hv').first()
-
     form_contraseña = CustomPasswordChangeForm(user=request.user)
-    form_documento = DocumentoLaboralForm()
-    form_perfil = PerfilForm(instance=perfil)
 
     if request.method == 'POST':
         if 'old_password' in request.POST:
@@ -215,140 +206,11 @@ def perfil(request):
                 else:
                     messages.error(
                         request, 'Por favor corrige los errores a continuación.')
-        elif request.POST.get('form_id') == 'documento_form':
-            form_documento = DocumentoLaboralForm(request.POST, request.FILES)
-            if form_documento.is_valid():
-                archivo = request.FILES['documento']
 
-                ruta = f'documentos/instructores/{usuario.perfil.nom}{usuario.perfil.apelli}{usuario.perfil.dni}/laboral/{archivo.name}'
-                ruta_guardada = default_storage.save(ruta, archivo)
-
-                t_docu = T_docu.objects.create(
-                    nom=archivo.name,
-                    tipo=archivo.name.split('.')[-1],
-                    tama=str(archivo.size // 1024) + " KB",
-                    archi=ruta_guardada,
-                    priva='No',
-                    esta='Activo'
-                )
-
-                documento = form_documento.save(commit=False)
-                documento.usu = request.user
-                documento.esta = 'Cargado'
-                documento.docu = t_docu
-                documento.tipo = 'laboral'
-                documento.save()
-                messages.success(
-                    request, "Documento guardado satisfactoriamente.")
-
-                return redirect(request.META.get('HTTP_REFERER', '/'))
-            else:
-                print(form_documento.errors)
-                messages.error(
-                    request, 'Por favor, corrige los errores en el formulario.')
-
-        elif request.POST.get('form_id') == 'documento_aca_form':
-            form_documento = DocumentoLaboralForm(request.POST, request.FILES)
-            if form_documento.is_valid():
-
-                archivo = request.FILES['documento']
-
-                ruta = f'documentos/instructores/{usuario.perfil.nom}{usuario.perfil.apelli}{usuario.perfil.dni}/academico/{archivo.name}'
-                ruta_guardada = default_storage.save(ruta, archivo)
-
-                t_docu = T_docu.objects.create(
-                    nom=archivo.name,
-                    tipo=archivo.name.split('.')[-1],
-                    tama=str(archivo.size // 1024) + " KB",
-                    archi=ruta_guardada,
-                    priva='No',
-                    esta='Activo'
-                )
-
-                documento = form_documento.save(commit=False)
-                documento.usu = request.user
-                documento.esta = 'Cargado'
-                documento.docu = t_docu
-                documento.tipo = 'academico'
-                documento.save()
-                messages.success(
-                    request, "Documento guardado satisfactoriamente.")
-
-                return redirect(request.META.get('HTTP_REFERER', '/'))
-            else:
-                print(form_documento.errors)
-                messages.error(
-                    request, 'Por favor, corrige los errores en el formulario.')
-        elif 'cv_file' in request.FILES:
-            archivo = request.FILES['cv_file']
-
-            ruta = f'documentos/instructores/{usuario.perfil.nom}{usuario.perfil.apelli}{usuario.perfil.dni}/HV/{archivo.name}'
-            ruta_guardada = default_storage.save(ruta, archivo)
-
-            t_docu = T_docu.objects.create(
-                nom=archivo.name,
-                tipo=archivo.name.split('.')[-1],
-                tama=str(archivo.size // 1024) + " KB",
-                archi=ruta_guardada,
-                priva='No',
-                esta='Activo'
-            )
-
-            documento = form_documento.save(commit=False)
-            documento.usu = request.user
-            documento.esta = 'Cargado'
-            documento.docu = t_docu
-            documento.tipo = 'hv'
-            documento.nom = 'Hoja de Vida'
-            documento.cate = 'hv'
-            documento.save()
-            messages.success(request, "Documento guardado satisfactoriamente.")
-
-            return redirect(request.META.get('HTTP_REFERER', '/'))
-
-        elif request.POST.get('form_id') == 'perfil_form':
-            logger.warning("llega?")
-            form_perfil = PerfilForm(
-                request.POST, instance=request.user.t_perfil)
-
-            if form_perfil.is_valid():
-                datos_actualizados = form_perfil.cleaned_data
-                logger.warning(datos_actualizados)
-
-                if 'fecha_naci' not in datos_actualizados or datos_actualizados['fecha_naci'] is None:
-                    logger.warning("No viene fecha")
-                    perfil_fe = T_perfil.objects.get(
-                        id=request.user.t_perfil.id)
-                    form_perfil.instance.fecha_naci = perfil_fe.fecha_naci
-                    logger.warning(form_perfil.instance.fecha_naci)
-                form_perfil.save()
-
-            nuevo_email = form_perfil.cleaned_data.get('mail')
-            if nuevo_email:
-                usuario_act = User.objects.get(id=request.user.id)
-                usuario_act.email = nuevo_email
-                usuario_act.save()
-
-                request.user.refresh_from_db()
-                # request.user.save()
-                messages.success(request, "Perfil actualizado correctamente.")
-            return redirect('perfil')
-        else:
-            print(form_documento.errors)
-            messages.error(
-                request, 'Por favor, corrige los errores en el formulario.')
-
-    form_perfil = PerfilForm(instance=request.user.t_perfil)
-    form_documento = DocumentoLaboralForm()
     form_contraseña = CustomPasswordChangeForm(user=request.user)
     return render(request, 'perfil.html', {
         'usuario': usuario,
-        'form_contraseña': form_contraseña,
-        'form_documento': form_documento,
-        'documentos': documentos,
-        'documentos_aca': documentos_aca,
-        'hoja_vida': hoja_vida,
-        'form_perfil': form_perfil
+        'form_contraseña': form_contraseña
     })
 
 

@@ -11,19 +11,11 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h1 class="display-5">Perfil del Usuario</h1>
                     <div class="d-flex justify-content-end">
-                        <div data-toggle="tooltip" data-placement="top" title="Editar perfil">
-                            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                                {% icon 'edit' %}
-                            </button>
-                        </div>
                         <div data-toggle="tooltip" data-placement="top" title="Cambiar contraseña">
                             <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                                 {% icon 'password' %}
                             </button>
                         </div>
-                        
-                        <a href="/logout" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Cerrar sesion">{% icon 'salir' %}</a>
-                            
                     </div>
                 </div>
             </div>
