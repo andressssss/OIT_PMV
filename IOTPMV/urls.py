@@ -318,6 +318,7 @@ urlpatterns = [
     
     # Dashboard
     path('inbox_novedades/', dashboard_views.inbox_novedades, name='inbox_novedades'),
+    path('novedad/<int:id_novedad>/', dashboard_views.novedad, name='novedad'),
 
 ]  
 

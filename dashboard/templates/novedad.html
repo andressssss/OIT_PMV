@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <main class="container py-5">
+    <section class="shadow-sm p-4 bg-white rounded-3">
+      <!-- ====== Encabezado ====== -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-6 fw-bold"><i class="bi bi-envelope-paper me-2"></i> Detalle de Novedad / PQRS</h1>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" id="btn-cambiar-estado"><i class="bi bi-arrow-repeat me-1"></i> Cambiar estado</button>
+        </div>
+      </div>
+
+      <!-- ====== Información general ====== -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light fw-bold">Información general</div>
+        <div class="card-body row g-3">
+          <div class="col-md-4">
+            <p class="mb-1 text-muted">Numero</p>
+            <h6 id="detalle-codigo">--</h6>
+          </div>
+          <div class="col-md-4">
+            <p class="mb-1 text-muted">Tipo</p>
+            <h6 id="detalle-tipo">--</h6>
+          </div>
+          <div class="col-md-4">
+            <p class="mb-1 text-muted">Estado</p>
+            <span id="detalle-estado" class="badge bg-secondary">--</span>
+          </div>
+          <div class="col-md-4">
+            <p class="mb-1 text-muted">Fecha de creación</p>
+            <h6 id="detalle-fecha">--</h6>
+            <p class="mb-1 text-muted">Fecha de cierre</p>
+            <h6 id="detalle-cierre">--</h6>
+          </div>
+          <div class="col-md-4">
+            <p class="mb-1 text-muted">Responsable</p>
+            <h6 id="detalle-responsable">--</h6>
+          </div>
+          <div class="col-md-4">
+            <p class="mb-1 text-muted">Usuario</p>
+            <h6 id="detalle-usuario">--</h6>
+          </div>
+          <div class="col-12">
+            <p class="mb-1 text-muted">Descripción</p>
+            <p id="detalle-descripcion" class="border rounded-3 p-3 bg-light">--</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== Documentos asociados ====== -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <span class="fw-bold">Documentos asociados</span>
+        </div>
+        <div class="card-body">
+          <table class="table table-hover align-middle" id="tabla-documentos">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="4" class="text-center text-muted">Sin documentos</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ====== Acciones / gestión ====== -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <span class="fw-bold">Acciones / Gestión</span>
+          <button class="btn btn-primary shadow-sm" id="btn-nueva-accion" data-bs-toggle="modal" data-bs-target="#modalNuevaAccion"><i class="bi bi-plus-circle me-2"></i> Crear nueva acción</button>
+        </div>
+        <div class="card-body">
+          <div id="lista-acciones" class="d-flex flex-column gap-3">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== Modal: Nueva acción ====== -->
+  <div class="modal fade" id="modalNuevaAccion" tabindex="-1" aria-labelledby="modalNuevaAccionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalNuevaAccionLabel">Registrar nueva acción</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-nueva-accion" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-control" rows="4" name="descripcion" required></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Documentos (opcional)</label>
+                <input type="file" class="form-control" name="documentos" multiple />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-success" id="btn-guardar-accion">Guardar acción</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+  <script type="module" src="{% static 'js/dashboard/novedad.js' %}"></script>
+{% endblock %}

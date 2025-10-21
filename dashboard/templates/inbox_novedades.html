@@ -2,58 +2,48 @@
 {% load static %}
 
 {% block content %}
-  <div class="container py-5">
-    <!-- ====== Encabezado ====== -->
-    <div class="row mb-4 align-items-center">
-      <div class="col-md-8">
-        <h2 class="fw-bold">Inbox de Novedades / PQRS</h2>
-        <p class="text-muted">Aquí puedes ver las novedades y PQRS asociadas a tu perfil. Gestiona cada una o crea nuevas solicitudes.</p>
-      </div>
-      <div class="col-md-4 text-md-end">
-        <button class="btn btn-primary shadow-sm" id="btn-nueva-novedad" data-bs-toggle="modal" data-bs-target="#modalNuevaNovedad">
-          <i class="bi bi-plus-circle me-2"></i> Crear nueva novedad
-        </button>
-      </div>
-    </div>
+  <main class="container py-5">
+    <section class="shadow-sm p-4 bg-white rounded-3">
+      <div class="row">
+        <div id="contenedor" class="col-12">
+          <div class="d-flex justify-content-between align-items-center pb-4">
+            <h1 class="display-5">Inbox de Novedades / PQRS</h1>
+            <button class="btn btn-primary shadow-sm" id="btn-nueva-novedad" data-bs-toggle="modal" data-bs-target="#modalNuevaNovedad"><i class="bi bi-plus-circle me-2"></i> Crear nueva novedad</button>
+          </div>
 
-    <!-- ====== Resumen rápido ====== -->
-    <div class="row g-4 mb-4">
-      <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-          <h6 class="text-muted">Total novedades</h6>
-          <h2 class="fw-bold" id="kpi-total-novedades">--</h2>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-          <h6 class="text-muted">Pendientes</h6>
-          <h2 class="fw-bold text-warning" id="kpi-novedades-pendientes">--</h2>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-          <h6 class="text-muted">En gestión</h6>
-          <h2 class="fw-bold text-primary" id="kpi-novedades-gestion">--</h2>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-3 text-center p-3">
-          <h6 class="text-muted">Cerradas</h6>
-          <h2 class="fw-bold text-success" id="kpi-novedades-cerradas">--</h2>
-        </div>
-      </div>
-    </div>
+          <!-- ====== Resumen rápido ====== -->
+          <div class="row g-4 mb-4">
+            <div class="col-md-3">
+              <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+                <h6 class="text-muted">Total novedades</h6>
+                <h2 class="fw-bold" id="kpi-total-novedades">--</h2>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+                <h6 class="text-muted">Pendientes</h6>
+                <h2 class="fw-bold text-warning" id="kpi-novedades-pendientes">--</h2>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+                <h6 class="text-muted">En gestión</h6>
+                <h2 class="fw-bold text-primary" id="kpi-novedades-gestion">--</h2>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+                <h6 class="text-muted">Cerradas</h6>
+                <h2 class="fw-bold text-success" id="kpi-novedades-cerradas">--</h2>
+              </div>
+            </div>
+          </div>
 
-    <!-- ====== Listado de novedades ====== -->
-    <div class="card shadow-sm border-0 rounded-3">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-bold">Mis novedades / PQRS</h5>
+          <table class="table table-hover align-middle" id="tabla-novedades"></table>
+        </div>
       </div>
-      <div class="card-body">
-        <table class="table table-hover align-middle" id="tabla-novedades"></table>
-      </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <!-- ====== Modal Crear Novedad ====== -->
   <div class="modal fade" id="modalNuevaNovedad" tabindex="-1" aria-labelledby="modalNuevaNovedadLabel" aria-hidden="true">
@@ -83,13 +73,13 @@
 
             <div class="mb-3">
               <label for="documentos" class="form-label">Documentos (opcional)</label>
-              <input type="file" id="documentos" name="documentos" class="form-control" multiple>
+              <input type="file" id="documentos" name="documentos" class="form-control" multiple />
               <small class="text-muted">Puede adjuntar varios documentos.</small>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Guardar novedad</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit">Guardar novedad</button>
           </div>
         </form>
       </div>

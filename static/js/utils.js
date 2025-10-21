@@ -691,22 +691,7 @@ export function resetForm(element) {
   });
 }
 
-
-
-
-/**
- * @description
- * @author Andrés Sanabria
- * @date 17-10-2025
- * @export
- * @param {*} url
- * @param {*} [{ method = "GET", body = null, headers = {} }={}]
- * @returns {*}  
- */
-export async function fetchData(
-  url,
-  { method = "GET", body = null, headers = {} } = {}
-) {
+export async function fetchData(url, { method = "GET", body = null, headers = {} } = {}) {
   try {
     const options = {
       method,

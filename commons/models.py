@@ -925,8 +925,8 @@ class T_nove(models.Model):
       ("consulta", "Consulta"),
       ("sugerencia", "Sugerencia"),
     ]
-    num = models.PositiveIntegerField(
-        unique=True, null=True, blank=True, db_index=True)
+    num = models.CharField(
+        unique=True, null=True, blank=True, db_index=True, max_length=20)
     esta = models.CharField(
         max_length=50, choices=ESTA_CHOICES, default="nuevo")
     motivo_solucion = models.CharField(

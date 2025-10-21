@@ -97,6 +97,9 @@
           <ul class="navbar-nav ms-auto align-items-lg-center">
             {% if user.is_authenticated %}
               {% if perfil %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'inbox_novedades' %}"><i class="bi bi-exclamation-square me-1"></i>Novedades</a>
+                </li>
                 {% if perfil.rol != 'instructor' and perfil.rol != 'aprendiz' %}
                   <li class="nav-item">
                     <a class="nav-link" href="{% url 'admin_dashboard' %}"><i class="bi bi-speedometer2 me-1"></i> Control</a>
