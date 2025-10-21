@@ -169,7 +169,7 @@ def check_authentication(request):
 
 @login_required
 def perfil(request):
-    perfil = T_perfil.objects.get(user_id=request.user.id)
+    perfil = T_perfil.objects.get(user=request.user)
     usuario = None
 
     if perfil.rol == 'instructor':
@@ -185,9 +185,7 @@ def perfil(request):
     elif perfil.rol == 'cuentas':
         usuario = T_cuentas.objects.get(perfil=perfil)
 
-
     form_contraseña = CustomPasswordChangeForm(user=request.user)
-    form_perfil = PerfilForm(instance=perfil)
 
     if request.method == 'POST':
         if 'old_password' in request.POST:
@@ -208,46 +206,11 @@ def perfil(request):
                 else:
                     messages.error(
                         request, 'Por favor corrige los errores a continuación.')
-        elif request.POST.get('form_id') == 'perfil_form':
-            logger.warning("llega?")
-            form_perfil = PerfilForm(
-                request.POST, instance=perfil)
 
-            if form_perfil.is_valid():
-                datos_actualizados = form_perfil.cleaned_data
-                logger.warning(datos_actualizados)
-
-                if 'fecha_naci' not in datos_actualizados or datos_actualizados['fecha_naci'] is None:
-                    logger.warning("No viene fecha")
-                    perfil_fe = T_perfil.objects.get(
-                        id=perfil.id)
-                    form_perfil.instance.fecha_naci = perfil_fe.fecha_naci
-                    logger.warning(form_perfil.instance.fecha_naci)
-                form_perfil.save()
-
-            nuevo_email = form_perfil.cleaned_data.get('mail')
-            if nuevo_email:
-                usuario_act = User.objects.get(id=request.user.id)
-                usuario_act.email = nuevo_email
-                usuario_act.save()
-
-                request.user.refresh_from_db()
-                # request.user.save()
-                messages.success(request, "Perfil actualizado correctamente.")
-            return redirect('perfil')
-        else:
-            print(form_documento.errors)
-            messages.error(
-                request, 'Por favor, corrige los errores en el formulario.')
-
-    form_perfil = PerfilForm(instance=perfil)
-    form_documento = DocumentoLaboralForm()
     form_contraseña = CustomPasswordChangeForm(user=request.user)
     return render(request, 'perfil.html', {
         'usuario': usuario,
-        'form_contraseña': form_contraseña,
-        'form_documento': form_documento,
-        'form_perfil': form_perfil
+        'form_contraseña': form_contraseña
     })
 
 
