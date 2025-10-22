@@ -46,29 +46,12 @@
             <p class="mb-1 text-muted">Descripción</p>
             <p id="detalle-descripcion" class="border rounded-3 p-3 bg-light">--</p>
           </div>
-        </div>
-      </div>
+          <div class="col-12">
+            <p class="mb-1 text-muted">Documentos asociados</p>
+            <div id="contenedor-documentos" class="d-flex flex-wrap gap-2"></div>
+          </div>
 
-      <!-- ====== Documentos asociados ====== -->
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <span class="fw-bold">Documentos asociados</span>
-        </div>
-        <div class="card-body">
-          <table class="table table-hover align-middle" id="tabla-documentos">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colspan="4" class="text-center text-muted">Sin documentos</td>
-              </tr>
-            </tbody>
-          </table>
+          </div>
         </div>
       </div>
 
@@ -76,28 +59,27 @@
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
           <span class="fw-bold">Acciones / Gestión</span>
-          <button class="btn btn-primary shadow-sm" id="btn-nueva-accion" data-bs-toggle="modal" data-bs-target="#modalNuevaAccion"><i class="bi bi-plus-circle me-2"></i> Crear nueva acción</button>
+          <button class="btn btn-primary shadow-sm" id="btn-nueva-accion" data-bs-toggle="modal" data-bs-target="#modalNuevaAccion"><i class="bi bi-plus-circle me-2"></i>Registrar nueva acción</button>
         </div>
         <div class="card-body">
-          <div id="lista-acciones" class="d-flex flex-column gap-3">
-          </div>
+          <div id="lista-acciones" class="d-flex flex-column gap-3"></div>
         </div>
       </div>
     </section>
 
     <!-- ====== Modal: Nueva acción ====== -->
-  <div class="modal fade" id="modalNuevaAccion" tabindex="-1" aria-labelledby="modalNuevaAccionLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalNuevaAccionLabel">Registrar nueva acción</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body">
-          <form id="form-nueva-accion" enctype="multipart/form-data">
-            <div class="mb-3">
-              <label class="form-label">Descripción</label>
-              <textarea class="form-control" rows="4" name="descripcion" required></textarea>
+    <div class="modal fade" id="modalNuevaAccion" tabindex="-1" aria-labelledby="modalNuevaAccionLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalNuevaAccionLabel">Registrar nueva acción</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="form-nueva-accion" enctype="multipart/form-data">
+              <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" rows="4" name="descripcion" required></textarea>
               </div>
               <div class="mb-3">
                 <label class="form-label">Documentos (opcional)</label>

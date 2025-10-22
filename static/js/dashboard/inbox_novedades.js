@@ -18,7 +18,14 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     columns: [
       { data: "num", title: "Numero" },
-      { data: "descri", title: "Descripcion" },
+      { data: "descri", title: "Descripcion",
+        render: function (data, type, row){
+          if (type === 'display' && data) {
+            return data.length > 50 ? data.substring(0, 50) + "..." : data;
+          }
+          return data;
+        }
+      },
       { data: "tipo", title: "Tipo" },
       { data: "esta", title: "Estado" },
       { data: "fecha", title: "Fecha" },
