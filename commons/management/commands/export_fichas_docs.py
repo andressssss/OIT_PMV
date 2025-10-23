@@ -58,7 +58,7 @@ class Command(BaseCommand):
                     os.makedirs(folder_dir, exist_ok=True)
 
                     if not docs:
-                        faltantes.append((ficha.id, f"Sin documentos en {folder.name}"))
+                        faltantes.append((ficha.num if ficha.num else f"G{ficha.grupo_id}", f"Sin documentos en {folder.name}"))
                         continue
 
                     for doc in docs:
@@ -68,11 +68,11 @@ class Command(BaseCommand):
                             has_docs = True
                         else:
                             faltantes.append(
-                                (ficha.id, f"Documento no encontrado o sin archivo: {doc.nom}")
+                                (ficha.num if ficha.num else f"G{ficha.grupo_id}", f"Documento no encontrado o sin archivo: {doc.nom}")
                             )
 
                 if has_docs:
-                    zip_path = os.path.join(base_dir, f"ficha_{ficha.num}.zip")
+                    zip_path = os.path.join(base_dir, f"ficha_{ficha.num}.zip" if ficha.num else f"ficha_G{ficha.grupo_id}.zip")
                     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                         for root, _, files in os.walk(ficha_dir):
                             for f in files:
