@@ -45,3 +45,5 @@ logs/
 /static/vendor/
 /static/autocomplete_light/
 /static/mptt/
+
+export_fichas/
