@@ -31,17 +31,14 @@ def guardar_documento(archivo, ruta, max_size_mb=50):
 
     # Validar extensión
     if extension not in EXTENSIONES_PERMITIDAS:
-        raise ValidationError({
-            "message": f"{archivo.name}: tipo no permitido"
-        }, status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError({"message": f"{archivo.name}: tipo no permitido"})
 
     max_size = max_size_mb * 1024 * 1024
 
     if archivo.size > max_size:
         raise ValidationError({
             "message": f"{archivo.name}: excede tamaño máximo "
-            f"({'1GB' if max_size > 50*1024*1024 else '50MB'})"
-        }, status=status.HTTP_400_BAD_REQUEST)
+            f"({'1GB' if max_size > 50*1024*1024 else '50MB'})"})
 
     try:
         ruta_guardada = default_storage.save(ruta, archivo)

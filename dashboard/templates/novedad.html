@@ -8,7 +8,8 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-6 fw-bold"><i class="bi bi-envelope-paper me-2"></i> Detalle de Novedad / PQRS</h1>
         <div class="d-flex gap-2">
-          <button class="btn btn-success" id="btn-cambiar-estado"><i class="bi bi-arrow-repeat me-1"></i> Cambiar estado</button>
+          <button class="btn btn-primary d-none" id="btn-reasignar" data-bs-toggle="modal" data-bs-target="#modalAsignacion"><i class="bi bi-person-workspace me-1"></i>Reasignar</button>
+          <button class="btn btn-secondary d-none" id="btn-cambiar-estado" data-bs-toggle="modal" data-bs-target="#modalEstado"><i class="bi bi-arrow-repeat me-1"></i>Cambiar estado</button>
         </div>
       </div>
 
@@ -16,29 +17,39 @@
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-light fw-bold">Información general</div>
         <div class="card-body row g-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <p class="mb-1 text-muted">Numero</p>
             <h6 id="detalle-codigo">--</h6>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <p class="mb-1 text-muted">Tipo</p>
             <h6 id="detalle-tipo">--</h6>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <p class="mb-1 text-muted">Estado</p>
             <span id="detalle-estado" class="badge bg-secondary">--</span>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <p class="mb-1 text-muted">Motivo Estado</p>
+            <h6 id="detalle-motivo">--</h6>
+          </div>
+          <div class="col-md-3">
             <p class="mb-1 text-muted">Fecha de creación</p>
             <h6 id="detalle-fecha">--</h6>
+          </div>
+          <div class="col-md-3">
             <p class="mb-1 text-muted">Fecha de cierre</p>
             <h6 id="detalle-cierre">--</h6>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <p class="mb-1 text-muted">Responsable</p>
             <h6 id="detalle-responsable">--</h6>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <p class="mb-1 text-muted">Grupo Responsable</p>
+            <h6 id="detalle-grupo">--</h6>
+          </div>
+          <div class="col-md-3">
             <p class="mb-1 text-muted">Usuario</p>
             <h6 id="detalle-usuario">--</h6>
           </div>
@@ -50,8 +61,6 @@
             <p class="mb-1 text-muted">Documentos asociados</p>
             <div id="contenedor-documentos" class="d-flex flex-wrap gap-2"></div>
           </div>
-
-          </div>
         </div>
       </div>
 
@@ -59,7 +68,7 @@
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
           <span class="fw-bold">Acciones / Gestión</span>
-          <button class="btn btn-primary shadow-sm" id="btn-nueva-accion" data-bs-toggle="modal" data-bs-target="#modalNuevaAccion"><i class="bi bi-plus-circle me-2"></i>Registrar nueva acción</button>
+          <button class="btn btn-primary shadow-sm d-none" id="btn-nueva-accion" data-bs-toggle="modal" data-bs-target="#modalNuevaAccion"><i class="bi bi-plus-circle me-2"></i>Registrar nueva acción</button>
         </div>
         <div class="card-body">
           <div id="lista-acciones" class="d-flex flex-column gap-3"></div>
@@ -68,7 +77,7 @@
     </section>
 
     <!-- ====== Modal: Nueva acción ====== -->
-    <div class="modal fade" id="modalNuevaAccion" tabindex="-1" aria-labelledby="modalNuevaAccionLabel" aria-hidden="true">
+    <div class="modal fade" id="modalNuevaAccion" tabindex="-1" aria-labelledby="modalNuevaAccionLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
@@ -79,7 +88,7 @@
             <form id="form-nueva-accion" enctype="multipart/form-data">
               <div class="mb-3">
                 <label class="form-label">Descripción</label>
-                <textarea class="form-control" rows="4" name="descripcion" required></textarea>
+                <textarea class="form-control" rows="4" name="descri" required></textarea>
               </div>
               <div class="mb-3">
                 <label class="form-label">Documentos (opcional)</label>
@@ -88,8 +97,57 @@
             </form>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button class="btn btn-success" id="btn-guardar-accion">Guardar acción</button>
+            <button form="form-nueva-accion" class="btn btn-primary" id="btn-guardar-accion">Guardar acción</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== Modal: Cambiar estado ====== -->
+    <div class="modal fade" id="modalEstado" tabindex="-1" aria-labelledby="modalEstadoLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEstadoLabel">Cambiar estado</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="form-estado">
+              <div class="mb-3">
+                <label class="form-label">Nuevo estado</label>
+                <select class="form-select" name="estado" required></select>
+                <label class="form-label">Motivo de estado</label>
+                <select class="form-select" name="motivo" required></select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button form="form-estado" class="btn btn-primary" id="btn-guardar-estado">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== Modal: Reasignar Caso ====== -->
+    <div class="modal fade" id="modalAsignacion" tabindex="-1" aria-labelledby="modalAsignacionLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalAsignacionLabel">Reasignar caso</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="form-asignacion">
+              <div class="mb-3">
+                <label class="form-label">Grupo</label>
+                <select class="form-select" name="grupo" required></select>
+                <label class="form-label">Persona</label>
+                <select class="form-select" name="persona" required disabled></select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button form="form-asignacion" class="btn btn-primary" id="btn-guardar-asignacion">Reasignar</button>
           </div>
         </div>
       </div>

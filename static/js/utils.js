@@ -714,14 +714,11 @@ export async function fetchData(url, { method = "GET", body = null, headers = {}
 
     const data = response.status !== 204 ? await response.json() : null;
 
-    if (validarErrorDRF(response, data)) {
-      throw new Error("Error en el request");
-    }
+    if (validarErrorDRF(response, data)) throw new Error;
 
     return data;
   } catch (error) {
-    console.error("❌ Error al cargar:", url, error);
-    return null;
+    throw error;
   }
 }
 

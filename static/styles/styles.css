@@ -543,17 +543,18 @@ select.form-select.choices__input {
 
 /* Estilos vista novedad */
 .card-documento {
-  flex: 0 0 160px;
-  display: flex;
+  display: inline-flex;             /* Se adapta bien en grids o inline flows */
   align-items: center;
-  justify-content: start;
-  gap: 8px;
+  gap: 0.5rem;
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 10px;
-  padding: 10px;
+  padding: 0.6rem 0.8rem;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  max-width: 100%;                  /* Evita que desborde */
+  box-sizing: border-box;           /* Respeta padding dentro del ancho */
+  word-break: break-word;           /* Evita overflow en textos largos */
 }
 
 .card-documento:hover {
@@ -562,8 +563,9 @@ select.form-select.choices__input {
 }
 
 .card-documento i {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   color: #0d6efd;
+  flex-shrink: 0;                   /* Mantiene el ícono visible */
 }
 
 .card-documento span {
@@ -572,4 +574,15 @@ select.form-select.choices__input {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: block;
+  flex: 1;                          /* Ocupa todo el espacio disponible */
+  min-width: 0;                     /* Necesario para que text-overflow funcione en flex */
+}
+
+.contenedor-documentos2 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  max-width: 50%; /* opcional: limita el espacio que ocupa la sección de documentos */
 }

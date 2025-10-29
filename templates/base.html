@@ -97,9 +97,9 @@
           <ul class="navbar-nav ms-auto align-items-lg-center">
             {% if user.is_authenticated %}
               {% if perfil %}
-                <li class="nav-item">
+                {% comment %} <li class="nav-item">
                     <a class="nav-link" href="{% url 'inbox_novedades' %}"><i class="bi bi-exclamation-square me-1"></i>Novedades</a>
-                </li>
+                </li> {% endcomment %}
                 {% if perfil.rol != 'instructor' and perfil.rol != 'aprendiz' %}
                   <li class="nav-item">
                     <a class="nav-link" href="{% url 'admin_dashboard' %}"><i class="bi bi-speedometer2 me-1"></i> Control</a>
@@ -204,9 +204,7 @@
       Swal.fire({
         title: 'Soporte Técnico',
         html: `
-                                                    <p>Si tiene alguna inquietud o detecta alguna inconsistencia,<br>
-                                                    no dude escalarlo a nuestro equipo de soporte:</p>
-                                                    <p class="fw-bold text-primary">mesadeayuda@senatic.com.co</p>
+                                                    <p>Si tiene alguna inquietud o detecta alguna inconsistencia, por favor regístrela en el modulo de novedades ubicado en el menu</p>
                                                 `,
         icon: 'info',
         confirmButtonText: 'Cerrar',

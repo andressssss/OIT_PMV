@@ -131,13 +131,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = '10.1.40.28'
+EMAIL_HOST = 'mail.formacionprofesional-oit.org'
 EMAIL_PORT = 25
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'noreply-senatic@formacionprofesional-oit.org')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = 'noreply-senatic@formacionprofesional-oit.org'
 
 DATE_INPUT_FORMATS = ['%d/%m/%Y', '%Y-%m-%d']
 
