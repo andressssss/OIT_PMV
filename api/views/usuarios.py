@@ -496,6 +496,7 @@ class AprendizViewSet(PermisosMixin, ModelViewSet):
 class PermisoViewSet(ModelViewSet):
     serializer_class = PermisoSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         perfil_id = self.request.query_params.get("perfil")

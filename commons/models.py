@@ -332,6 +332,7 @@ class T_ficha(models.Model):
     num_apre_pendi_regi = models.CharField(max_length=100)
     esta = models.CharField(max_length=100)
     grupo = models.ForeignKey(T_grupo, on_delete=models.CASCADE)
+    vige = models.CharField(max_length=20, default="1")
 
     def __str__(self):
         return self.num if self.num else str(f"G{self.grupo.id}")
@@ -371,6 +372,7 @@ class T_apre(models.Model):
     ESTADO_ESTUDIANTE_CHOICES = [
         ('activo', 'Activo'),
         ('suspendido', 'Suspendido'),
+        ('retirov', 'Retiro voluntario'),
         ('prematricula', 'Pre matricula'),
         ('desertado', 'Desertado'),
         ('sinficha', 'Sin Ficha')
@@ -890,7 +892,7 @@ class T_porta_archi(models.Model):
     ubi = models.CharField(max_length=500)
 
     class Meta:
-      db_table = "t_porta_archi"
+        db_table = "t_porta_archi"
 
     def __str__(self):
         return f"{self.docu.nom} (Archivo eliminado)"
@@ -898,32 +900,32 @@ class T_porta_archi(models.Model):
 
 class T_nove(models.Model):
     ESTA_CHOICES = [
-      ("nuevo", "Nuevo"),
-      ("en_curso", "En_curso"),
-      ("pendiente", "Pendiente"),
-      ("planificacion", "Planificacion"),
-      ("terminado", "Terminado"),
-      ("rechazado", "Rechazado"),
-      ("cerrado", "Cerrado"),
-      ("reabierto", "Reabierto"),
+        ("nuevo", "Nuevo"),
+        ("en_curso", "En_curso"),
+        ("pendiente", "Pendiente"),
+        ("planificacion", "Planificacion"),
+        ("terminado", "Terminado"),
+        ("rechazado", "Rechazado"),
+        ("cerrado", "Cerrado"),
+        ("reabierto", "Reabierto"),
     ]
 
     SOLUCION_CHOICES = [
-      ("exito", "Exito"),
-      ("cierre_cliente", "Cierre_cliente"),
-      ("exito_problemas", "Exito_problemas"),
-      ("cancelado_soporte", "Cancelado_soporte"),
-      ("accion_otro_proveedor", "Accion_otro_proveedor"),
-      ("accion_solicitante", "Accion_solicitante"),
-      ("cronograma", "Cronograma"),
-      ("en_curso", "En_curso"),
+        ("exito", "Exito"),
+        ("cierre_cliente", "Cierre_cliente"),
+        ("exito_problemas", "Exito_problemas"),
+        ("cancelado_soporte", "Cancelado_soporte"),
+        ("accion_otro_proveedor", "Accion_otro_proveedor"),
+        ("accion_solicitante", "Accion_solicitante"),
+        ("cronograma", "Cronograma"),
+        ("en_curso", "En_curso"),
     ]
 
     TIPO_CHOICES = [
-      ("incidencia", "Incidencia"),
-      ("requerimiento", "Requerimiento"),
-      ("consulta", "Consulta"),
-      ("sugerencia", "Sugerencia"),
+        ("incidencia", "Incidencia"),
+        ("requerimiento", "Requerimiento"),
+        ("consulta", "Consulta"),
+        ("sugerencia", "Sugerencia"),
     ]
     num = models.CharField(
         unique=True, null=True, blank=True, db_index=True, max_length=20)
@@ -934,7 +936,8 @@ class T_nove(models.Model):
     descri = models.TextField()
     soli = models.ForeignKey(
         User, on_delete=models.PROTECT, related_name="novedades_solicitadas")
-    tipo = models.CharField(max_length=50, choices=TIPO_CHOICES, null=True, blank=True)
+    tipo = models.CharField(
+        max_length=50, choices=TIPO_CHOICES, null=True, blank=True)
     fecha_regi = models.DateTimeField(auto_now_add=True)
     fecha_venci = models.DateTimeField(null=True, blank=True)
     fecha_ulti_acci = models.DateTimeField(null=True, blank=True)
@@ -948,7 +951,7 @@ class T_nove(models.Model):
         ordering = ['-fecha_venci']
         managed = True
         db_table = 't_nove'
-        
+
     def __str__(self):
         return f"N{self.num or 'NN'} - {self.tipo} - {self.soli}"
 
@@ -971,8 +974,10 @@ class T_nove_docu(models.Model):
         db_table = 't_nove_docu'
     nove = models.ForeignKey(T_nove, on_delete=models.CASCADE)
     docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True)
+
     def __str__(self):
         return f"{self.docu}"
+
 
 class T_acci_nove_docu(models.Model):
     class Meta:
@@ -980,5 +985,6 @@ class T_acci_nove_docu(models.Model):
         db_table = 't_acci_nove_docu'
     acci_nove = models.ForeignKey(T_acci_nove, on_delete=models.CASCADE)
     docu = models.ForeignKey(T_docu, on_delete=models.SET_NULL, null=True)
+
     def __str__(self):
         return f"{self.docu}"

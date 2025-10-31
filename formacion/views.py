@@ -76,13 +76,17 @@ def panel_ficha(request, ficha_id):
         'puede_editar': puede_editar
     })
 
-
 @login_required
 def obtener_carpetas(request, ficha_id):
-    # Obtener todas las carpetas y documentos asociados a la ficha
-    nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values(
-        "id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi"
-    )
+    """ Obtener todas las carpetas y documentos asociados a la ficha """
+
+    ficha_vige = T_ficha.objects.filter(id = ficha_id).values_list("vige", flat=True).first()
+
+    nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values("id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi")
+
+    # Nuevo bloque
+    if ficha_vige == "2025":
+        nodos = [n for n in nodos if n["name"] not in ["3. EJECUCIÓN", "4. EVALUACIÓN"]]
 
     mixin = PermisosMixin()
 
@@ -409,17 +413,22 @@ def obtener_hijos_carpeta(request, carpeta_id):
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
-
 @login_required
 def obtener_carpetas_aprendiz(request, aprendiz_id):
-    # Obtener todas las carpetas y documentos asociados a la ficha
-    nodos = T_DocumentFolderAprendiz.objects.filter(
+    """ Obtener todas las carpetas y documentos asociados a un aprendiz """
+
+    ficha_vige = T_apre.objects.select_related("ficha").get(id=aprendiz_id).ficha.vige
+
+    nodos = list(T_DocumentFolderAprendiz.objects.filter(
         aprendiz_id=aprendiz_id
     ).annotate(
         orden=RawSQL("CAST(SUBSTRING_INDEX(name, '.', 1) AS UNSIGNED)", [])
     ).order_by("orden").values(
         "id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi"
-    )
+    ))
+
+    if ficha_vige == "2025":
+        nodos = [n for n in nodos if n["name"] not in ["3. EJECUCIÓN", "4. EVALUACIÓN"]]
 
     folder_map = {}
 

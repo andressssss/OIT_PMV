@@ -2,6 +2,11 @@
 {% load static %}
 {% load icons %}
 {% load custom_filters %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'styles/formacion/panel_ficha.css' %}">
+{% endblock %}
+
 {% block content %}
   {% if not puede_ver %}
     <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
@@ -232,18 +237,7 @@
                   </div>
                 {% endif %}
                 <div class="table-responsive">
-                  <table id="tabla_aprendices_ficha" class="table table-hover table-striped w-100">
-                    <thead>
-                      <tr>
-                        <th>Nombre</th>
-                        <th>Apellido</th>
-                        <th>DNI</th>
-                        <th>Estado</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody></tbody>
-                  </table>
+                  <table id="tabla_aprendices_ficha" class="table table-hover table-striped w-100"></table>
                 </div>
               </div>
             </div>

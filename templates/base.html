@@ -34,6 +34,8 @@
     <!-- Estilos Personalizados -->
     <link rel="stylesheet" href="{% static 'styles/styles.css' %}" />
 
+    {% block styles %}{% endblock %}
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
@@ -59,9 +61,7 @@
     <!-- Scripts Personalizados -->
     <script defer src="{% static 'js/scripts.js' %}"></script>
     <script defer src="{% static 'js/session_monitor.js' %}"></script>
-    {% block scripts %}
-
-    {% endblock %}
+    {% block scripts %}{% endblock %}
   </head>
   <body data-user-role="{% if perfil %}
       {{ perfil.rol }}

@@ -200,47 +200,53 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderTree(nodes, can_edit) {
-    if (!nodes || nodes.length === 0) return null;
+    if (!Array.isArray(nodes) || nodes.length === 0)
+      return document.createElement("ul");
 
     const ul = document.createElement("ul");
     ul.classList.add("folder-list");
 
-    nodes.forEach((node) => {
-      if (userRole.trim() === "instructor" && node.name === "LINK DE PORTAFOLIO APRENDICES 2024") return null;
+    for (const node of nodes) {
+      // Evitar carpeta de portafolio en rol instructor
+      if (
+        userRole.trim() === "instructor" &&
+        node.name === "LINK DE PORTAFOLIO APRENDICES 2024"
+      )
+        continue;
 
       const li = document.createElement("li");
       li.classList.add("folder-item");
 
-      // Elementos comunes a todos los nodos
+      // Elementos comunes
       const icon = document.createElement("i");
       const span = document.createElement("span");
       span.textContent = node.name;
 
-      // Usamos dataset para almacenar el ID según el tipo
+      // Dataset según tipo
       const dataId = node.tipo === "carpeta" ? "folderId" : "documentId";
       icon.dataset[dataId] = node.id;
       span.dataset[dataId] = node.id;
 
+      // === 📁 Carpeta ===
       if (node.tipo === "carpeta") {
-        // Configuración para carpetas
         icon.classList.add("bi", "bi-folder2");
 
         if (node.name === "LINK DE PORTAFOLIO APRENDICES 2024") {
           span.dataset.portafolioLink = "true";
         }
 
-        // Contenedor de subelementos (solo para carpetas)
+        // Contenedor de hijos
         const subFolderContainer = document.createElement("ul");
         subFolderContainer.classList.add("folder-children");
         subFolderContainer.id = `folder-${node.id}`;
 
+        // Botón de carga (si aplica)
         if (
           can_edit &&
           (!node.children ||
             node.children.length === 0 ||
             node.children.every((child) => child.tipo === "documento"))
         ) {
-          // Botón de carga (solo para carpetas)
           const uploadLi = document.createElement("li");
           uploadLi.classList.add("upload-item");
           uploadLi.style.listStyle = "none";
@@ -259,19 +265,26 @@ document.addEventListener("DOMContentLoaded", function () {
           uploadLi.appendChild(uploadSpan);
           subFolderContainer.appendChild(uploadLi);
         }
-        // Procesar hijos recursivamente si existen
-        if (node.children && node.children.length > 0) {
-          subFolderContainer.appendChild(renderTree(node.children, can_edit));
-        }
 
-        // Ensamblar elementos de carpeta
+        // Ensamblar encabezado de carpeta
         li.appendChild(icon);
         li.appendChild(span);
+
+        // Procesar hijos recursivamente
+        if (Array.isArray(node.children) && node.children.length > 0) {
+          const subTree = renderTree(node.children, can_edit);
+          Array.from(subTree.children).forEach((child) =>
+            subFolderContainer.appendChild(child)
+          );
+        }
+
+        // Agregar subcarpetas al li
         li.appendChild(subFolderContainer);
-      } else if (node.tipo === "documento") {
-        // Configuración para documentos
+      }
+
+      // === 📄 Documento ===
+      else if (node.tipo === "documento") {
         const extension = node.documento_nombre.split(".").pop().toLowerCase();
-        // Determinar icono según extensión
         const extensionIcons = {
           pdf: "bi-file-earmark-pdf",
           xlsx: "bi-file-earmark-spreadsheet",
@@ -287,7 +300,7 @@ document.addEventListener("DOMContentLoaded", function () {
           docm: "bi-file-earmark-richtext",
           mp3: "bi-file-earmark-music",
           mp4: "bi-file-earmark-play",
-          xls: "file-earmark-spreadsheet",
+          xls: "bi-file-earmark-spreadsheet",
           psc: "bi-file-earmark-code",
           sql: "bi-database",
           zip: "bi-file-earmark-zip-fill",
@@ -300,7 +313,6 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         const link = document.createElement("a");
-
         const lastSlashIndex = node.url.lastIndexOf("/");
         const path = node.url.substring(0, lastSlashIndex + 1);
         const filename = node.url.substring(lastSlashIndex + 1);
@@ -311,20 +323,20 @@ document.addEventListener("DOMContentLoaded", function () {
         link.appendChild(span);
         li.appendChild(link);
 
+        // Botón de eliminar (si aplica)
         if (can_edit && userRole != "instructor") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
           deleteBtn.style.cssText = `
-                        background: none;
-                        border: none;
-                        color: #dc3545;
-                        padding: 2px 8px;
-                        margin-left: auto;
-                        transition: opacity 0.2s;
-                    `;
+          background: none;
+          border: none;
+          color: #dc3545;
+          padding: 2px 8px;
+          margin-left: auto;
+          transition: opacity 0.2s;
+        `;
 
-          // Efecto hover para mejor feedback visual
           deleteBtn.addEventListener("mouseenter", () => {
             deleteBtn.style.opacity = "0.8";
             deleteBtn.style.cursor = "pointer";
@@ -341,7 +353,8 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       ul.appendChild(li);
-    });
+    }
+
     return ul;
   }
 
@@ -918,7 +931,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (contexto === "aprendiz") {
           await actualizarCarpeta(folderId, "aprendiz", can_edit);
         }
-        tablaArchivo.ajax.reload()
+        tablaArchivo.ajax.reload();
       } else {
         toastError("Error al eliminar el archivo");
       }
@@ -994,7 +1007,7 @@ document.addEventListener("DOMContentLoaded", function () {
       renderHistorial();
       if (contexto === "ficha") {
         renderAlertas("ficha", fichaId);
-      } else if (contexto === "aprendiz"){
+      } else if (contexto === "aprendiz") {
         renderAlertas("aprendiz", aprendizId);
       }
     } catch (error) {
@@ -1038,6 +1051,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let alertasEnProceso = false;
+  
   async function renderAlertas(contexto, id) {
     if (alertasEnProceso) return;
     alertasEnProceso = true;
@@ -1052,7 +1066,7 @@ document.addEventListener("DOMContentLoaded", function () {
         list: "alertasApreList",
         tab: "alertas-apre-tab",
         url: `/api/tree/obtener_carpetas_aprendiz/${id}/`,
-      }
+      },
     };
     if (!config[contexto]) {
       alertasEnProceso = false;
@@ -1062,7 +1076,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const { list, tab, url } = config[contexto];
     const alertasList = document.getElementById(list);
     const alertasTab = document.getElementById(tab);
-
 
     // limpiar contenido previo
     alertasList.innerHTML = "";
@@ -1076,7 +1089,6 @@ document.addEventListener("DOMContentLoaded", function () {
     spinner.style.height = "1rem";
     spinner.innerHTML = `<span class="visually-hidden">Loading...</span>`;
     spinner.id = `spinner-alertas-${contexto}`;
-
 
     alertasTab.appendChild(spinner);
 
@@ -1157,11 +1169,11 @@ document.addEventListener("DOMContentLoaded", function () {
       dataSrc: "",
     },
     columns: [
-      { data: "nombre" },
-      { data: "apellido" },
-      { data: "dni" },
+      { data: "nombre" , title: "Nombre"},
+      { data: "apellido", title: "Apellido" },
+      { data: "dni", title: "DNI" },
       {
-        data: "estado",
+        data: "estado", title: "Estado",
         render: function (data, type, row) {
           let badge = "";
           switch (data.toLowerCase()) {
@@ -1180,6 +1192,10 @@ document.addEventListener("DOMContentLoaded", function () {
             case "aplazado":
               badge =
                 '<span class="badge bg-warning text-dark">Aplazado</span>';
+              break;
+            case "retirov":
+              badge =
+                '<span class="badge bg-warning text-dark">Retiro voluntario</span>';
               break;
             default:
               badge = `<span class="badge bg-secondary">${data}</span>`;
@@ -1207,9 +1223,13 @@ document.addEventListener("DOMContentLoaded", function () {
               </button>
               ${
                 row.can_edit === true
-                  ? row.estado.toLowerCase() !== "desertado"
+                  ? row.estado.toLowerCase() !== "desertado" &&
+                    row.estado.toLowerCase() !== "retirov"
                     ? `
                 <button class="btn btn-outline-danger desertar-aprendiz" data-id="${row.id}" title="Marcar como desertado">
+                  <i class="bi bi-person-dash"></i>
+                </button>
+                <button class="btn btn-outline-danger retiro-aprendiz" data-id="${row.id}" title="Marcar como retiro voluntario">
                   <i class="bi bi-person-dash"></i>
                 </button>
                 <button class="btn btn-outline-dark desasociar-aprendiz" data-id="${row.id}" title="Eliminar de la ficha">
@@ -1554,6 +1574,26 @@ document.addEventListener("DOMContentLoaded", function () {
           hideSpinner(target5, originalBtnContent);
         }
       }
+
+      const target6 = e.target.closest(".retiro-aprendiz");
+      if (target6) {
+        const confirm = await confirmAction({
+          message:
+            "¿Esta seguro de marcar como retiro voluntario al aprendiz?, esta acción no se puede deshacer",
+          title: "Retiro voluntario aprendiz",
+          icon: "warning",
+        });
+        if (!confirm) return;
+        const originalBtnContent = target6.innerHTML;
+        showSpinner(target6);
+        const aprendizId = target6.getAttribute("data-id");
+
+        try {
+          await retiroVoluntarioAprendiz(aprendizId);
+        } finally {
+          hideSpinner(target6, originalBtnContent);
+        }
+      }
     });
   }
   const formEditarAprendiz = document.getElementById("formEditarAprendiz");
@@ -1758,6 +1798,29 @@ document.addEventListener("DOMContentLoaded", function () {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ esta: "desertado" }),
+      });
+      const data = await response.json();
+
+      if (validarErrorDRF(response, data)) return;
+
+      toastSuccess(data.message);
+      tableAprendices.ajax.reload(null, false);
+      cargarHistorial("fichaG", fichaId);
+    } catch (error) {
+      toastError(error);
+    }
+  }
+
+  async function retiroVoluntarioAprendiz(aprendizId) {
+    try {
+      const response = await fetch(`/api/usuarios/aprendices/${aprendizId}/`, {
+        method: "PATCH",
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ esta: "retirov" }),
       });
       const data = await response.json();
 

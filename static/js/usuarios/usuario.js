@@ -147,110 +147,113 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  tableEl.addEventListener("click", async function (e) {
-    if (e.target.closest(".btn-establecer-contra")) {
-      const btn = e.target.closest(".btn-establecer-contra");
-      const userId = btn.dataset.id;
-      const nombre = btn.dataset.usuario;
-      document.getElementById("user-id-reset").value = userId;
-      document.getElementById("nombre-usr-restablecer").innerHTML = nombre;
-      document.getElementById("new-password").value = "";
-    }
-    if (e.target.closest(".btn-inhabilitar")) {
-      const btn = e.target.closest(".btn-inhabilitar");
-      const userId = btn.dataset.id;
-      if (await confirmAction({ message: "¿Inhabilitar usuario?" })) {
-        try {
-          const response = await fetch(`/api/usuarios/perfiles/${userId}/`, {
-            method: "PATCH",
-            headers: {
-              "X-CSRFToken": csrfToken,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ is_active: false }),
-          });
-          const data = await response.json();
-          if (validarErrorDRF(response, data)) return;
-          toastSuccess(data.message);
-          table.ajax.reload();
-        } catch (e) {
-          toastError(e);
-        }
+  if (tableEl) {
+    tableEl.addEventListener("click", async function (e) {
+      if (e.target.closest(".btn-establecer-contra")) {
+        const btn = e.target.closest(".btn-establecer-contra");
+        const userId = btn.dataset.id;
+        const nombre = btn.dataset.usuario;
+        document.getElementById("user-id-reset").value = userId;
+        document.getElementById("nombre-usr-restablecer").innerHTML = nombre;
+        document.getElementById("new-password").value = "";
       }
-    }
-    if (e.target.closest(".btn-habilitar")) {
-      const btn = e.target.closest(".btn-habilitar");
-      const userId = btn.dataset.id;
-      if (await confirmAction({ message: "¿Habilitar usuario?" })) {
-        try {
-          const response = await fetch(`/api/usuarios/perfiles/${userId}/`, {
-            method: "PATCH",
-            headers: {
-              "X-CSRFToken": csrfToken,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ is_active: true }),
-          });
-          const data = await response.json();
-          if (validarErrorDRF(response, data)) return;
-          toastSuccess(data.message);
-          table.ajax.reload();
-        } catch (e) {
-          toastError(e);
-        }
-      }
-    }
-    if (e.target.closest(".btn-permisos")) {
-      const btn = e.target.closest(".btn-permisos");
-      currentUserId = btn.dataset.id;
-      const usuarioNombre = btn.dataset.usuario;
-
-      // Mostrar el nombre del usuario en el modal
-      modalPermisos.querySelector(".modal-title").textContent =
-        "Permisos de " + usuarioNombre;
-
-      // Limpiar el formulario antes de cargar
-      permisosForm.reset();
-      setFormDisabled(permisosForm, true);
-      document.getElementById("btn-guardarPerm").disabled = true;
-      // Cargar permisos actuales con GET
-      try {
-        const response = await fetch(
-          `/api/usuarios/permisos/?perfil=${currentUserId}`
-        );
-        const data = await response.json();
-        if (validarErrorDRF(response, data)) return;
-
-        data.forEach((el) => {
-          const { modu, acci, filtro } = el;
-
-          const ckBoxName = `${modu}_${acci}`;
-          const filtroName = `${modu}_filtro`;
-
-          const checkbox = permisosForm.querySelector(`[name="${ckBoxName}"]`);
-          if (checkbox) {
-            checkbox.checked = true;
+      if (e.target.closest(".btn-inhabilitar")) {
+        const btn = e.target.closest(".btn-inhabilitar");
+        const userId = btn.dataset.id;
+        if (await confirmAction({ message: "¿Inhabilitar usuario?" })) {
+          try {
+            const response = await fetch(`/api/usuarios/perfiles/${userId}/`, {
+              method: "PATCH",
+              headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ is_active: false }),
+            });
+            const data = await response.json();
+            if (validarErrorDRF(response, data)) return;
+            toastSuccess(data.message);
+            table.ajax.reload();
+          } catch (e) {
+            toastError(e);
           }
+        }
+      }
+      if (e.target.closest(".btn-habilitar")) {
+        const btn = e.target.closest(".btn-habilitar");
+        const userId = btn.dataset.id;
+        if (await confirmAction({ message: "¿Habilitar usuario?" })) {
+          try {
+            const response = await fetch(`/api/usuarios/perfiles/${userId}/`, {
+              method: "PATCH",
+              headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ is_active: true }),
+            });
+            const data = await response.json();
+            if (validarErrorDRF(response, data)) return;
+            toastSuccess(data.message);
+            table.ajax.reload();
+          } catch (e) {
+            toastError(e);
+          }
+        }
+      }
+      if (e.target.closest(".btn-permisos")) {
+        const btn = e.target.closest(".btn-permisos");
+        currentUserId = btn.dataset.id;
+        const usuarioNombre = btn.dataset.usuario;
 
-          if (filtro !== null) {
-            const filtroInput = permisosForm.querySelector(
-              `[name="${filtroName}"]`
+        // Mostrar el nombre del usuario en el modal
+        modalPermisos.querySelector(".modal-title").textContent =
+          "Permisos de " + usuarioNombre;
+
+        // Limpiar el formulario antes de cargar
+        permisosForm.reset();
+        setFormDisabled(permisosForm, true);
+        document.getElementById("btn-guardarPerm").disabled = true;
+        // Cargar permisos actuales con GET
+        try {
+          const response = await fetch(
+            `/api/usuarios/permisos/?perfil=${currentUserId}`
+          );
+          const data = await response.json();
+          if (validarErrorDRF(response, data)) return;
+
+          data.forEach((el) => {
+            const { modu, acci, filtro } = el;
+
+            const ckBoxName = `${modu}_${acci}`;
+            const filtroName = `${modu}_filtro`;
+
+            const checkbox = permisosForm.querySelector(
+              `[name="${ckBoxName}"]`
             );
-            if (filtroInput) {
-              filtroInput.value = JSON.stringify(filtro, null, 2);
+            if (checkbox) {
+              checkbox.checked = true;
             }
-          }
-        });
-      } catch (err) {
-        console.error("Error cargando permisos:", err);
-        toastError("No se pudieron cargar los permisos del usuario.");
-      } finally {
-        setFormDisabled(permisosForm, false);
-        document.getElementById("btn-guardarPerm").disabled = false;
-      }
-    }
-  });
 
+            if (filtro !== null) {
+              const filtroInput = permisosForm.querySelector(
+                `[name="${filtroName}"]`
+              );
+              if (filtroInput) {
+                filtroInput.value = JSON.stringify(filtro, null, 2);
+              }
+            }
+          });
+        } catch (err) {
+          console.error("Error cargando permisos:", err);
+          toastError("No se pudieron cargar los permisos del usuario.");
+        } finally {
+          setFormDisabled(permisosForm, false);
+          document.getElementById("btn-guardarPerm").disabled = false;
+        }
+      }
+    });
+  }
   const passwordInput = document.getElementById("new-password");
 
   if (passwordInput) {
@@ -283,9 +286,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  document
-    .getElementById("form-reset")
-    .addEventListener("submit", async (e) => {
+  const formReset = document.getElementById("form-reset");
+
+  if (formReset) {
+    formReset.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const userId = document.getElementById("user-id-reset").value;
@@ -327,15 +331,17 @@ document.addEventListener("DOMContentLoaded", () => {
         hideSpinner(btn, originalBtnContent);
       }
     });
+  }
 
   const modalPermisos = document.getElementById("modalPermisos");
   const permisosForm = document.getElementById("permisosForm");
   let currentUserId = null;
 
   // Guardar permisos
-  document
-    .getElementById("btn-guardarPerm")
-    .addEventListener("click", async (e) => {
+  const btnGuardarPerm = document.getElementById("btn-guardarPerm");
+
+  if (btnGuardarPerm) {
+    btnGuardarPerm.addEventListener("click", async (e) => {
       e.preventDefault();
       if (!currentUserId) return;
       const btn = document.getElementById("btn-guardarPerm");
@@ -443,4 +449,5 @@ document.addEventListener("DOMContentLoaded", () => {
         setFormDisabled(permisosForm, false);
       }
     });
+  }
 });

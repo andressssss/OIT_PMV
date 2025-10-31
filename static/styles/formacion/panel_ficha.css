@@ -1,0 +1,255 @@
+/* ================================
+  PORTAFOLIO - Árbol de documentos
+   ================================ */
+
+.folder-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+}
+
+/* Ítems de carpeta */
+.folder-item {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.folder-item > i,
+.folder-item > span,
+.folder-item > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+/* Espaciado e íconos */
+.folder-item i.bi-folder2,
+.folder-item i.bi-folder2-open,
+.upload-item .bi {
+  margin-right: 6px;
+}
+
+/* Subcarpetas */
+.folder-children {
+  padding-left: 1rem;
+  margin-top: 4px;
+  border-left: 2px dashed #dee2e6;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out,
+    padding 0.3s ease-in-out, margin 0.3s ease-in-out;
+  display: none;
+}
+
+.folder-children.visible {
+  display: block;
+  max-height: none;
+  opacity: 1;
+  padding: 0 0 0 1rem;
+  margin-top: 4px;
+}
+
+/* Cargar documento */
+.upload-item {
+  padding-left: 22px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  list-style: none;
+}
+
+
+/* Colores de íconos según tipo */
+.bi-folder2,
+.bi-folder2-open {
+  color: #ffc107;
+} /* Carpetas */
+
+.bi-file-earmark-pdf {
+  color: #dc3545;
+}
+.bi-image {
+  color: #0d6efd;
+}
+.bi-file-earmark-spreadsheet {
+  color: #198754;
+}
+.bi-file-earmark-richtext {
+  color: #6f42c1;
+}
+.bi-file-earmark {
+  color: #6c757d;
+}
+.bi-file-earmark-easel {
+  color: #fd7e14;
+}
+.bi-file-earmark-music {
+  color: #6610f2;
+}
+.bi-file-earmark-play {
+  color: #20c997;
+}
+.bi-file-earmark-code {
+  color: #0dcaf0;
+}
+.bi-database {
+  color: #adb5bd;
+}
+.bi-file-earmark-zip-fill {
+  color: #fd7e14;
+}
+
+/* ================================
+   PORTAFOLIO - Drag & Drop
+   ================================ */
+.dragover-highlight {
+  border: 2px dashed #1e2dbe;
+  background-color: #f0f4ff;
+  border-radius: 8px;
+}
+
+.folder-disabled {
+  pointer-events: none;
+  opacity: 0.6;
+  position: relative;
+}
+
+.folder-glow {
+  animation: glow-pulse 1s infinite ease-in-out;
+  box-shadow: 0 0 8px 2px #1e2dbe;
+  border-radius: 4px;
+}
+
+@keyframes glow-pulse {
+  0% {
+    box-shadow: 0 0 8px 2px #1e2dbe;
+  }
+  50% {
+    box-shadow: 0 0 14px 4px #1e2dbe;
+  }
+  100% {
+    box-shadow: 0 0 8px 2px #1e2dbe;
+  }
+}
+
+/* ================================
+   PORTAFOLIO - Progreso de carga
+   ================================ */
+.upload-progress {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background-color 0.2s;
+}
+
+.upload-progress:hover {
+  background-color: #f1f3f5;
+}
+
+.upload-progress .file-name {
+  font-weight: 500;
+  color: #495057;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.upload-progress .progress {
+  height: 14px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #e9ecef;
+}
+
+.upload-progress .progress-bar {
+  font-size: 0.75rem;
+  line-height: 14px;
+}
+
+/* ================================
+   PORTAFOLIO - Feedback visual
+   ================================ */
+.loading {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 3px solid #007bff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 1000;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ================================
+   PORTAFOLIO - Alertas de acciones
+   ================================ */
+.alerta-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 6px 0;
+  font-size: 14px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+.alerta-item:hover {
+  background: #f3f4f6;
+}
+
+.alerta-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.alerta-success {
+  border-left: 4px solid #10b981;
+}
+
+/* ================================
+   PORTAFOLIO - Efecto parpadeo (nuevo documento)
+   ================================ */
+.blink-highlight {
+  animation: blink 0.6s linear infinite alternate;
+  background-color: yellow;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+@keyframes blink {
+  from {
+    background-color: yellow;
+  }
+  to {
+    background-color: transparent;
+  }
+}
