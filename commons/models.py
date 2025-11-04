@@ -332,7 +332,7 @@ class T_ficha(models.Model):
     num_apre_pendi_regi = models.CharField(max_length=100)
     esta = models.CharField(max_length=100)
     grupo = models.ForeignKey(T_grupo, on_delete=models.CASCADE)
-    vige = models.CharField(max_length=20, default="1")
+    vige = models.CharField(max_length=20, default="2025")
 
     def __str__(self):
         return self.num if self.num else str(f"G{self.grupo.id}")
