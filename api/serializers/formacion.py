@@ -85,7 +85,7 @@ class FichaEditarSerializer(FichaSerializer):
     class Meta:
         model = T_ficha
         fields = FichaSerializer.Meta.fields + \
-            ['centro_id', 'insti_id', 'progra_id', 'fase_id', 'muni_id', 'depa_id']
+            ['centro_id', 'insti_id', 'progra_id', 'fase_id', 'muni_id', 'depa_id', "vige"]
 
     def get_fase_id(self, ficha):
         fase_actual = T_fase_ficha.objects.filter(ficha=ficha, vige=1).first()

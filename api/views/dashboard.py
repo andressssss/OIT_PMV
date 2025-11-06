@@ -337,6 +337,21 @@ class NovedadesViewSet(ModelViewSet):
             )
             T_acci_nove_docu.objects.create(acci_nove=accion, docu=new_doc)
 
+        try:
+            enviar_correo(
+              destinatarios=[novedad.soli.perfil.mail],
+              asunto=f"Caso #{novedad.num} acción registrada",
+              mensaje=f"Se ha registrado una nueva accion en el caso #{novedad.num}: {descripcion.strip()}."
+            )
+            
+            enviar_correo(
+              destinatarios=[novedad.respo.perfil.mail],
+              asunto=f"Caso #{novedad.num} acción registrada",
+              mensaje=f"Se ha registrado una nueva accion en el caso #{novedad.num}: {descripcion.strip()}."
+            )
+        except Exception as e:
+            print(f"Error enviando correo: {e}")
+
         return Response({"message": "Acción creada exitosamente"}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['get'], url_path='estados')

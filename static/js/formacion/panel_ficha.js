@@ -20,6 +20,7 @@ import {
   csrfToken,
   showSuccessToast,
   showErrorToast,
+  fetchData
 } from "/static/js/utils.js";
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -44,6 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   verTree();
+  cargarPunto4Plantillas(fichaId);
 
   async function verTree() {
     const container = document.getElementById("folderTree");
@@ -1135,6 +1137,21 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     } finally {
       alertasEnProceso = false;
+    }
+  }
+
+  async function cargarPunto4Plantillas(id){
+    const contendor = document.getElementById("contenedor4")
+    const data = await fetchData(`/api/formacion/fichas/${id}/`)
+    
+    if (data.vige === "2024"){
+      contendor.innerHTML = `
+        <a href="/static/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo.xlsx">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo</a><br />
+      `
+    } else if (data.vige === "2025") {
+      contendor.innerHTML = `
+        <a href="/static/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva (3)EN BLANCO.xlsx">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva (3)EN BLANCO.xlsx</a><br />
+      `
     }
   }
 
