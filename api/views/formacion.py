@@ -691,14 +691,25 @@ class FichasViewSet(ModelViewSet):
         search = request.GET.get("search[value]", "").strip()
         order_col_index = request.GET.get("order[0][column]")
         order_dir = request.GET.get("order[0][dir]")
-
+        
         fichas = T_ficha.objects.all()
+
+        mixin = PermisosMixin()
+        mixin.modulo = "fichas"
+        fichas = mixin.apply_permission_filters(fichas, request)
+        acciones = mixin.get_permission_actions_for(request, "fichas")
+        mixinP = PermisosMixin()
+        accionesP = mixinP.get_permission_actions_for(request, "portafolios")
+
 
         perfil_logueado = T_perfil.objects.get(user=request.user)
 
         if perfil_logueado.rol == "instructor":
-            instructor = T_instru.objects.get(perfil=perfil_logueado)
-            fichas = fichas.filter(instru=instructor)
+            ver_todos = acciones.get("verinstructor", False)
+            
+            if not ver_todos:
+              instructor = T_instru.objects.get(perfil=perfil_logueado)
+              fichas = fichas.filter(instru=instructor)
 
         elif perfil_logueado.rol == "gestor":
             gestor = T_gestor.objects.get(perfil=perfil_logueado)
@@ -718,13 +729,6 @@ class FichasViewSet(ModelViewSet):
 
         if programa:
             fichas = fichas.filter(progra_id=programa)
-
-        mixin = PermisosMixin()
-        mixin.modulo = "fichas"
-        fichas = mixin.apply_permission_filters(fichas, request)
-        acciones = mixin.get_permission_actions_for(request, "fichas")
-        mixinP = PermisosMixin()
-        accionesP = mixinP.get_permission_actions_for(request, "portafolios")
 
         if search:
             fichas = fichas.filter(

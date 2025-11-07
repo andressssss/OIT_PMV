@@ -861,6 +861,7 @@ class T_permi(models.Model):
 
     ACCION_CHOICES = [
         ('ver', 'Ver'),
+        ('verinstructor', 'Ver Instructor'),
         ('editar', 'Editar'),
         ('eliminar', 'Eliminar'),
     ]
