@@ -969,7 +969,7 @@ class JuiciosHistoViewSet(ModelViewSet):
 class PortaArchiViewSet(ModelViewSet):
     queryset = T_porta_archi.objects.all().order_by('-eli_en')
     serializer_class = PortaArchiSerializer
-    pagination_class = DataTablesPagination
+    pagination_class = None
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
