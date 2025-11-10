@@ -1,8 +1,34 @@
-from datetime import datetime
-import os
-import logging
-import pandas as pd
-from django.db import transaction
+"""
+ETL de Juicios de Evaluación
+----------------------------
+Este módulo ejecuta un proceso ETL (Extract, Transform, Load) sobre archivos Excel
+que contienen información de juicios de evaluación, sincronizando los datos
+en las tablas `T_jui_eva_actu` y `T_jui_eva_diff`.
+
+Uso:
+    from commons.etl import juicios
+    juicios.run_etl("ruta/al/archivo.xlsx")
+
+Argumentos:
+    file_path (str): Ruta del archivo Excel (.xlsx) a procesar.
+
+----------------------------------------------------------------------
+CHANGELOG
+----------------------------------------------------------------------
+    v1.2.0 (2025-11-07) - Mejora estructural:
+        - Se agregaron type hints (PEP484)
+        - Se documentaron funciones con docstrings estandarizados
+        - Se mejoró manejo de errores y logging
+        - Se corrigió formato de logs con timestamp por ejecución
+        - Se aplicó estructura modular ETL
+    v1.1.0 (2025-11-05) - Cache de entidades en memoria
+    v1.0.0 (2025-11-01) - Versión inicial del ETL
+----------------------------------------------------------------------
+"""
+
+__author__ = "Andrés Sanabria"
+__version__ = "1.2.0"
+
 from commons.models import (
     T_jui_eva_actu,
     T_jui_eva_diff,
@@ -12,20 +38,26 @@ from commons.models import (
     T_instru,
     T_perfil
 )
+from datetime import datetime, date
+from django.db import transaction
+from typing import Any, Generator, Optional
+import logging
+import os
+import pandas as pd
 
 # === CONFIG ===
-CHUNK_SIZE = 5000
-UPDATE_THRESHOLD = 100
-LOG_DIR = "logs/juicios"
+CHUNK_SIZE: int = 5000
+UPDATE_THRESHOLD: int = 100
+LOG_DIR: str = "logs/juicios"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # === LOGGER ===
-def get_logger():
+
+
+def get_logger() -> logging.Logger:
     """Crea un logger por ejecución con salida a consola y archivo"""
     logger = logging.getLogger("etl_juicios")
     logger.setLevel(logging.INFO)
-
-    # Evitar duplicación de handlers
     logger.handlers.clear()
 
     now = datetime.now()
@@ -40,8 +72,8 @@ def get_logger():
 
     fh = logging.FileHandler(log_file, encoding="utf-8")
     ch = logging.StreamHandler()
-
     fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
     fh.setFormatter(fmt)
     ch.setFormatter(fmt)
 
@@ -55,51 +87,77 @@ logger = get_logger()
 
 
 # === HELPERS ===
-def safe_date(value):
-    """Convierte fecha a date seguro"""
+def safe_date(value: any) -> Optional[date]:
+    """Convierte valores en fechas válidas o devuelve None si no es posible."""
     if pd.isna(value) or value == "":
         return None
     if isinstance(value, datetime):
         return value.date()
     try:
-        return pd.to_datetime(value).date()
+        return pd.to_datetime(value, errors="coerce").date()
     except Exception:
         return None
 
 
-def clean_dni(dni):
-    """Extrae solo los números del documento"""
+def clean_dni(dni) -> Optional[str]:
+    """Normaliza documentos de identidad extrayendo solo dígitos."""
     if pd.isna(dni):
         return None
     return "".join(ch for ch in str(dni) if ch.isdigit())
 
 
-
 # === CACHES ===
-cache_fichas = {}
-cache_perfiles = {}
-cache_apres = {}
-cache_raps = {}
-cache_instrus = {}
+cache_fichas: dict[str, Optional[T_ficha]] = {}
+cache_perfiles: dict[str, Optional[T_perfil]] = {}
+cache_apres: dict[str, Optional[T_apre]] = {}
+cache_raps: dict[str, Optional[T_raps]] = {}
+cache_instrus: dict[str, Optional[T_instru]] = {}
 
 
 # === EXTRACT ===
-def extract(file_path):
-    """Convierte Excel → CSV para soportar chunks"""
+def extract(file_path: str) -> Generator[pd.DataFrame, None, None]:
+    """
+    Convierte un archivo Excel a CSV temporal y lo lee por chunks.
+
+    Args:
+        file_path: Ruta al archivo Excel de entrada.
+
+    Yields:
+        pd.DataFrame: Fragmentos del dataset procesable por transform().
+    """
+    if not os.path.exists(file_path):
+        logger.error(f"Archivo no encontrado: {file_path}")
+        raise FileNotFoundError(f"El archivo '{file_path}' no existe.")
     csv_path = file_path.replace(".xlsx", ".csv")
 
-    if not os.path.exists(csv_path):
-        logger.info(f"Convirtiendo {file_path} → {csv_path}")
-        df = pd.read_excel(file_path, engine="openpyxl")
-        df.to_csv(csv_path, index=False)
+    try:
+        if not os.path.exists(csv_path):
+            logger.info(f"Convirtiendo {file_path} → {csv_path}")
+            df = pd.read_excel(file_path, engine="openpyxl")
+            df.to_csv(csv_path, index=False)
+    except PermissionError:
+        logger.error(f"Permiso denegado para acceder a {file_path}")
+        raise
+    except Exception as e:
+        logger.exception(f"Error leyendo Excel: {e}")
+        raise
 
     for chunk in pd.read_csv(csv_path, dtype=str, chunksize=CHUNK_SIZE):
         yield chunk
 
 
-def transform(chunk):
-    registros = []
-    errores = 0  # 👈 contador de errores
+def transform(chunk: pd.DataFrame) -> tuple[list[dict], int]:
+    """
+    Transforma datos crudos del chunk a registros validados.
+
+    Args:
+        chunk: Fragmento del CSV.
+
+    Returns:
+        tuple[list[dict], int]: Lista de registros válidos y cantidad de errores.
+    """
+    registros: list[dict] = []
+    errores = 0
 
     for _, row in chunk.iterrows():
         try:
@@ -110,67 +168,58 @@ def transform(chunk):
             eva = row.get("EVALUACIÓN")
             fecha_eva = safe_date(row.get("FCH_EVALUACION"))
             instru_doc = clean_dni(row.get("INTRUCT_RESPONSABLE"))
-            
 
-            # --- Resolver Ficha ---
+            # Resolver entidades con cache
+            ficha = cache_fichas.get(ficha_num)
             if ficha_num not in cache_fichas:
-                try:
-                    cache_fichas[ficha_num] = T_ficha.objects.get(num=ficha_num)
-                except T_ficha.DoesNotExist:
+                ficha = T_ficha.objects.filter(num=ficha_num).first()
+                cache_fichas[ficha_num] = ficha
+                if not ficha:
                     logger.warning(f"Ficha no encontrada: {ficha_num}")
-                    cache_fichas[ficha_num] = None
-            ficha = cache_fichas[ficha_num]
-            if not ficha:
-                errores += 1
-                continue
+                    errores += 1
+                    continue
 
-            # --- Resolver Perfil ---
+            perfil = cache_perfiles.get(dni)
             if dni not in cache_perfiles:
-                try:
-                    cache_perfiles[dni] = T_perfil.objects.get(dni=dni)
-                except T_perfil.DoesNotExist:
+                perfil = T_perfil.objects.filter(dni=dni).first()
+                cache_perfiles[dni] = perfil
+                if not perfil:
                     logger.warning(f"Perfil no encontrado: {dni}")
-                    cache_perfiles[dni] = None
-            perfil = cache_perfiles[dni]
-            if not perfil:
-                errores += 1
-                continue
+                    errores += 1
+                    continue
 
-            # --- Resolver Aprendiz ---
+            apre = cache_apres.get(dni)
             if dni not in cache_apres:
-                try:
-                    cache_apres[dni] = T_apre.objects.get(perfil=perfil)
-                except T_apre.DoesNotExist:
+                apre = T_apre.objects.filter(perfil=perfil).first()
+                cache_apres[dni] = apre
+                if not apre:
                     logger.warning(f"Aprendiz no encontrado: {dni}")
-                    cache_apres[dni] = None
-            apre = cache_apres[dni]
-            if not apre:
-                errores += 1
-                continue
+                    errores += 1
+                    continue
 
-            # --- Resolver RAP ---
+            rap = cache_raps.get(rap_cod)
             if rap_cod not in cache_raps:
-                try:
-                    cache_raps[rap_cod] = T_raps.objects.get(cod=rap_cod)
-                except T_raps.DoesNotExist:
+                rap = T_raps.objects.filter(cod=rap_cod).first()
+                cache_raps[rap_cod] = rap
+                if not rap:
                     logger.warning(f"RAP no encontrado: {rap_cod}")
-                    cache_raps[rap_cod] = None
-            rap = cache_raps[rap_cod]
-            if not rap:
-                errores += 1
-                continue
+                    errores += 1
+                    continue
 
-            # --- Resolver Instructor ---
             instru = None
             if instru_doc:
+                instru = cache_instrus.get(instru_doc)
                 if instru_doc not in cache_instrus:
-                    try:
-                        perfil_instru = T_perfil.objects.get(dni=instru_doc)
-                        cache_instrus[instru_doc] = T_instru.objects.get(perfil=perfil_instru)
-                    except (T_perfil.DoesNotExist, T_instru.DoesNotExist):
-                        logger.warning(f"Instructor no encontrado: {instru_doc}")
-                        cache_instrus[instru_doc] = None
-                instru = cache_instrus[instru_doc]
+                    perfil_instru = T_perfil.objects.filter(
+                        dni=instru_doc).first()
+                    instru = (
+                        T_instru.objects.filter(perfil=perfil_instru).first()
+                        if perfil_instru else None
+                    )
+                    cache_instrus[instru_doc] = instru
+                    if not instru:
+                        logger.warning(
+                            f"Instructor no encontrado: {instru_doc}")
 
             registros.append({
                 "fecha_repor": fecha_repor,
@@ -189,9 +238,17 @@ def transform(chunk):
     return registros, errores
 
 
-def load(registros):
-    nuevos_objs, actualizar_objs, diffs = [], [], []
-    sin_cambios = []
+def load(registros: list[dict]) -> tuple[int, int, int]:
+    """
+    Carga los registros transformados en la base de datos.
+
+    Args:
+        registros: Lista de registros listos para persistencia.
+
+    Returns:
+        tuple[int, int, int]: Cantidades de nuevos, actualizados y sin cambios.
+    """
+    nuevos_objs, actualizar_objs, diffs, sin_cambios = [], [], [], []
 
     fichas_ids = {r["ficha"].id for r in registros}
     existentes = {
@@ -202,32 +259,26 @@ def load(registros):
     with transaction.atomic():
         for r in registros:
             clave = (r["ficha"].id, r["apre"].id, r["rap"].id)
+            existente = existentes.get(clave)
 
-            if clave not in existentes:
-                obj = T_jui_eva_actu(**r)
-                nuevos_objs.append(obj)
+            if not existente:
+                nuevos_objs.append(T_jui_eva_actu(**r))
                 diffs.append(T_jui_eva_diff(
                     ficha=r["ficha"], apre=r["apre"], instru=r["instru"],
                     tipo_cambi="nuevo", descri=f"Evaluación inicial {r['eva']}"
                 ))
-                logger.info(
-                    f"Nuevo → ficha {r['ficha'].id}, apre {r['apre'].id}, rap {r['rap'].id}, eva={r['eva']}, instru={r['instru']}"
-                )
-
             else:
-                existente = existentes[clave]
                 cambios = []
-
                 if existente.eva != r["eva"]:
                     cambios.append(f"eva: {existente.eva} -> {r['eva']}")
                     existente.eva = r["eva"]
-
                 if existente.fecha_eva != r["fecha_eva"]:
-                    cambios.append(f"fecha_eva: {existente.fecha_eva} -> {r['fecha_eva']}")
+                    cambios.append(
+                        f"fecha_eva: {existente.fecha_eva} -> {r['fecha_eva']}")
                     existente.fecha_eva = r["fecha_eva"]
-
                 if existente.instru_id != (r["instru"].id if r["instru"] else None):
-                    cambios.append(f"instru: {existente.instru} -> {r['instru']}")
+                    cambios.append(
+                        f"instru: {existente.instru} -> {r['instru']}")
                     existente.instru = r["instru"]
 
                 if cambios:
@@ -237,71 +288,59 @@ def load(registros):
                         tipo_cambi="actualizado", descri="; ".join(cambios),
                         jui=existente
                     ))
-                    logger.info(
-                        f"Actualizado → ficha {r['ficha'].id}, apre {r['apre'].id}, rap {r['rap'].id} | {', '.join(cambios)}"
-                    )
                 else:
                     sin_cambios.append(clave)
 
-        # Insertar nuevos
         if nuevos_objs:
             T_jui_eva_actu.objects.bulk_create(nuevos_objs, batch_size=5000)
 
-        # Actualizar existentes
         if actualizar_objs:
+            campos = ["eva", "fecha_eva", "instru"]
             if len(actualizar_objs) > UPDATE_THRESHOLD:
                 T_jui_eva_actu.objects.bulk_update(
-                    actualizar_objs, ["eva", "fecha_eva", "instru"], batch_size=5000
-                )
+                    actualizar_objs, campos, batch_size=5000)
             else:
                 for obj in actualizar_objs:
-                    obj.save(update_fields=["eva", "fecha_eva", "instru"])
+                    obj.save(update_fields=campos)
 
-        # Guardar diffs
         if diffs:
             T_jui_eva_diff.objects.bulk_create(diffs, batch_size=5000)
-
-    for clave in sin_cambios:
-        logger.info(f"Sin cambios → ficha {clave[0]}, apre {clave[1]}, rap {clave[2]}")
 
     logger.info(
         f"Resumen → Nuevos: {len(nuevos_objs)}, "
         f"Actualizados: {len(actualizar_objs)}, "
         f"Sin cambios: {len(sin_cambios)}"
     )
-    
+
     return len(nuevos_objs), len(actualizar_objs), len(sin_cambios)
 
 
 # === MAIN ===
-def run_etl(file_path):
+def run_etl(file_path: str) -> None:
+    """Orquesta la ejecución completa del ETL."""
     logger.info("=== INICIO ETL ===")
 
-    total_leidas = 0
-    total_validas = 0
-    total_errores = 0
-    total_nuevos = 0
-    total_actualizados = 0
-    total_sin_cambios = 0
+    total = {"leidas": 0, "validas": 0, "errores": 0,
+             "nuevos": 0, "actualizados": 0, "sin_cambios": 0}
 
     for chunk in extract(file_path):
-        total_leidas += len(chunk)  # 👈 todas las filas leídas
+        total["leidas"] += len(chunk)
         registros, errores = transform(chunk)
-
-        total_validas += len(registros)
-        total_errores += errores
+        total["validas"] += len(registros)
+        total["errores"] += errores
 
         nuevos, actualizados, sin_cambios = load(registros)
-        total_nuevos += nuevos
-        total_actualizados += actualizados
-        total_sin_cambios += sin_cambios
+        total["nuevos"] += nuevos
+        total["actualizados"] += actualizados
+        total["sin_cambios"] += sin_cambios
 
     logger.info("=== FIN ETL ===")
     logger.info(
-        f"Resumen total → Leídas: {total_leidas}, "
-        f"Procesadas: {total_validas}, "
-        f"Errores: {total_errores}, "
-        f"Nuevos: {total_nuevos}, "
-        f"Actualizados: {total_actualizados}, "
-        f"Sin cambios: {total_sin_cambios}"
+        "Resumen total → "
+        f"Leídas: {total['leidas']}, "
+        f"Procesadas: {total['validas']}, "
+        f"Errores: {total['errores']}, "
+        f"Nuevos: {total['nuevos']}, "
+        f"Actualizados: {total['actualizados']}, "
+        f"Sin cambios: {total['sin_cambios']}"
     )
