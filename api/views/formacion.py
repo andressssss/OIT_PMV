@@ -880,7 +880,6 @@ class JuiciosViewSet(ModelViewSet):
         if search:
             juicios = juicios.filter(
                 Q(eva__icontains=search) |
-                Q(fecha_eva__icontains=search) |
                 Q(apre__perfil__nom__icontains=search) |
                 Q(apre__perfil__apelli__icontains=search) |
                 Q(apre__perfil__dni__icontains=search) |
@@ -893,8 +892,6 @@ class JuiciosViewSet(ModelViewSet):
             "1": "apre__perfil__nom",
             "2": "rap__nom",
             "3": "eva",
-            "4": "fecha_eva",
-            "5": "instru__perfil__nom",
         }
 
         if order_col_index in column_map:

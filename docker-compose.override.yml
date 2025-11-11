@@ -2,6 +2,7 @@ services:
   app:
     volumes:
       - .:/app
+      - E:\Documents\OIT\pruebas\OIT_APP:/etl_data
     environment:
       DJANGO_ENV: dev
     ports:

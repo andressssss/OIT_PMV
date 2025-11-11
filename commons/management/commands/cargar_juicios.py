@@ -1,40 +1,34 @@
 """
-Comando Django para ejecutar el proceso ETL de juicios evaluativos.
-----------------------------
-Este comando toma un archivo Excel con las evaluaciones y ejecuta
-el proceso de extracción, transformación y carga (ETL) definido en
-`commons.etl.evaluaciones`.
+Comando Django: Cargar Juicios de Evaluación
+============================================
 
-Uso:
-    python manage.py cargar_juicios <file_path> [--chunksize 5000]
+Este comando ejecuta el proceso ETL (Extract, Transform, Load) definido en
+`commons.etl.juicios`, tomando como entrada un archivo Excel con las
+evaluaciones de los aprendices. Los datos procesados se sincronizan con
+las tablas `T_jui_eva_actu` y `T_jui_eva_diff`.
 
 Ejemplo:
-    python manage.py cargar_juicios data/evaluaciones.xlsx --chunksize 10000
-    
-Argumentos:
-    file_path   Ruta del archivo Excel con las evaluaciones.
-    
-Opciones:
-    --chunksize Tamaño del lote de lectura (por defecto: 5000 filas).
+    >>> python manage.py cargar_juicios /etl_data/evaluaciones.xlsx --chunksize 10000
 
-----------------------------------------------------------------------
-CHANGELOG
-----------------------------------------------------------------------
-    v1.1.0 (2025-11-07) - Mejora estructural al archivo
-      - Añadido tipado (PEP 484)
-      - Incluidas variables __author__ y __version__
-      - Implementado logging para trazabilidad
-      - Manejo de errores más específico (FileNotFoundError, Exception)
-      - Documentación completa (PEP 257)
-      - Pasado `chunksize` al método run_etl
+Args:
+    file_path (str): Ruta del archivo Excel (.xlsx) con las evaluaciones.
+    --chunksize (int, opcional): Tamaño de lote de lectura. Por defecto 5000.
 
-    v1.0.0 (2025-10-25) - Versión inicial del comando `etl_evaluaciones`
+Salida:
+    Se genera un log de ejecución en `logs/juicios/YYYY-MM-DD/etl_log_<hora>.txt`
+    con el detalle del proceso y los errores encontrados.
 
-----------------------------------------------------------------------
+Changelog:
+    - **v1.0.0 (2025-10-25):** Versión inicial del comando `cargar_juicios`.
+    - **v1.1.0 (2025-11-07):** Mejora estructural:
+        - Añadido tipado (PEP 484) y manejo robusto de errores.
+        - Implementado sistema de logging y trazabilidad.
+        - Documentación completa (PEP 257).
+    - **v1.1.1 (2025-11-11):** Se añade parámetro de chunks
 """
 
 __author__ = "Andrés Sanabria"
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 import logging
 from django.core.management.base import BaseCommand, CommandError

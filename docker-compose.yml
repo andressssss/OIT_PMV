@@ -10,6 +10,7 @@ services:
       - .:/var/www/iotpmv
       - /var/www/iotpmv/static:/var/www/iotpmv/static
       - /mnt/fileshare/media:/mnt/fileshare/media:rw
+      - /mnt/pruebas:/etl_data:rw
     depends_on:
       - redis
 

@@ -2316,8 +2316,6 @@ document.addEventListener("DOMContentLoaded", function () {
       { data: "apre_nom", title: "Aprendiz" },
       { data: "rap_nom", title: "RAP" },
       { data: "eva", title: "Evaluacion" },
-      { data: "fecha", title: "Fecha evaluacion" },
-      { data: "instru_nom", title:"Instructor" },
     ],
     language: {
       url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
@@ -2355,7 +2353,6 @@ document.addEventListener("DOMContentLoaded", function () {
       { data: "descri", title: "Descripcion" },
       { data: "tipo_cambi", title: "Tipo" },
       { data: "jui_desc", title: "Juicio" },
-      { data: "instru_nom", title: "Instructor" },
     ],
     language: {
       url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",

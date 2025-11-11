@@ -210,40 +210,29 @@ class FaseSerializer(serializers.ModelSerializer):
 class JuicioSerializer(serializers.ModelSerializer):
     apre_nom = serializers.SerializerMethodField()
     ficha_num = serializers.CharField(source="ficha.num", read_only="true")
-    instru_nom = serializers.SerializerMethodField()
     rap_nom = serializers.CharField(source="rap.nom", read_only="true")
-    fecha = serializers.SerializerMethodField()
 
     class Meta:
         model = T_jui_eva_actu
-        fields = ['fecha_repor', 'eva', 'fecha', 'apre_nom',
-                  'ficha_num', 'instru_nom', 'rap_nom']
+        fields = ['fecha_repor', 'eva', 'apre_nom',
+                  'ficha_num', 'rap_nom']
 
     def get_apre_nom(self, obj):
         return f"{obj.apre.perfil.nom} {obj.apre.perfil.apelli}"
 
-    def get_instru_nom(self, obj):
-        return "Sin registro" if obj.instru is None else f"{obj.instru.perfil.nom} {obj.instru.perfil.apelli}"
-
-    def get_fecha(self, obj):
-        return "Sin registro" if obj.fecha_eva is None else obj.fecha_eva
 
 class JuicioHistoSerializer(serializers.ModelSerializer):
     apre_nom = serializers.SerializerMethodField()
-    instru_nom = serializers.SerializerMethodField()
     jui_desc = serializers.SerializerMethodField()
     tipo_cambi = serializers.SerializerMethodField()
     
     class Meta:
         model = T_jui_eva_diff
-        fields = ['tipo_cambi', 'descri', 'fecha_diff', 'apre_nom', 'instru_nom', 'jui_desc']
+        fields = ['tipo_cambi', 'descri', 'fecha_diff', 'apre_nom', 'jui_desc']
         
     def get_apre_nom(self, obj):
         return f"{obj.apre.perfil.nom} {obj.apre.perfil.apelli}"
       
-    def get_instru_nom(self, obj):
-        return "Sin registro" if obj.instru is None else f"{obj.instru.perfil.nom} {obj.instru.perfil.apelli}"
-    
     def get_jui_desc(self, obj):
         return "N/A" if obj.jui is None else f"Juicio:{obj.jui.rap.cod}. Aprendiz:{obj.jui.apre.perfil.dni}"
       

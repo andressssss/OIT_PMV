@@ -791,16 +791,12 @@ class T_jui_eva_actu(models.Model):
     Histórico de evaluaciones cargadas desde SOFIA.
     """
 
-    fecha_repor = models.DateField()  # FECHA_REPORTE
+    fecha_repor = models.DateField()
 
-    ficha = models.ForeignKey("T_ficha", on_delete=models.CASCADE)  # FICHA
+    ficha = models.ForeignKey("T_ficha", on_delete=models.CASCADE)
     apre = models.ForeignKey("T_apre", on_delete=models.CASCADE)
-    rap = models.ForeignKey("T_raps", on_delete=models.CASCADE)  # RESULTADO_ID
-    instru = models.ForeignKey(
-        "T_instru", on_delete=models.SET_NULL, null=True)  # INTRUCT_RESPONSABLE
-
-    eva = models.CharField(max_length=20)  # EVALUACIÓN
-    fecha_eva = models.DateField(null=True, blank=True)  # FCH_EVALUACION
+    rap = models.ForeignKey("T_raps", on_delete=models.CASCADE)
+    eva = models.CharField(max_length=20)
 
     class Meta:
         db_table = "t_jui_eva_actu"
@@ -824,8 +820,6 @@ class T_jui_eva_diff(models.Model):
     ficha = models.ForeignKey("T_ficha", on_delete=models.CASCADE)
     apre = models.ForeignKey(
         "T_apre", on_delete=models.CASCADE, null=True, blank=True)
-    instru = models.ForeignKey(
-        "T_instru", on_delete=models.SET_NULL, null=True, blank=True)
 
     tipo_cambi = models.CharField(max_length=20, choices=TIPO_CAMBIO_CHOICES)
     descri = models.TextField(blank=True, null=True)
