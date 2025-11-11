@@ -776,6 +776,11 @@ class AuditLog(models.Model):
         verbose_name_plural = "Registros de auditoría"
         managed = True
         db_table = 't_auditlog'
+        indexes = [
+            models.Index(fields=["content_type", "related_id"]),
+            models.Index(fields=["content_type", "related_id", "-timestamp"]),
+            models.Index(fields=["user", "-timestamp"]),
+        ]
 
     def __str__(self):
         return f"{self.user} realizó {self.get_action_display()} en {self.content_type} (ID {self.object_id})"
