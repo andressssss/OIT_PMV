@@ -20,7 +20,7 @@ import {
   csrfToken,
   showSuccessToast,
   showErrorToast,
-  fetchData
+  fetchData,
 } from "/static/js/utils.js";
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -1053,7 +1053,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let alertasEnProceso = false;
-  
+
   async function renderAlertas(contexto, id) {
     if (alertasEnProceso) return;
     alertasEnProceso = true;
@@ -1140,18 +1140,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function cargarPunto4Plantillas(id){
-    const contendor = document.getElementById("contenedor4")
-    const data = await fetchData(`/api/formacion/fichas/${id}/`)
-    
-    if (data.vige === "2024"){
+  async function cargarPunto4Plantillas(id) {
+    const contendor = document.getElementById("contenedor4");
+    const data = await fetchData(`/api/formacion/fichas/${id}/`);
+
+    if (data.vige === "2024") {
       contendor.innerHTML = `
         <a href="/static/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo.xlsx">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo</a><br />
-      `
+      `;
     } else if (data.vige === "2025") {
       contendor.innerHTML = `
         <a href="/static/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva (3)EN BLANCO.xlsx">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva (3)EN BLANCO.xlsx</a><br />
-      `
+      `;
     }
   }
 
@@ -1186,11 +1186,12 @@ document.addEventListener("DOMContentLoaded", function () {
       dataSrc: "",
     },
     columns: [
-      { data: "nombre" , title: "Nombre"},
+      { data: "nombre", title: "Nombre" },
       { data: "apellido", title: "Apellido" },
       { data: "dni", title: "DNI" },
       {
-        data: "estado", title: "Estado",
+        data: "estado",
+        title: "Estado",
         render: function (data, type, row) {
           let badge = "";
           switch (data.toLowerCase()) {
@@ -1225,44 +1226,97 @@ document.addEventListener("DOMContentLoaded", function () {
         orderable: false,
         render: function (data, type, row) {
           return `
-            <div class="btn-group btn-group-sm mb-1" role="group">
-              <button class="btn btn-outline-secondary ver-portafolio" data-id="${
-                row.id
-              }" data-nombre="${row.nombre} ${
-            row.apellido
-          }" title="Subir portafolio">
-                <i class="bi bi-folder"></i>
-              </button>
-              <button class="btn btn-outline-info perfil-btn" data-id="${
-                row.id
-              }" title="Ver Perfil">
-                <i class="bi bi-plus-lg"></i>
-              </button>
-              ${
-                row.can_edit === true
-                  ? row.estado.toLowerCase() !== "desertado" &&
-                    row.estado.toLowerCase() !== "retirov"
-                    ? `
-                <button class="btn btn-outline-danger desertar-aprendiz" data-id="${row.id}" title="Marcar como desertado">
-                  <i class="bi bi-person-dash"></i>
-                </button>
-                <button class="btn btn-outline-danger retiro-aprendiz" data-id="${row.id}" title="Marcar como retiro voluntario">
-                  <i class="bi bi-person-dash"></i>
-                </button>
-                <button class="btn btn-outline-dark desasociar-aprendiz" data-id="${row.id}" title="Eliminar de la ficha">
-                  <i class="bi bi-x-circle"></i>
-                </button>
-                <button class="btn btn-outline-primary editar-aprendiz" data-id="${row.id}" title="Editar">
-                  <i class="bi bi-pencil"></i>
-                </button>`
-                    : `
-                <button class="btn btn-outline-success activar-aprendiz" data-id="${row.id}" title="Activar">
-                  <i class="bi bi-person-check"></i>
-                </button>`
-                  : ``
-              }
-            </div>
-          `;
+    <div class="d-flex flex-wrap gap-1 mb-1">
+      
+      <!-- Grupo 1: Portafolio -->
+      <div class="btn-group btn-group-sm" role="group">
+        <button 
+          class="btn btn-outline-secondary ver-portafolio" 
+          data-id="${row.id}" 
+          data-nombre="${row.nombre} ${row.apellido}" 
+          title="Subir portafolio"
+        >
+          <i class="bi bi-folder"></i>
+        </button>
+
+        <button 
+          class="btn btn-outline-primary descargar-portafolio" 
+          data-id="${row.id}" 
+          title="Descargar portafolio"
+        >
+          <i class="bi bi-download"></i>
+        </button>
+      </div>
+
+      <!-- Grupo 2: Perfil -->
+      <div class="btn-group btn-group-sm" role="group">
+        <button 
+          class="btn btn-outline-info perfil-btn" 
+          data-id="${row.id}" 
+          title="Ver Perfil"
+        >
+          <i class="bi bi-person-lines-fill"></i>
+        </button>
+
+        ${
+          row.can_edit === true &&
+          row.estado.toLowerCase() !== "desertado" &&
+          row.estado.toLowerCase() !== "retirov"
+            ? `
+        <button 
+          class="btn btn-outline-primary editar-aprendiz" 
+          data-id="${row.id}" 
+          title="Editar aprendiz"
+        >
+          <i class="bi bi-pencil"></i>
+        </button>`
+            : ``
+        }
+      </div>
+
+      <!-- Grupo 3: Estado -->
+      <div class="btn-group btn-group-sm" role="group">
+        ${
+          row.can_edit === true
+            ? row.estado.toLowerCase() !== "desertado" &&
+              row.estado.toLowerCase() !== "retirov"
+              ? `
+          <button 
+            class="btn btn-outline-danger desertar-aprendiz" 
+            data-id="${row.id}" 
+            title="Marcar como desertado"
+          >
+            <i class="bi bi-person-dash"></i>
+          </button>
+
+          <button 
+            class="btn btn-outline-danger retiro-aprendiz" 
+            data-id="${row.id}" 
+            title="Marcar como retiro voluntario"
+          >
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+
+          <button 
+            class="btn btn-outline-dark desasociar-aprendiz" 
+            data-id="${row.id}" 
+            title="Eliminar de la ficha"
+          >
+            <i class="bi bi-x-circle"></i>
+          </button>`
+              : `
+          <button 
+            class="btn btn-outline-success activar-aprendiz" 
+            data-id="${row.id}" 
+            title="Activar aprendiz"
+          >
+            <i class="bi bi-person-check"></i>
+          </button>`
+            : ``
+        }
+      </div>
+    </div>
+  `;
         },
       },
     ],
@@ -1343,6 +1397,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
+
   async function asociarAprendiz(aprendizDni) {
     try {
       const response = await fetch(
@@ -1610,6 +1665,11 @@ document.addEventListener("DOMContentLoaded", function () {
         } finally {
           hideSpinner(target6, originalBtnContent);
         }
+      }
+
+      if (e.target.closest(".descargar-portafolio")) {
+        const id = e.target.closest(".descargar-portafolio").dataset.id;
+        window.location.href = `/tree/descargar_portafolio_aprendiz/${id}`;
       }
     });
   }
@@ -2252,12 +2312,12 @@ document.addEventListener("DOMContentLoaded", function () {
       },
     },
     columns: [
-      { data: "fecha_repor" },
-      { data: "apre_nom" },
-      { data: "rap_nom" },
-      { data: "eva" },
-      { data: "fecha" },
-      { data: "instru_nom" },
+      { data: "fecha_repor", title: "Fecha reporte" },
+      { data: "apre_nom", title: "Aprendiz" },
+      { data: "rap_nom", title: "RAP" },
+      { data: "eva", title: "Evaluacion" },
+      { data: "fecha", title: "Fecha evaluacion" },
+      { data: "instru_nom", title:"Instructor" },
     ],
     language: {
       url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
@@ -2281,7 +2341,7 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     columns: [
       {
-        data: "fecha_diff",
+        data: "fecha_diff", title: "Fecha",
         render: function (data, type, row) {
           if (!data) return "Sin registro";
           const date = new Date(data);
@@ -2291,11 +2351,11 @@ document.addEventListener("DOMContentLoaded", function () {
           return `${year}-${month}-${day}`;
         },
       },
-      { data: "apre_nom" },
-      { data: "descri" },
-      { data: "tipo_cambi" },
-      { data: "jui_desc" },
-      { data: "instru_nom" },
+      { data: "apre_nom", title: "Aprendiz" },
+      { data: "descri", title: "Descripcion" },
+      { data: "tipo_cambi", title: "Tipo" },
+      { data: "jui_desc", title: "Juicio" },
+      { data: "instru_nom", title: "Instructor" },
     ],
     language: {
       url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
