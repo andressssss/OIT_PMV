@@ -1984,74 +1984,74 @@ document.addEventListener("DOMContentLoaded", function () {
           "4. EVIDENCIAS DE APRENDIZAJE > 2. PLANEACIÓN",
         ];
 
-        if (
-          userRole.trim() === "consulta" &&
-          rutaRestrictiva.includes(rutaActual)
-        ) {
-          const tieneDocs = tieneDocumentos(node);
+        // if (
+        //   userRole.trim() === "consulta" &&
+        //   rutaRestrictiva.includes(rutaActual)
+        // ) {
+        //   const tieneDocs = tieneDocumentos(node);
 
-          if (!tieneDocs) {
-            // 🔹 Solo en este caso aplicamos el cursor tipo pointer
-            span.style.cursor = "pointer";
+        //   if (!tieneDocs) {
+        //     // 🔹 Solo en este caso aplicamos el cursor tipo pointer
+        //     span.style.cursor = "pointer";
 
-            span.addEventListener("click", () => {
-              // 🔹 Cerrar modal aprendiz
-              const modalAprendiz = bootstrap.Modal.getInstance(
-                document.getElementById("portafolioAprendizModal")
-              );
-              if (modalAprendiz) modalAprendiz.hide();
+        //     span.addEventListener("click", () => {
+        //       // 🔹 Cerrar modal aprendiz
+        //       const modalAprendiz = bootstrap.Modal.getInstance(
+        //         document.getElementById("portafolioAprendizModal")
+        //       );
+        //       if (modalAprendiz) modalAprendiz.hide();
 
-              // 🔹 Cambiar a tab ficha
-              const tabFicha = document.querySelector("#portfolioFicha-tab");
-              if (tabFicha) new bootstrap.Tab(tabFicha).show();
+        //       // 🔹 Cambiar a tab ficha
+        //       const tabFicha = document.querySelector("#portfolioFicha-tab");
+        //       if (tabFicha) new bootstrap.Tab(tabFicha).show();
 
-              // 🔹 Cambiar al subtab "Portafolio" dentro de portfolioFicha
-              const subTabPortafolio =
-                document.querySelector("#portafolio-tab");
-              if (subTabPortafolio) new bootstrap.Tab(subTabPortafolio).show();
+        //       // 🔹 Cambiar al subtab "Portafolio" dentro de portfolioFicha
+        //       const subTabPortafolio =
+        //         document.querySelector("#portafolio-tab");
+        //       if (subTabPortafolio) new bootstrap.Tab(subTabPortafolio).show();
 
-              Toastify({
-                text:
-                  "Las evidencias de formación de las etapas de análisis y planeación, " +
-                  "para las fichas de cohorte 1, se alojan en la carpeta 'LINK DE PORTAFOLIO APRENDICES 2024' " +
-                  "dentro del portafolio general de la ficha.",
-                duration: 6000,
-                close: true,
-                gravity: "top",
-                position: "center",
-                stopOnFocus: true,
-                style: {
-                  background: "#1E2DBE",
-                  color: "#fff",
-                  fontSize: "14px",
-                  lineHeight: "1.5",
-                  padding: "12px 20px",
-                  borderRadius: "8px",
-                  maxWidth: "500px",
-                  whiteSpace: "pre-line",
-                },
-              }).showToast();
+        //       Toastify({
+        //         text:
+        //           "Las evidencias de formación de las etapas de análisis y planeación, " +
+        //           "para las fichas de cohorte 1, se alojan en la carpeta 'LINK DE PORTAFOLIO APRENDICES 2024' " +
+        //           "dentro del portafolio general de la ficha.",
+        //         duration: 6000,
+        //         close: true,
+        //         gravity: "top",
+        //         position: "center",
+        //         stopOnFocus: true,
+        //         style: {
+        //           background: "#1E2DBE",
+        //           color: "#fff",
+        //           fontSize: "14px",
+        //           lineHeight: "1.5",
+        //           padding: "12px 20px",
+        //           borderRadius: "8px",
+        //           maxWidth: "500px",
+        //           whiteSpace: "pre-line",
+        //         },
+        //       }).showToast();
 
-              // 🔹 Resaltar carpeta especial
-              setTimeout(() => {
-                const carpetaSpan = document.querySelector(
-                  'span[data-portafolio-link="true"]'
-                );
-                if (carpetaSpan) {
-                  carpetaSpan.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center",
-                  });
-                  carpetaSpan.classList.add("blink-highlight");
-                  setTimeout(
-                    () => carpetaSpan.classList.remove("blink-highlight"),
-                    3000
-                  );
-                }
-              }, 2000);
-            });
-          }
-        }
+        //       // 🔹 Resaltar carpeta especial
+        //       setTimeout(() => {
+        //         const carpetaSpan = document.querySelector(
+        //           'span[data-portafolio-link="true"]'
+        //         );
+        //         if (carpetaSpan) {
+        //           carpetaSpan.scrollIntoView({
+        //             behavior: "smooth",
+        //             block: "center",
+        //           });
+        //           carpetaSpan.classList.add("blink-highlight");
+        //           setTimeout(
+        //             () => carpetaSpan.classList.remove("blink-highlight"),
+        //             3000
+        //           );
+        //         }
+        //       }, 2000);
+        //     });
+        //   }
+        // }
 
         if (
           can_edit &&
