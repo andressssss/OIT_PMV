@@ -300,7 +300,7 @@ class AprendizViewSet(PermisosMixin, ModelViewSet):
             return Response({
                 "existe": True,
                 "asociado": True,
-                "message": f"El aprendiz esta asociado a la ficha {aprendiz.ficha.num}"
+                "message": f"El aprendiz esta asociado a la ficha {aprendiz.ficha.num} y al grupo {aprendiz.ficha.grupo.id}"
             })
 
     @action(detail=True, methods=['post'], url_path='asociar_ficha')
