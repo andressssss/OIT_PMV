@@ -82,19 +82,21 @@ class CentroFormacionViewSet(ModelViewSet):
     queryset = T_centro_forma.objects.all()
     serializer_class = CentroFormacionSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
 
 class DepartamentoViewSet(ModelViewSet):
     queryset = T_departa.objects.all()
     serializer_class = DepartamentoSerializer
     permission_classes = [IsAuthenticated]
-
+    pagination_class = None
 
 class MunicipioViewSet(ModelViewSet):
     queryset = T_munici.objects.all()
     serializer_class = MunicipioSerializer
     permission_classes = [IsAuthenticated]
-
+    pagination_class = None
+    
     def get_queryset(self):
         queryset = super().get_queryset()
         departamento_id = self.request.query_params.get('departamento')
