@@ -17,6 +17,7 @@ urlpatterns = [
 
     path('api/', include('api.urls')),
 
+    path('plantillas/', include('plantillas.urls')),
 
     # Ruta default
     path('', usuarios_views.home, name='home'),
