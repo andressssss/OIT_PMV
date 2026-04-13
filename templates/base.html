@@ -127,6 +127,11 @@
                       </li>
                     </ul>
                   </li>
+                  {% if is_plantilla_admin %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'plantillas_editor' %}"><i class="bi bi-diagram-3 me-1"></i>Plantillas</a>
+                  </li>
+                  {% endif %}
                 {% elif perfil.rol == 'instructor' %}
                   <li class="nav-item">
                     <a class="nav-link" href="{% url 'fichas' %}">Formación</a>

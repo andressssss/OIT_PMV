@@ -79,7 +79,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'commons.context_processors.perfil',
-                'commons.context_processors.expiracion_sesion_context'
+                'commons.context_processors.expiracion_sesion_context',
+                'plantillas.context_processors.plantilla_admin'
             ],
         },
     },

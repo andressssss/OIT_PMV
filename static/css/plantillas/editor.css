@@ -1,0 +1,12 @@
+.nodo-inactivo > .wb-row {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+#plantillaTree .wb-row:hover {
+  background-color: #f0f4ff;
+}
+
+#plantillaTree {
+  font-size: 0.9rem;
+}
