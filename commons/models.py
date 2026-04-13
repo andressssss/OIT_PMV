@@ -333,6 +333,7 @@ class T_ficha(models.Model):
     esta = models.CharField(max_length=100)
     grupo = models.ForeignKey(T_grupo, on_delete=models.CASCADE)
     vige = models.CharField(max_length=20, default="2025")
+    corte = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
         return self.num if self.num else str(f"G{self.grupo.id}")
@@ -607,6 +608,9 @@ class T_DocumentFolder(MPTTModel):
     ficha = models.ForeignKey(T_ficha, on_delete=models.CASCADE)
     documento = models.ForeignKey(
         T_docu, on_delete=models.SET_NULL, null=True, blank=True)
+    oculto = models.BooleanField(default=False)
+    roles_visibles = models.JSONField(null=True, blank=True)
+    roles_editables = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -988,3 +992,65 @@ class T_acci_nove_docu(models.Model):
 
     def __str__(self):
         return f"{self.docu}"
+
+
+class T_PlantillaNodo(MPTTModel):
+    class Meta:
+        managed = True
+        db_table = 't_plantilla_nodo'
+    name = models.CharField(max_length=255)
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='plantilla_children')
+    orden = models.IntegerField(default=0)
+    roles_visibles = models.JSONField(null=True, blank=True)
+    roles_editables = models.JSONField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_crea = models.DateTimeField(auto_now_add=True)
+    usuario_crea = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    class MPTTMeta:
+        order_insertion_by = ['orden']
+
+    def __str__(self):
+        return self.name
+
+
+class T_PlantillaVersion(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_plantilla_version'
+        ordering = ['-version']
+    version = models.IntegerField()
+    snapshot = models.JSONField()
+    descripcion = models.CharField(max_length=500)
+    auto_aplicar_nuevas = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"v{self.version} - {self.descripcion}"
+
+
+class T_PlantillaAplicacion(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_plantilla_aplicacion'
+        ordering = ['-fecha']
+    version = models.ForeignKey(T_PlantillaVersion, on_delete=models.CASCADE)
+    ficha = models.ForeignKey(T_ficha, on_delete=models.CASCADE)
+    resultado = models.CharField(max_length=50)
+    detalle = models.JSONField()
+    fecha = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"v{self.version.version} → Ficha {self.ficha.num} ({self.resultado})"
+
+
+class T_PlantillaAdmin(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_plantilla_admin'
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.user.username

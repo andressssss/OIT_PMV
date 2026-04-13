@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'dal',
     'dal_select2',
     'administracion',
+    'plantillas',
     'channels',
     'whitenoise.runserver_nostatic',
     'corsheaders'
