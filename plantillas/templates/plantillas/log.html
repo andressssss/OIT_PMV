@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-journal-text me-2"></i>Log de aplicaciones</h4>
+    <a href="{% url 'plantillas_editor' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Volver al editor
+    </a>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <select id="filtroCorte" class="form-select form-select-sm">
+        <option value="">Todos los cortes</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <input id="filtroUsuario" class="form-control form-control-sm" placeholder="Filtrar por usuario" />
+    </div>
+    <div class="col-md-2">
+      <button id="btnFiltrar" class="btn btn-outline-primary btn-sm">Filtrar</button>
+    </div>
+  </div>
+
+  <table class="table table-striped table-hover" id="tablaLog">
+    <thead>
+      <tr>
+        <th>Version</th>
+        <th>Ficha</th>
+        <th>Resultado</th>
+        <th>Detalle</th>
+        <th>Usuario</th>
+        <th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+</div>
+
+<script>
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(";").forEach(c => {
+    c = c.trim();
+    if (c.startsWith(name + "=")) v = decodeURIComponent(c.substring(name.length + 1));
+  });
+  return v;
+}
+
+function cargarLog(params = "") {
+  const tbody = document.getElementById("logBody");
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando...</td></tr>';
+
+  fetch(`/plantillas/api/log/?${params}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Sin registros</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(r => `
+        <tr>
+          <td>v${r.version}</td>
+          <td>${r.ficha_num}</td>
+          <td><span class="badge bg-${r.resultado === 'exitoso' ? 'success' : 'danger'}">${r.resultado}</span></td>
+          <td><small>${JSON.stringify(r.detalle)}</small></td>
+          <td>${r.usuario || '-'}</td>
+          <td>${new Date(r.fecha).toLocaleString()}</td>
+        </tr>
+      `).join("");
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  cargarLog();
+
+  fetch("/plantillas/api/cortes/")
+    .then(r => r.json())
+    .then(cortes => {
+      const sel = document.getElementById("filtroCorte");
+      cortes.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        sel.appendChild(opt);
+      });
+    });
+
+  document.getElementById("btnFiltrar").addEventListener("click", function() {
+    const corte = document.getElementById("filtroCorte").value;
+    const usuario = document.getElementById("filtroUsuario").value;
+    const params = new URLSearchParams();
+    if (corte) params.set("corte", corte);
+    if (usuario) params.set("usuario", usuario);
+    cargarLog(params.toString());
+  });
+});
+</script>
+{% endblock %}

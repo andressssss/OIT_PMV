@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/wunderbaum@0/dist/wunderbaum.min.css" />
+<link rel="stylesheet" href="{% static 'css/plantillas/editor.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-diagram-3 me-2"></i>Editor de Plantilla</h4>
+    <div>
+      <a href="{% url 'plantillas_historial' %}" class="btn btn-outline-secondary btn-sm me-1">
+        <i class="bi bi-clock-history me-1"></i>Historial
+      </a>
+      <a href="{% url 'plantillas_aplicar' %}" class="btn btn-outline-primary btn-sm me-1">
+        <i class="bi bi-play-circle me-1"></i>Aplicar
+      </a>
+      <a href="{% url 'plantillas_log' %}" class="btn btn-outline-info btn-sm">
+        <i class="bi bi-journal-text me-1"></i>Log
+      </a>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="btn-group mb-3">
+    <button id="btnAgregar" class="btn btn-success btn-sm"><i class="bi bi-plus-lg me-1"></i>Agregar hijo</button>
+    <button id="btnRenombrar" class="btn btn-warning btn-sm"><i class="bi bi-pencil me-1"></i>Renombrar</button>
+    <button id="btnToggle" class="btn btn-secondary btn-sm"><i class="bi bi-eye-slash me-1"></i>Ocultar/Mostrar</button>
+    <button id="btnVisibilidad" class="btn btn-info btn-sm"><i class="bi bi-shield-lock me-1"></i>Visibilidad</button>
+  </div>
+  <button id="btnGuardar" class="btn btn-primary btn-sm ms-3"><i class="bi bi-save me-1"></i>Guardar version</button>
+
+  <!-- Tree container -->
+  <div id="plantillaTree" class="border rounded p-2" style="min-height: 400px;"></div>
+</div>
+
+<!-- Modal visibilidad -->
+<div class="modal fade" id="modalVisibilidad" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Configurar visibilidad</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2">Nodo: <strong id="visNodoName"></strong></p>
+        <h6>Roles que VEN esta carpeta:</h6>
+        <div id="checksVisibles" class="mb-3"></div>
+        <h6>Roles que EDITAN esta carpeta:</h6>
+        <div id="checksEditables"></div>
+        <p class="text-muted small mt-2">Dejar todo desmarcado = todos los roles</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="btnGuardarVisibilidad" class="btn btn-primary btn-sm">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal guardar version -->
+<div class="modal fade" id="modalGuardarVersion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Guardar nueva version</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Descripcion del cambio</label>
+          <textarea id="versionDescripcion" class="form-control" rows="3" placeholder="Ej: Se agrego carpeta X en nodo Y"></textarea>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="versionAutoAplicar">
+          <label class="form-check-label" for="versionAutoAplicar">Aplicar automaticamente a fichas nuevas</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="btnConfirmarGuardar" class="btn btn-primary btn-sm">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/wunderbaum@0/dist/wunderbaum.umd.min.js"></script>
+<script src="{% static 'js/plantillas/editor.js' %}"></script>
+{% endblock %}

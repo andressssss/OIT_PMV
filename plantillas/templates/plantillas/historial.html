@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-clock-history me-2"></i>Historial de versiones</h4>
+    <a href="{% url 'plantillas_editor' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Volver al editor
+    </a>
+  </div>
+  <table class="table table-striped table-hover" id="tablaHistorial">
+    <thead>
+      <tr>
+        <th>Version</th>
+        <th>Descripcion</th>
+        <th>Usuario</th>
+        <th>Fecha</th>
+        <th>Auto-aplicar</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="historialBody"></tbody>
+  </table>
+</div>
+
+<!-- Modal ver snapshot -->
+<div class="modal fade" id="modalSnapshot" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="snapshotTitle">Version</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <pre id="snapshotContent" style="max-height:500px; overflow:auto;"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(";").forEach(c => {
+    c = c.trim();
+    if (c.startsWith(name + "=")) v = decodeURIComponent(c.substring(name.length + 1));
+  });
+  return v;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const tbody = document.getElementById("historialBody");
+
+  fetch("/plantillas/api/versiones/")
+    .then(r => r.json())
+    .then(data => {
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Sin versiones</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(v => `
+        <tr>
+          <td><strong>v${v.version}</strong></td>
+          <td>${v.descripcion}</td>
+          <td>${v.usuario || '-'}</td>
+          <td>${new Date(v.fecha).toLocaleString()}</td>
+          <td>${v.auto_aplicar_nuevas ? '<span class="badge bg-success">Si</span>' : '-'}</td>
+          <td>
+            <button class="btn btn-outline-secondary btn-sm" onclick="verSnapshot(${v.id}, ${v.version})">Ver</button>
+            <button class="btn btn-outline-warning btn-sm" onclick="restaurarVersion(${v.id}, ${v.version})">Restaurar</button>
+          </td>
+        </tr>
+      `).join("");
+    });
+});
+
+function verSnapshot(id, version) {
+  fetch(`/plantillas/api/version/${id}/snapshot/`)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("snapshotTitle").textContent = `Version v${data.version} - ${data.descripcion}`;
+      document.getElementById("snapshotContent").textContent = JSON.stringify(data.snapshot, null, 2);
+      new bootstrap.Modal(document.getElementById("modalSnapshot")).show();
+    });
+}
+
+function restaurarVersion(id, version) {
+  if (!confirm(`Restaurar a version v${version}? Esto creara una nueva version basada en esa.`)) return;
+  fetch(`/plantillas/api/version/${id}/restaurar/`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken")},
+  })
+    .then(r => r.json())
+    .then(data => {
+      alert(`Restaurada como v${data.version}`);
+      location.reload();
+    });
+}
+</script>
+{% endblock %}
