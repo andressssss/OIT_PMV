@@ -57,6 +57,12 @@ def crear_estructura_arbol(ficha, estructura, parent=None):
         crear_estructura_arbol(ficha, hijos, folder)
 
 def crear_datos_prueba(ficha_id):
+    from plantillas.services import aplicar_a_ficha_nueva
     ficha = T_ficha.objects.get(id=ficha_id)
-    crear_estructura_arbol(ficha, estructura_documental)
-    print("Datos de portafolio creados exitosamente.")
+    result = aplicar_a_ficha_nueva(ficha)
+    if result is None:
+        # Fallback: no auto-apply version exists, use hardcoded structure
+        crear_estructura_arbol(ficha, estructura_documental)
+        print("Portafolio creado desde estructura hardcodeada (fallback).")
+    else:
+        print("Portafolio creado desde plantilla vigente.")
