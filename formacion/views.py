@@ -80,30 +80,54 @@ def panel_ficha(request, ficha_id):
 def obtener_carpetas(request, ficha_id):
     """ Obtener todas las carpetas y documentos asociados a la ficha """
 
-    ficha_vige = T_ficha.objects.filter(id = ficha_id).values_list("vige", flat=True).first()
+    ficha_vige = T_ficha.objects.filter(id=ficha_id).values_list("vige", flat=True).first()
 
-    nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values("id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi")
+    nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values(
+        "id", "name", "parent_id", "tipo",
+        "documento__id", "documento__nom", "documento__archi",
+        "oculto", "roles_visibles", "roles_editables"
+    )
 
-    # Nuevo bloque
+    # Filtro por vigencia
     if ficha_vige == "2025":
         nodos = [n for n in nodos if n["name"] not in ["3. EJECUCIÓN", "4. EVALUACIÓN"]]
 
-    mixin = PermisosMixin()
+    # Obtener rol del usuario
+    perfil = T_perfil.objects.filter(user=request.user).first()
+    rol_usuario = perfil.rol if perfil else None
 
+    # Filtrar nodos ocultos y por visibilidad de rol
+    nodos_filtrados = []
+    for n in nodos:
+        if n["oculto"]:
+            continue
+        rv = n["roles_visibles"]
+        if rv and rol_usuario and rol_usuario not in rv:
+            continue
+        nodos_filtrados.append(n)
+
+    mixin = PermisosMixin()
     acciones = mixin.get_permission_actions_for(request, "portafolios")
     can_edit = acciones.get("editar", False)
 
     folder_map = {}
 
-    for nodo in nodos:
+    for nodo in nodos_filtrados:
         nodo_id = nodo["id"]
         parent_id = nodo["parent_id"]
+
+        # Determinar si el usuario puede editar esta carpeta
+        re = nodo["roles_editables"]
+        can_edit_folder = can_edit
+        if re and rol_usuario and rol_usuario not in re:
+            can_edit_folder = False
 
         nodo_data = {
             "id": nodo_id,
             "name": nodo["name"],
             "parent_id": parent_id,
             "tipo": nodo["tipo"],
+            "can_edit_folder": can_edit_folder,
             "children": []
         }
 
@@ -111,7 +135,7 @@ def obtener_carpetas(request, ficha_id):
             nodo_data.update({
                 "documento_id": nodo["documento__id"],
                 "documento_nombre": nodo["documento__nom"],
-                "url": nodo["documento__archi"],  # La URL del archivo
+                "url": nodo["documento__archi"],
             })
 
         folder_map[nodo_id] = nodo_data

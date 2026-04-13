@@ -245,6 +245,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Botón de carga (si aplica)
         if (
           can_edit &&
+          node.can_edit_folder !== false &&
           (!node.children ||
             node.children.length === 0 ||
             node.children.every((child) => child.tipo === "documento"))
@@ -326,7 +327,7 @@ document.addEventListener("DOMContentLoaded", function () {
         li.appendChild(link);
 
         // Botón de eliminar (si aplica)
-        if (can_edit && userRole != "instructor") {
+        if (can_edit && node.can_edit_folder !== false && userRole != "instructor") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
