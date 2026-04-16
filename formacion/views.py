@@ -80,17 +80,13 @@ def panel_ficha(request, ficha_id):
 def obtener_carpetas(request, ficha_id):
     """ Obtener todas las carpetas y documentos asociados a la ficha """
 
-    ficha_vige = T_ficha.objects.filter(id=ficha_id).values_list("vige", flat=True).first()
-
     nodos = T_DocumentFolder.objects.filter(ficha_id=ficha_id).values(
         "id", "name", "parent_id", "tipo",
         "documento__id", "documento__nom", "documento__archi",
         "oculto", "roles_visibles", "roles_editables"
     )
 
-    # Filtro por vigencia
-    if ficha_vige == "2025":
-        nodos = [n for n in nodos if n["name"] not in ["3. EJECUCIÓN", "4. EVALUACIÓN"]]
+    # Filtro por vigencia removido — la visibilidad se controla desde la plantilla
 
     # Obtener rol del usuario
     perfil = T_perfil.objects.filter(user=request.user).first()

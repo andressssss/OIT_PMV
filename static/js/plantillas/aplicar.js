@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   document.getElementById("btnAplicar").addEventListener("click", function () {
-    if (!confirm("Estas seguro de aplicar los cambios? Esta accion es irreversible.")) return;
+    if (!confirm("Estas seguro de aplicar los cambios a las fichas seleccionadas?")) return;
 
     const modo = modoSelect.value;
     let valor = null;
