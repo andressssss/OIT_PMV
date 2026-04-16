@@ -437,8 +437,6 @@ def obtener_hijos_carpeta(request, carpeta_id):
 def obtener_carpetas_aprendiz(request, aprendiz_id):
     """ Obtener todas las carpetas y documentos asociados a un aprendiz """
 
-    ficha_vige = T_apre.objects.select_related("ficha").get(id=aprendiz_id).ficha.vige
-
     nodos = list(T_DocumentFolderAprendiz.objects.filter(
         aprendiz_id=aprendiz_id
     ).annotate(
@@ -446,9 +444,6 @@ def obtener_carpetas_aprendiz(request, aprendiz_id):
     ).order_by("orden").values(
         "id", "name", "parent_id", "tipo", "documento__id", "documento__nom", "documento__archi"
     ))
-
-    if ficha_vige == "2025":
-        nodos = [n for n in nodos if n["name"] not in ["3. EJECUCIÓN", "4. EVALUACIÓN"]]
 
     folder_map = {}
 
