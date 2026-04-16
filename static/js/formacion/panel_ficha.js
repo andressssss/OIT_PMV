@@ -125,8 +125,8 @@ document.addEventListener("DOMContentLoaded", function () {
       contexto === "ficha"
         ? "historialFicha"
         : contexto === "aprendiz"
-        ? "historialAprendiz"
-        : "historialGeneralFicha";
+          ? "historialAprendiz"
+          : "historialGeneralFicha";
     const container = document.getElementById(containerId);
     const historialTitle = document.getElementById("historial-tab");
 
@@ -591,8 +591,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (file.size > maxSize) {
         toastError(
-          `El archivo "${file.name}" supera el tamaño máximo permitido (${
-            maxSize === 1000 * 1024 * 1024 ? "1GB" : "50MB"
+          `El archivo "${file.name}" supera el tamaño máximo permitido (${maxSize === 1000 * 1024 * 1024 ? "1GB" : "50MB"
           }).`
         );
         continue;
@@ -839,8 +838,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (file.size > maxSize) {
           toastError(
-            `El archivo "${file.name}" supera el tamaño máximo permitido (${
-              maxSize === 1000 * 1024 * 1024 ? "1GB" : "50MB"
+            `El archivo "${file.name}" supera el tamaño máximo permitido (${maxSize === 1000 * 1024 * 1024 ? "1GB" : "50MB"
             }).`
           );
           continue;
@@ -1145,15 +1143,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const contendor = document.getElementById("contenedor4");
     const data = await fetchData(`/api/formacion/fichas/${id}/`);
 
-    if (data.vige === "2024") {
-      contendor.innerHTML = `
-        <a href="/static/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo.xlsx">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva - ejemplo</a><br />
-      `;
-    } else if (data.vige === "2025") {
-      contendor.innerHTML = `
-        <a href="/static/documents/portafolio_ficha/4/GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva (3)EN BLANCO.xlsx">GFPI-F-023V5FormatoPlaneacionSeguimientoyEvaluacionEtapaProductiva (3)EN BLANCO.xlsx</a><br />
-      `;
-    }
+    contendor.innerHTML = `
+      <a href="/static/documents/portafolio_ficha/4/GFPI-F-023_V06.__Formato_de_Planeación_Seguimiento_y_Evaluación_de_Etapa_Productiva.doc">GFPI-F-023_V06.__Formato_de_Planeación_Seguimiento_y_Evaluación_de_Etapa_Productiva</a><br />
+    `;
   }
 
   function getFichaIdFromUrl() {
@@ -1259,11 +1251,10 @@ document.addEventListener("DOMContentLoaded", function () {
           <i class="bi bi-person-lines-fill"></i>
         </button>
 
-        ${
-          row.can_edit === true &&
-          row.estado.toLowerCase() !== "desertado" &&
-          row.estado.toLowerCase() !== "retirov"
-            ? `
+        ${row.can_edit === true &&
+              row.estado.toLowerCase() !== "desertado" &&
+              row.estado.toLowerCase() !== "retirov"
+              ? `
         <button 
           class="btn btn-outline-primary editar-aprendiz" 
           data-id="${row.id}" 
@@ -1271,17 +1262,16 @@ document.addEventListener("DOMContentLoaded", function () {
         >
           <i class="bi bi-pencil"></i>
         </button>`
-            : ``
-        }
+              : ``
+            }
       </div>
 
       <!-- Grupo 3: Estado -->
       <div class="btn-group btn-group-sm" role="group">
-        ${
-          row.can_edit === true
-            ? row.estado.toLowerCase() !== "desertado" &&
-              row.estado.toLowerCase() !== "retirov"
-              ? `
+        ${row.can_edit === true
+              ? row.estado.toLowerCase() !== "desertado" &&
+                row.estado.toLowerCase() !== "retirov"
+                ? `
           <button 
             class="btn btn-outline-danger desertar-aprendiz" 
             data-id="${row.id}" 
@@ -1305,7 +1295,7 @@ document.addEventListener("DOMContentLoaded", function () {
           >
             <i class="bi bi-x-circle"></i>
           </button>`
-              : `
+                : `
           <button 
             class="btn btn-outline-success activar-aprendiz" 
             data-id="${row.id}" 
@@ -1313,8 +1303,8 @@ document.addEventListener("DOMContentLoaded", function () {
           >
             <i class="bi bi-person-check"></i>
           </button>`
-            : ``
-        }
+              : ``
+            }
       </div>
     </div>
   `;
@@ -1380,9 +1370,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (data.existe === true && data.asociado === true) {
           confirmAction({
-            message: `El aprendiz ya esta asociado a la ficha ${
-              data.message.split("ficha")[1]
-            }. Primero gestione el retiro con el instructor responsable.`,
+            message: `El aprendiz ya esta asociado a la ficha ${data.message.split("ficha")[1]
+              }. Primero gestione el retiro con el instructor responsable.`,
             title: "Aprendiz ya asociado",
             icon: "info",
             confirmButtonText: "Aceptar",
