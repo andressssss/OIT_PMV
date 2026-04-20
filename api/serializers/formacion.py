@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha, T_insti_edu, T_centro_forma, T_jui_eva_actu, T_jui_eva_diff, T_porta_archi
+from commons.models import T_raps, T_compe, T_ficha, T_fase, T_fase_ficha, T_insti_edu, T_centro_forma, T_jui_eva_actu, T_jui_eva_diff, T_porta_archi, T_progra
 import logging
 from django.utils.timezone import localtime
 
@@ -62,12 +62,17 @@ class FichaFiltrarSerializer(FichaSerializer):
     insti_nom = serializers.CharField(source="insti.nom")
     instru_nom = serializers.SerializerMethodField()
     progra_nom = serializers.CharField(source="progra.nom")
+    progra_id = serializers.IntegerField(source="progra.id", read_only=True)
     fecha_aper = serializers.DateTimeField(format="%d/%m/%Y")
+
     class Meta:
-      model = T_ficha
-      fields = FichaSerializer.Meta.fields + ['grupo_id', 'esta', 'fecha_aper', 'fecha_cierre', 'centro_nom', 'insti_nom', 'instru_nom', 'num_apre_proce', 'progra_nom']
-      
-      
+        model = T_ficha
+        fields = FichaSerializer.Meta.fields + [
+            'grupo_id', 'esta', 'fecha_aper', 'fecha_cierre',
+            'centro_nom', 'insti_nom', 'instru_nom', 'num_apre_proce',
+            'progra_nom', 'progra_id', 'carpetas_desincronizadas'
+        ]
+
     def get_instru_nom(self, value):
         return value.instru.perfil.nom if value.instru else None
 
@@ -77,6 +82,8 @@ class FichaEditarSerializer(FichaSerializer):
         queryset=T_insti_edu.objects.all(), required=False)
     centro_id = serializers.PrimaryKeyRelatedField(
         queryset=T_centro_forma.objects.all(), required=False)
+    progra_id = serializers.PrimaryKeyRelatedField(
+        queryset=T_progra.objects.all(), required=False, source='progra')
 
     fase_id = serializers.SerializerMethodField()
     muni_id = serializers.SerializerMethodField()
@@ -113,6 +120,11 @@ class FichaEditarSerializer(FichaSerializer):
         instance.num = validated_data.get('num', instance.num)
         instance.insti = validated_data.get('insti_id', instance.insti)
         instance.centro = validated_data.get('centro_id', instance.centro)
+
+        nuevo_progra = validated_data.get('progra')
+        if nuevo_progra and nuevo_progra != instance.progra:
+            instance.progra = nuevo_progra
+            instance.carpetas_desincronizadas = True
 
         fase_id = self.context['request'].data.get('fase_id')
         if fase_id:
