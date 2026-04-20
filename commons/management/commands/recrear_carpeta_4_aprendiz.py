@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from commons.models import T_apre, T_DocumentFolderAprendiz, T_fase, T_raps
+from commons.models import T_apre, T_DocumentFolderAprendiz, T_fase, T_raps, T_ficha
 
 FASES_LABELS = {
     "ANALISIS": "1. ANÁLISIS",
@@ -118,3 +118,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 f"[{aprendiz.id}] Carpeta 4 recreada correctamente"
             ))
+
+        fichas_ids = aprendices.values_list('ficha_id', flat=True).distinct()
+        T_ficha.objects.filter(id__in=fichas_ids).update(carpetas_desincronizadas=False)
+        self.stdout.write(self.style.SUCCESS("Flag carpetas_desincronizadas limpiado."))
