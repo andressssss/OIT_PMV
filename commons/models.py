@@ -334,6 +334,7 @@ class T_ficha(models.Model):
     grupo = models.ForeignKey(T_grupo, on_delete=models.CASCADE)
     vige = models.CharField(max_length=20, default="2025")
     corte = models.CharField(max_length=20, null=True, blank=True)
+    carpetas_desincronizadas = models.BooleanField(default=False)
 
     def __str__(self):
         return self.num if self.num else str(f"G{self.grupo.id}")
