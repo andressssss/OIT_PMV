@@ -846,6 +846,11 @@ class FichasViewSet(ModelViewSet):
         opciones = [{"id": p[0], "nom": p[1]} for p in programas]
         return Response(opciones)
 
+    @action(detail=False, methods=['get'], url_path='lista-programas')
+    def lista_programas(self, request):
+        programas = T_progra.objects.all().order_by('nom').values('id', 'nom')
+        return Response(list(programas))
+
 
 class ProgramasViewSet(ModelViewSet):
     queryset = T_progra.objects.all()
