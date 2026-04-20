@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.pagination import PageNumberPagination
 from django.core.files.storage import default_storage
 from django.contrib.contenttypes.models import ContentType
@@ -161,13 +161,20 @@ class FichasViewSet(ModelViewSet):
     queryset = T_ficha.objects.all()
     serializer_class = FichaSerializer
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser]
+    parser_classes = [MultiPartParser, JSONParser]
     pagination_class = DataTablesPagination
 
     def get_serializer_class(self):
         if self.action in ['list', 'fichas_por_programa']:
             return FichaSerializer
         return FichaEditarSerializer
+
+    def partial_update(self, request, *args, **kwargs):
+        if 'progra_id' in request.data:
+            perfil = T_perfil.objects.get(user=request.user)
+            if perfil.rol != 'admin':
+                return Response({"detail": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'], url_path='por_programa/(?P<programa_id>[^/.]+)')
     def fichas_por_programa(self, request, programa_id=None):

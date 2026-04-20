@@ -85,6 +85,7 @@ class FichaEditarSerializer(FichaSerializer):
     progra_id = serializers.PrimaryKeyRelatedField(
         queryset=T_progra.objects.all(), required=False, source='progra')
 
+    carpetas_desincronizadas = serializers.BooleanField(read_only=True)
     fase_id = serializers.SerializerMethodField()
     muni_id = serializers.SerializerMethodField()
     depa_id = serializers.SerializerMethodField()
