@@ -523,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Cambiar programa de formación ──────────────────────────────────────
   const modalCambiarProgramaEl = document.getElementById("modalCambiarPrograma");
 
-  if (modalCambiarProgramaEl) {
+  if (modalCambiarProgramaEl && tableEl) {
     let fichaIdSeleccionada = null;
 
     tableEl.addEventListener("click", async (e) => {
@@ -531,7 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!btn) return;
 
       fichaIdSeleccionada = btn.dataset.fichaId;
-      document.getElementById("programaActualNom").textContent = btn.dataset.programaNom;
+      document.getElementById("programaActualNom").textContent = btn.dataset.prograNom;
 
       const contenedor = document.getElementById("contenedor-nuevo-programa");
       contenedor.innerHTML = `<div class="placeholder-glow"><span class="placeholder col-12 rounded"></span></div>`;
