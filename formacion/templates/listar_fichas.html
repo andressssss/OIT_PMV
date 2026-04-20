@@ -177,6 +177,7 @@
     </div>
 
     <!-- Modal: Cambiar programa de formación -->
+    {% if perfil.rol == 'admin' %}
     <div class="modal fade" id="modalCambiarPrograma" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -195,6 +196,7 @@
         </div>
       </div>
     </div>
+    {% endif %}
   {% endif %}
 {% endblock %}
 
