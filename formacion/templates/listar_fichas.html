@@ -175,6 +175,26 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal: Cambiar programa de formación -->
+    <div class="modal fade" id="modalCambiarPrograma" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Cambiar programa de formación</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted mb-3">Programa actual: <strong id="programaActualNom"></strong></p>
+            <div id="contenedor-nuevo-programa"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnGuardarPrograma">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
   {% endif %}
 {% endblock %}
 
