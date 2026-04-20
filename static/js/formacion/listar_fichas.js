@@ -80,7 +80,21 @@ document.addEventListener("DOMContentLoaded", () => {
             render: (data) => data || "No asignado",
           },
           { data: "num_apre_proce", title: "Matriculados" },
-          { data: "progra_nom", title: "Programa" },
+          {
+            data: "progra_nom",
+            title: "Programa",
+            render: (data, type, row) => {
+              let html = data || "No registrado";
+              if (row.carpetas_desincronizadas && userRole === "admin") {
+                html += ` <i class="bi bi-exclamation-triangle-fill text-warning"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  title="Programa actualizado — carpeta 4 desincronizada. Ejecutar: python manage.py recrear_carpeta_4_aprendiz --id_ficha ${row.id}">
+                </i>`;
+              }
+              return html;
+            },
+          },
           {
             data: null,
             orderable: false,
@@ -107,6 +121,19 @@ document.addEventListener("DOMContentLoaded", () => {
                   data-bs-placement="top">
                   <i class="bi bi-pencil-square"></i>
               </a>
+            `;
+              }
+              if (userRole === "admin") {
+                botones += `
+              <button class="btn btn-outline-secondary btn-sm mb-1 btn-cambiar-programa"
+                  data-ficha-id="${row.id}"
+                  data-progra-nom="${row.progra_nom}"
+                  data-progra-id="${row.progra_id}"
+                  title="Cambiar programa de formación"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top">
+                  <i class="bi bi-mortarboard"></i>
+              </button>
             `;
               }
               return botones;
@@ -489,6 +516,83 @@ document.addEventListener("DOMContentLoaded", () => {
       } finally {
         setFormDisabled(formAsignarAprendices, false);
         hideSpinner(btn, originalBtnContent);
+      }
+    });
+  }
+
+  // ── Cambiar programa de formación ──────────────────────────────────────
+  const modalCambiarProgramaEl = document.getElementById("modalCambiarPrograma");
+
+  if (modalCambiarProgramaEl) {
+    let fichaIdSeleccionada = null;
+
+    tableEl.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".btn-cambiar-programa");
+      if (!btn) return;
+
+      fichaIdSeleccionada = btn.dataset.fichaId;
+      document.getElementById("programaActualNom").textContent = btn.dataset.programaNom;
+
+      const contenedor = document.getElementById("contenedor-nuevo-programa");
+      contenedor.innerHTML = `<div class="placeholder-glow"><span class="placeholder col-12 rounded"></span></div>`;
+
+      const modalInstance = new bootstrap.Modal(modalCambiarProgramaEl);
+      modalInstance.show();
+
+      try {
+        const res = await fetch("/api/formacion/fichas/lista-programas/");
+        const programas = await res.json();
+
+        const select = document.createElement("select");
+        select.id = "nuevo-programa";
+        select.className = "form-select";
+        select.innerHTML = `<option value="">Seleccione un programa</option>` +
+          programas.map((p) => `<option value="${p.id}">${p.nom}</option>`).join("");
+
+        contenedor.innerHTML = "";
+        contenedor.appendChild(select);
+      } catch (err) {
+        toastError("Error al cargar programas");
+      }
+    });
+
+    document.getElementById("btnGuardarPrograma").addEventListener("click", async () => {
+      const select = document.getElementById("nuevo-programa");
+      if (!select || !select.value) {
+        toastWarning("Seleccione un programa");
+        return;
+      }
+
+      const btn = document.getElementById("btnGuardarPrograma");
+      const originalContent = btn.innerHTML;
+      showSpinner(btn);
+
+      try {
+        const res = await fetch(`/api/formacion/fichas/${fichaIdSeleccionada}/`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: JSON.stringify({ progra_id: parseInt(select.value) }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const mensaje = data.message || data.detail || Object.values(data).flat().join(", ");
+          toastError(mensaje);
+          return;
+        }
+
+        toastSuccess("Programa actualizado correctamente");
+        bootstrap.Modal.getInstance(modalCambiarProgramaEl).hide();
+        table.ajax.reload(null, false);
+      } catch (err) {
+        toastError("Error al actualizar el programa");
+      } finally {
+        hideSpinner(btn, originalContent);
       }
     });
   }
