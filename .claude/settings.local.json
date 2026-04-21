@@ -12,7 +12,10 @@
       "Bash(python *)",
       "Bash(cp \"C:/Users/asanabria_alocredit/Downloads/Formato Acta Senatic.docx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/3/GOR-F-084 Formato de Acta V02.docx\")",
       "Bash(cp \"C:/Users/asanabria_alocredit/Downloads/Formato Acta Senatic.docx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/6/GOR-F-084 Formato de Acta V02.docx\")",
-      "Bash(cp \"C:/Users/asanabria_alocredit/Downloads/Formato Acta Senatic.docx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/7/GOR-F-084 Formato de Acta V02.docx\")"
+      "Bash(cp \"C:/Users/asanabria_alocredit/Downloads/Formato Acta Senatic.docx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/7/GOR-F-084 Formato de Acta V02.docx\")",
+      "Bash(mv \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/3/GOR-F-084 Formato de Acta V02.docx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/3/Formato Acta Senatic.docx\")",
+      "Bash(mv \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/6/GOR-F-084 Formato de Acta V02.docx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/6/Formato Acta Senatic.docx\")",
+      "Bash(mv \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/7/GOR-F-084 Formato de Acta V02.docx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/7/Formato Acta Senatic.docx\")"
     ]
   }
 }
