@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.db import IntegrityError
 from django.contrib.auth.models import User
 from commons.models import T_perfil, T_consulta
+from usuarios.forms import ConsultaForm
 
 
 class T_consultaModelTest(TestCase):
@@ -37,3 +38,18 @@ class T_consultaModelTest(TestCase):
         T_consulta.objects.create(perfil=self.perfil, area='sistemas', nivel_acceso='basico', esta='activo')
         with self.assertRaises(IntegrityError):
             T_consulta.objects.create(perfil=self.perfil, area='contable', nivel_acceso='avanzado', esta='activo')
+
+
+class ConsultaFormTest(TestCase):
+    def test_form_valid(self):
+        form = ConsultaForm(data={
+            'area': 'sistemas',
+            'nivel_acceso': 'basico',
+            'esta': 'activo',
+        })
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_missing_area(self):
+        form = ConsultaForm(data={'nivel_acceso': 'basico', 'esta': 'activo'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('area', form.errors)

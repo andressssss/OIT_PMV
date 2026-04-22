@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
-from commons.models import T_gestor_depa,T_docu_labo, T_instru, T_perfil,T_gestor, T_admin, T_apre, T_lider, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma
+from commons.models import T_gestor_depa,T_docu_labo, T_instru, T_perfil,T_gestor, T_admin, T_apre, T_lider, T_repre_legal, T_munici, T_departa, T_insti_edu, T_centro_forma, T_consulta
 
 class UserFormEdit(forms.ModelForm):
     class Meta:
@@ -374,3 +374,18 @@ class CargarInstructoresMasivoForm(forms.Form):
         widget=forms.FileInput(attrs={'class': 'form-control'}),
         label="Seleccione un archivo CSV"
     )
+
+class ConsultaForm(forms.ModelForm):
+    class Meta:
+        model = T_consulta
+        fields = ['area', 'nivel_acceso', 'esta']
+        widgets = {
+            'area':         forms.Select(attrs={'class': 'form-select'}),
+            'nivel_acceso': forms.Select(attrs={'class': 'form-select'}),
+            'esta':         forms.Select(attrs={'class': 'form-select'}),
+        }
+        labels = {
+            'area':         'Área',
+            'nivel_acceso': 'Nivel de acceso',
+            'esta':         'Estado',
+        }
