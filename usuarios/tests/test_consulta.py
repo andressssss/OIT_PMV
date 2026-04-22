@@ -12,7 +12,7 @@ class T_consultaModelTest(TestCase):
         self.user = User.objects.create_user(username='testcon', password='1234')
         self.perfil = T_perfil.objects.create(
             user=self.user, nom='Ana', apelli='Lopez',
-            tipo_dni='CC', dni=123456789, tele='3001234567',
+            tipo_dni='cc', dni=123456789, tele='3001234567',
             dire='Calle 1', mail='ana@test.com', gene='M',
             fecha_naci='1990-01-01', rol='consulta'
         )
@@ -63,7 +63,7 @@ class ConsultaViewsTest(TestCase):
         admin_user = User.objects.create_user(username='admin1', password='pass')
         perfil_admin = T_perfil.objects.create(
             user=admin_user, nom='Admin', apelli='Test',
-            tipo_dni='CC', dni=999999999, tele='3000000000',
+            tipo_dni='cc', dni=999999999, tele='3000000000',
             dire='Calle Admin', mail='admin@test.com', gene='H',
             fecha_naci='1985-01-01', rol='admin'
         )
@@ -78,7 +78,7 @@ class ConsultaViewsTest(TestCase):
 
     def test_crear_consulta_post(self):
         response = self.client.post(reverse('api_crear_consulta'), {
-            'nom': 'Carlos', 'apelli': 'Ruiz', 'tipo_dni': 'CC',
+            'nom': 'Carlos', 'apelli': 'Ruiz', 'tipo_dni': 'cc',
             'dni': '111222333', 'tele': '3101234567', 'dire': 'Cra 5',
             'mail': 'carlos@test.com', 'gene': 'H', 'fecha_naci': '1995-06-15',
             'area': 'contable', 'nivel_acceso': 'basico', 'esta': 'activo',
