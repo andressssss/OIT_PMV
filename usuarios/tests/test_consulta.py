@@ -1,3 +1,4 @@
+import json
 from django.test import TestCase, Client
 from django.db import IntegrityError
 from django.contrib.auth.models import User
@@ -83,6 +84,5 @@ class ConsultaViewsTest(TestCase):
             'area': 'contable', 'nivel_acceso': 'basico', 'esta': 'activo',
         }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
-        import json
         data = json.loads(response.content)
         self.assertEqual(data['status'], 'success')

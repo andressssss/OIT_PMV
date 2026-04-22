@@ -2661,7 +2661,6 @@ def crear_consulta(request):
 
 
 @login_required
-@bloquear_si_consulta
 def obtener_consulta(request, consulta_id):
     consulta = T_consulta.objects.filter(id=consulta_id).first()
     if consulta:
