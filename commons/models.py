@@ -890,6 +890,7 @@ class T_permi(models.Model):
         ('competencias', 'Competencias'),
         ('raps', 'Raps'),
         ('dashboard', 'Dashboard'),
+        ('consultas', 'Usuarios de Consulta'),
     ]
 
     ACCION_CHOICES = [
