@@ -33,10 +33,11 @@ from commons.models import (
     T_insti_edu,
     T_centro_forma,
     T_progra,
-    T_permi
+    T_permi,
+    T_consulta
 )
 from commons.mixins import PermisosMixin
-from .forms import InstructorForm, PerfilEForm, CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm
+from .forms import InstructorForm, PerfilEForm, CargarInstructoresMasivoForm, CustomPasswordChangeForm, DocumentoLaboralForm, GestorForm, PerfilEditForm, GestorDepaForm, CargarAprendicesMasivoForm, UserFormCreate, UserFormEdit, PerfilForm, AdministradoresForm, AprendizForm, LiderForm, RepresanteLegalForm, DepartamentoForm, MunicipioForm, InstitucionForm, CentroFormacionForm, ConsultaForm
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
 from .serializers import T_insti_edu_Serializer
@@ -2562,3 +2563,158 @@ def validar_contrasena_segura(password):
     if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=/\\[\]`~%$]', password):
         return False
     return True
+
+
+### CONSULTAS ###
+
+@login_required
+def consultas(request):
+    consultas_qs = T_consulta.objects.select_related('perfil__user').all()
+    perfil_form = PerfilForm()
+    consulta_form = ConsultaForm()
+
+    acciones = PermisosMixin().get_permission_actions_for(request, "consultas")
+    can_view = acciones.get("ver", False)
+    can_edit = acciones.get("editar", False)
+    return render(request, 'consulta.html', {
+        'consultas': consultas_qs,
+        'perfil_form': perfil_form,
+        'consulta_form': consulta_form,
+        'can_view': can_view,
+        'can_edit': can_edit,
+    })
+
+
+@login_required
+@bloquear_si_consulta
+def crear_consulta(request):
+    if request.method == 'POST':
+        perfil_form = PerfilForm(request.POST)
+        consulta_form = ConsultaForm(request.POST)
+
+        if perfil_form.is_valid() and consulta_form.is_valid():
+            dni = perfil_form.cleaned_data.get('dni')
+            email = perfil_form.cleaned_data.get('mail')
+
+            if T_perfil.objects.filter(dni__iexact=dni).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese DNI'}, status=400)
+            if T_perfil.objects.filter(mail__iexact=email).exists():
+                return JsonResponse({'status': 'error', 'message': 'Ya existe un usuario con ese email'}, status=400)
+
+            nombre = perfil_form.cleaned_data['nom']
+            apellido = perfil_form.cleaned_data['apelli']
+            base_username = (nombre[:3] + apellido[:3]).lower()
+            username = base_username
+            i = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{i}"
+                i += 1
+
+            new_user = User.objects.create_user(
+                username=username,
+                password=str(dni),
+                email=email,
+            )
+            new_perfil = perfil_form.save(commit=False)
+            new_perfil.user = new_user
+            new_perfil.rol = 'consulta'
+            new_perfil.mail = new_user.email
+            new_perfil.save()
+
+            new_consulta = consulta_form.save(commit=False)
+            new_consulta.perfil = new_perfil
+            new_consulta.save()
+
+            PERMISOS_CONSULTA = [
+                ("usuarios", "ver"),
+                ("instructores", "ver"),
+                ("aprendices", "ver"),
+                ("lideres", "ver"),
+                ("cuentas", "ver"),
+                ("gestores", "ver"),
+                ("fichas", "ver"),
+                ("portafolios", "ver"),
+                ("instituciones", "ver"),
+                ("centros", "ver"),
+                ("competencias", "ver"),
+                ("raps", "ver"),
+            ]
+            for modu, acci in PERMISOS_CONSULTA:
+                T_permi.objects.get_or_create(modu=modu, acci=acci, filtro=None, perfil=new_perfil)
+
+            return JsonResponse({'status': 'success', 'message': 'Usuario de consulta creado con éxito.'})
+        else:
+            errores_dict = {**perfil_form.errors.get_json_data(), **consulta_form.errors.get_json_data()}
+            errores_custom = []
+            for field, errors_list in errores_dict.items():
+                campo = perfil_form.fields.get(field) or consulta_form.fields.get(field)
+                nombre_campo = (campo.label if campo else field.capitalize())
+                for err in errors_list:
+                    errores_custom.append(f"{nombre_campo}: {err['message']}")
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Errores en el formulario',
+                'errors': '<br>'.join(errores_custom),
+            }, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+
+@login_required
+@bloquear_si_consulta
+def obtener_consulta(request, consulta_id):
+    consulta = T_consulta.objects.filter(id=consulta_id).first()
+    if consulta:
+        data = {
+            'consulta-nom':          consulta.perfil.nom,
+            'consulta-apelli':       consulta.perfil.apelli,
+            'consulta-tipo_dni':     consulta.perfil.tipo_dni,
+            'consulta-dni':          consulta.perfil.dni,
+            'consulta-tele':         consulta.perfil.tele,
+            'consulta-dire':         consulta.perfil.dire,
+            'consulta-mail':         consulta.perfil.mail,
+            'consulta-gene':         consulta.perfil.gene,
+            'consulta-fecha_naci':   str(consulta.perfil.fecha_naci),
+            'consulta-area':         consulta.area,
+            'consulta-nivel_acceso': consulta.nivel_acceso,
+            'consulta-esta':         consulta.esta,
+        }
+        return JsonResponse(data)
+    return JsonResponse({'status': 'error', 'message': 'Usuario de consulta no encontrado'}, status=404)
+
+
+@login_required
+@bloquear_si_consulta
+def editar_consulta(request, consulta_id):
+    consulta = get_object_or_404(T_consulta, pk=consulta_id)
+    perfil = get_object_or_404(T_perfil, pk=consulta.perfil.id)
+
+    if request.method == 'POST':
+        form_perfil = PerfilForm(request.POST, instance=perfil)
+        form_consulta = ConsultaForm(request.POST, instance=consulta)
+
+        if form_perfil.is_valid() and form_consulta.is_valid():
+            form_perfil.save()
+            form_consulta.save()
+            return JsonResponse({'status': 'success', 'message': 'Usuario de consulta actualizado con éxito.'})
+        else:
+            errors = {'perfil': form_perfil.errors, 'consulta': form_consulta.errors}
+            return JsonResponse({'status': 'error', 'message': 'Error al actualizar', 'errors': errors}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+
+@login_required
+@bloquear_si_consulta
+def eliminar_consulta(request, consulta_id):
+    consulta = get_object_or_404(T_consulta, pk=consulta_id)
+
+    if request.method == 'POST':
+        perfil = consulta.perfil
+        usuario = perfil.user
+        consulta.delete()
+        perfil.delete()
+        usuario.delete()
+        return JsonResponse({'status': 'success', 'message': 'Usuario de consulta eliminado correctamente.'}, status=200)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
