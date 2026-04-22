@@ -2662,6 +2662,9 @@ def crear_consulta(request):
 
 @login_required
 def obtener_consulta(request, consulta_id):
+    acciones = PermisosMixin().get_permission_actions_for(request, "consultas")
+    if not acciones.get("ver"):
+        return JsonResponse({'status': 'error', 'message': 'Sin permiso'}, status=403)
     consulta = T_consulta.objects.filter(id=consulta_id).first()
     if consulta:
         data = {
