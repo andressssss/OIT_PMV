@@ -272,6 +272,8 @@ def dashboard_admin(request):
                     "titulo": "Cuentas", "desc": "Administrar los perfiles de cuentas."},
                 {"perm": "gestores", "url": "gestores", "img": "images/gestoricon.webp",
                     "titulo": "Gestores", "desc": "Administrar los gestores del sistema."},
+                {"perm": "consultas", "url": "consultas", "img": "images/usuario.webp",
+                    "titulo": "Usuarios de Consulta", "desc": "Administrar los usuarios de consulta del sistema."},
             ],
         },
         {

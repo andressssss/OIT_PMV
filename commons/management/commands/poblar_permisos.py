@@ -95,7 +95,9 @@ PERMISOS_ROL = {
         ("competencias", "editar"),
         ("raps", "ver"),
         ("raps", "editar"),
-        ("dashboard", "ver")
+        ("dashboard", "ver"),
+        ("consultas", "ver"),
+        ("consultas", "editar"),
     ],
     "instructor": [
         ("fichas", "ver"),
