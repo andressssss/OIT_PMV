@@ -97,6 +97,13 @@ urlpatterns = [
     path('api/lider/editar/<int:lider_id>/',usuarios_views.editar_lider, name='api_editar_lider'),
     path('api/lider/eliminar/<int:lider_id>/',usuarios_views.eliminar_lider, name='api_eliminar_lider'),
 
+    # ROL Consulta
+    path('consultas/',                                  usuarios_views.consultas,          name='consultas'),
+    path('api/consulta/crear/',                         usuarios_views.crear_consulta,     name='api_crear_consulta'),
+    path('api/consulta/<int:consulta_id>/',             usuarios_views.obtener_consulta,   name='api_obtener_consulta'),
+    path('api/consulta/editar/<int:consulta_id>/',      usuarios_views.editar_consulta,    name='api_editar_consulta'),
+    path('api/consulta/eliminar/<int:consulta_id>/',    usuarios_views.eliminar_consulta,  name='api_eliminar_consulta'),
+
     # ROL Departamentos
     path('departamentos/', usuarios_views.departamentos, name='departamentos'),
     path('departamentos/crear/', usuarios_views.creardepartamentos, name='creardepartamentos'),
