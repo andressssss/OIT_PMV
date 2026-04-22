@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.db import IntegrityError
 from django.contrib.auth.models import User
 from commons.models import T_perfil, T_consulta
 
@@ -31,3 +32,8 @@ class T_consultaModelTest(TestCase):
             nivel_acceso='intermedio', esta='activo'
         )
         self.assertIn('Ana', str(consulta))
+
+    def test_perfil_unicidad(self):
+        T_consulta.objects.create(perfil=self.perfil, area='sistemas', nivel_acceso='basico', esta='activo')
+        with self.assertRaises(IntegrityError):
+            T_consulta.objects.create(perfil=self.perfil, area='contable', nivel_acceso='avanzado', esta='activo')

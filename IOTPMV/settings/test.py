@@ -3,7 +3,10 @@ Minimal settings for running tests locally without Docker/MySQL.
 Uses SQLite in-memory and bypasses xhtml2pdf/cairo import issues.
 """
 import os
+import warnings
 from pathlib import Path
+
+warnings.filterwarnings("ignore")
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -107,6 +110,3 @@ CORS_ALLOW_ALL_ORIGINS = True
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1048576000
 
 ASGI_APPLICATION = 'IOTPMV.asgi.application'
-
-import warnings
-warnings.filterwarnings("ignore")
