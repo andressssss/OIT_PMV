@@ -586,6 +586,13 @@ class FichasViewSet(ModelViewSet):
 
     @action(detail=False, methods=['delete'], url_path='eliminar_documento_portafolio/(?P<doc_id>\d+)/(?P<contexto>[^/]+)')
     def eliminar_documento_portafolio(self, request, doc_id=None, contexto=None):
+        try:
+            perfil = T_perfil.objects.get(user=request.user)
+        except T_perfil.DoesNotExist:
+            return Response({"error": "Perfil no encontrado"}, status=status.HTTP_403_FORBIDDEN)
+        if perfil.rol != "admin":
+            return Response({"error": "Solo los administradores pueden eliminar documentos"}, status=status.HTTP_403_FORBIDDEN)
+
         if not doc_id or not contexto:
             return Response({"error": "Se requieren los parametros"}, status=status.HTTP_400_BAD_REQUEST)
 
