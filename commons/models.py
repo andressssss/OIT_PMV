@@ -123,6 +123,35 @@ class T_admin(models.Model):
         return f"{self.perfil.nom} {self.perfil.apelli} - Area/equipo: {self.area}"
 
 
+class T_consulta(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_consulta'
+
+    AREA_CHOICES = [
+        ('sistemas',  'Sistemas'),
+        ('contable',  'Contable'),
+        ('direccion', 'Dirección'),
+        ('rrhh',      'RRHH'),
+    ]
+    NIVEL_CHOICES = [
+        ('basico',     'Básico'),
+        ('intermedio', 'Intermedio'),
+        ('avanzado',   'Avanzado'),
+    ]
+    ESTADO_CHOICES = [
+        ('activo',   'Activo'),
+        ('inactivo', 'Inactivo'),
+    ]
+    perfil       = models.OneToOneField(T_perfil, on_delete=models.CASCADE, related_name='consulta')
+    area         = models.CharField(max_length=20, choices=AREA_CHOICES)
+    nivel_acceso = models.CharField(max_length=20, choices=NIVEL_CHOICES)
+    esta         = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='activo')
+
+    def __str__(self):
+        return f"{self.perfil.nom} {self.perfil.apelli} - {self.get_area_display()} / {self.get_nivel_acceso_display()}"
+
+
 class T_lider(models.Model):
     class Meta:
         managed = True
@@ -861,6 +890,7 @@ class T_permi(models.Model):
         ('competencias', 'Competencias'),
         ('raps', 'Raps'),
         ('dashboard', 'Dashboard'),
+        ('consultas', 'Usuarios de Consulta'),
     ]
 
     ACCION_CHOICES = [

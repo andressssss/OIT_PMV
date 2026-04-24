@@ -586,6 +586,10 @@ class FichasViewSet(ModelViewSet):
 
     @action(detail=False, methods=['delete'], url_path='eliminar_documento_portafolio/(?P<doc_id>\d+)/(?P<contexto>[^/]+)')
     def eliminar_documento_portafolio(self, request, doc_id=None, contexto=None):
+        perfil = T_perfil.objects.get(user=request.user)
+        if perfil.rol == "consulta":
+            return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+
         if not doc_id or not contexto:
             return Response({"error": "Se requieren los parametros"}, status=status.HTTP_400_BAD_REQUEST)
 

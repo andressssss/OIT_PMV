@@ -326,8 +326,8 @@ document.addEventListener("DOMContentLoaded", function () {
         link.appendChild(span);
         li.appendChild(link);
 
-        // Botón de eliminar (si aplica)
-        if (can_edit && node.can_edit_folder !== false && userRole != "instructor") {
+        // Botón de eliminar
+        if (can_edit && node.can_edit_folder !== false && userRole != "consulta") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
@@ -2119,7 +2119,7 @@ document.addEventListener("DOMContentLoaded", function () {
         link.append(icon, span);
         li.appendChild(link);
 
-        if (can_edit && userRole != "instructor") {
+        if (can_edit && userRole != "consulta") {
           const deleteBtn = document.createElement("button");
           deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
           deleteBtn.title = "Eliminar documento";
