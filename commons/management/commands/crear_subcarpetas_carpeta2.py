@@ -1,3 +1,4 @@
+import time
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from commons.models import T_apre, T_DocumentFolderAprendiz
@@ -102,11 +103,23 @@ class Command(BaseCommand):
         parser.add_argument("--id_aprendiz", type=int, help="Procesar solo un aprendiz")
         parser.add_argument("--id_ficha", type=int, help="Procesar solo aprendices de una ficha")
         parser.add_argument("--dry-run", action="store_true", help="Simula sin escribir en BD")
+        parser.add_argument(
+            "--progreso-cada", type=int, default=200,
+            help="Imprime una línea de progreso cada N aprendices (default: 200)",
+        )
+
+    def _log(self, msg, style=None):
+        if style:
+            self.stdout.write(style(msg))
+        else:
+            self.stdout.write(msg)
+        self.stdout.flush()
 
     def handle(self, *args, **options):
         id_aprendiz = options.get("id_aprendiz")
         id_ficha = options.get("id_ficha")
         dry_run = options.get("dry_run")
+        progreso_cada = max(1, options.get("progreso_cada") or 200)
 
         qs = T_apre.objects.all()
         if id_aprendiz:
@@ -116,11 +129,12 @@ class Command(BaseCommand):
 
         total = qs.count()
         if not total:
-            self.stdout.write(self.style.WARNING("No hay aprendices para procesar."))
+            self._log("No hay aprendices para procesar.", self.style.WARNING)
             return
 
-        self.stdout.write(
-            f"{'[DRY RUN] ' if dry_run else ''}Procesando {total} aprendiz(es)..."
+        self._log(
+            f"{'[DRY RUN] ' if dry_run else ''}Procesando {total} aprendiz(es). "
+            f"Progreso cada {progreso_cada}."
         )
 
         padres_creados = 0
@@ -129,7 +143,11 @@ class Command(BaseCommand):
         v3_renombradas = 0
         conflictos = []
 
-        for aprendiz in qs.iterator():
+        t_inicio = time.monotonic()
+        t_ultimo_log = t_inicio
+        procesados = 0
+
+        for aprendiz in qs.iterator(chunk_size=500):
             if dry_run:
                 stats = asegurar_carpeta_2(aprendiz, dry_run=True)
             else:
@@ -143,15 +161,36 @@ class Command(BaseCommand):
             v3_renombradas += stats["v3_renombradas"]
             conflictos.extend(stats["conflictos"])
 
-        self.stdout.write(self.style.SUCCESS(
+            procesados += 1
+
+            if procesados % progreso_cada == 0 or procesados == total:
+                ahora = time.monotonic()
+                transc = ahora - t_inicio
+                delta = ahora - t_ultimo_log
+                t_ultimo_log = ahora
+                pct = procesados / total * 100
+                vel = progreso_cada / delta if delta > 0 else 0
+                restante = (total - procesados) / vel if vel > 0 else 0
+                self._log(
+                    f"  [{procesados}/{total} {pct:5.1f}%] "
+                    f"padres={padres_creados} subs+={subs_creadas} "
+                    f"subs=existen={subs_existentes} v3->v4={v3_renombradas} "
+                    f"conflic={len(conflictos)} | "
+                    f"{vel:.0f} aprendiz/s | "
+                    f"transc={transc:.0f}s eta={restante:.0f}s"
+                )
+
+        self._log(
             f"\nResumen{' (DRY RUN)' if dry_run else ''}:\n"
             f"  Aprendices procesados: {total}\n"
             f"  Carpetas 2 creadas: {padres_creados}\n"
             f"  Subcarpetas creadas: {subs_creadas}\n"
             f"  Subcarpetas ya existentes: {subs_existentes}\n"
             f"  V3 renombradas a V4: {v3_renombradas}\n"
-            f"  Conflictos V3+V4: {len(conflictos)}"
-        ))
+            f"  Conflictos V3+V4: {len(conflictos)}\n"
+            f"  Tiempo total: {time.monotonic() - t_inicio:.0f}s",
+            self.style.SUCCESS,
+        )
 
         if conflictos:
             self.stdout.write(self.style.WARNING("\nConflictos a revisar manualmente:"))
