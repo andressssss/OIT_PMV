@@ -8,7 +8,8 @@
       "Bash(git commit -m ':*)",
       "Bash(git commit:*)",
       "Bash(cp \"C:/Users/asanabria_alocredit/Downloads/OIT/GFPI-F-147FormatoBitacoraSeguimientoEtapaProductiva V5.xlsx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/8/\")",
-      "Bash(cp \"C:/Users/asanabria_alocredit/Downloads/OIT/GFPI-F-165FormatoSeleccionModificacionAlternativaEtapaProductiva V4.xlsx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/9/\")"
+      "Bash(cp \"C:/Users/asanabria_alocredit/Downloads/OIT/GFPI-F-165FormatoSeleccionModificacionAlternativaEtapaProductiva V4.xlsx\" \"C:/ALO/apps/OIT_PMV/static/documents/portafolio_ficha/9/\")",
+      "Bash(python *)"
     ]
   }
 }
