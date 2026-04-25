@@ -109,6 +109,7 @@ class InstitucionViewSet(ModelViewSet):
     queryset = T_insti_edu.objects.all()
     serializer_class = InstitucionSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         queryset = super().get_queryset()
