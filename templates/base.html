@@ -101,6 +101,11 @@
                     <a class="nav-link" href="{% url 'admin_dashboard' %}"><i class="bi bi-speedometer2 me-1"></i> Control</a>
                   </li>
                 {% endif %}
+                {% if permisos.seguimiento.ver %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard_instructores' %}"><i class="bi bi-people-fill me-1"></i> Seguimiento</a>
+                  </li>
+                {% endif %}
 
                 {% if perfil.rol == 'admin' %}
                   <li class="nav-item dropdown">
@@ -152,6 +157,22 @@
                 {% endif %}
               {% endif %}
 
+              <!-- Notificaciones -->
+              <li class="nav-item dropdown ms-lg-2" id="notifi-wrapper">
+                <a class="nav-link position-relative text-white" href="#" id="notifi-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notificaciones">
+                  <i class="bi bi-bell-fill" style="font-size: 1.2rem;"></i>
+                  <span id="notifi-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.65rem;">0</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 320px; max-width: 380px;" aria-labelledby="notifi-toggle">
+                  <li class="dropdown-header d-flex justify-content-between align-items-center">
+                    <span>Notificaciones</span>
+                    <button type="button" class="btn btn-link btn-sm p-0" id="notifi-marcar-todas" title="Marcar todas como leídas"><i class="bi bi-check2-all"></i></button>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li id="notifi-lista" class="px-2"><div class="text-muted small text-center py-2">Sin notificaciones</div></li>
+                </ul>
+              </li>
+
               <!-- Perfil -->
               <li class="nav-item ms-lg-3">
                 <a class="btn btn-light btn-sm px-3" href="/perfil" title="Perfil"><i class="bi bi-person-circle me-1"></i> Perfil</a>
@@ -201,6 +222,73 @@
     {% endblock %}
   </body>
   <script>
+    {% if user.is_authenticated %}
+    (function () {
+      const NIVEL_CSS = {
+        info: 'text-primary',
+        preventiva: 'text-warning',
+        seguimiento: 'text-warning',
+        riesgo: 'text-danger'
+      };
+      const $badge = document.getElementById('notifi-badge');
+      const $lista = document.getElementById('notifi-lista');
+      const $btnTodas = document.getElementById('notifi-marcar-todas');
+
+      function getCsrf() {
+        const m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+      }
+
+      function render(data) {
+        const n = data.no_leidas || 0;
+        if (n > 0) {
+          $badge.textContent = n > 99 ? '99+' : n;
+          $badge.classList.remove('d-none');
+        } else {
+          $badge.classList.add('d-none');
+        }
+        if (!data.ultimas || !data.ultimas.length) {
+          $lista.innerHTML = '<div class="text-muted small text-center py-2">Sin notificaciones</div>';
+          return;
+        }
+        $lista.innerHTML = data.ultimas.map(it => `
+          <a href="${it.url || '#'}" class="dropdown-item small d-block py-2 border-bottom" data-id="${it.id}" style="white-space: normal;">
+            <div class="${NIVEL_CSS[it.nivel] || ''} fw-bold">${it.titulo}</div>
+            <div class="text-muted">${it.mensaje || ''}</div>
+            <div class="text-muted" style="font-size: 0.7rem;">${new Date(it.creada_en).toLocaleString()}</div>
+          </a>
+        `).join('') + '<div class="text-center py-2"><a href="/notificaciones/" class="small">Ver todas</a></div>';
+
+        $lista.querySelectorAll('a[data-id]').forEach(a => {
+          a.addEventListener('click', () => {
+            fetch(`/api/notificaciones/${a.dataset.id}/marcar-leida/`, {
+              method: 'POST',
+              headers: { 'X-CSRFToken': getCsrf() }
+            });
+          });
+        });
+      }
+
+      function fetchResumen() {
+        fetch('/api/notificaciones/resumen/', { credentials: 'same-origin' })
+          .then(r => r.ok ? r.json() : null)
+          .then(d => d && render(d))
+          .catch(() => {});
+      }
+
+      $btnTodas && $btnTodas.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetch('/api/notificaciones/marcar-todas-leidas/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCsrf() }
+        }).then(fetchResumen);
+      });
+
+      document.addEventListener('DOMContentLoaded', fetchResumen);
+      setInterval(fetchResumen, 60000);
+    })();
+    {% endif %}
+
     function mostrarSwalSoporte() {
       Swal.fire({
         title: 'Soporte Técnico',

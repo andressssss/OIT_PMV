@@ -256,6 +256,8 @@ def dashboard_admin(request):
                     "titulo": "Usuarios", "desc": "Administrar los usuarios del sistema."},
                 {"perm": "dashboard", "url": "dashboard", "img": "images/kpi.png",
                     "titulo": "Indicadores", "desc": "Indicadores y métricas del sistema."},
+                {"perm": "seguimiento", "url": "dashboard_instructores", "img": "images/kpi.png",
+                    "titulo": "Seguimiento", "desc": "Seguimiento de instructores, evidencias y mayoría de edad."},
             ],
         },
         {

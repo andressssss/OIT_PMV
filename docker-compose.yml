@@ -17,5 +17,30 @@ services:
   redis:
     image: redis:alpine
 
+  celery:
+    build: .
+    container_name: oitpmv_celery
+    command: celery -A IOTPMV worker -l info
+    environment:
+      - DJANGO_ENV=${DJANGO_ENV}
+    volumes:
+      - .:/var/www/iotpmv
+      - /mnt/fileshare/media:/mnt/fileshare/media:rw
+    depends_on:
+      - redis
+      - app
+
+  celery-beat:
+    build: .
+    container_name: oitpmv_celery_beat
+    command: celery -A IOTPMV beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      - DJANGO_ENV=${DJANGO_ENV}
+    volumes:
+      - .:/var/www/iotpmv
+    depends_on:
+      - redis
+      - app
+
 volumes:
   db_data:

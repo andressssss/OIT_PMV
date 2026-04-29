@@ -5,4 +5,5 @@ urlpatterns = [
     path('matricula/', include('api.urls.matricula')),
     path('usuarios/', include('api.urls.usuarios')),
     path('dashboard/', include('api.urls.dashboard')),
+    path('notificaciones/', include('api.urls.notificaciones')),
 ]

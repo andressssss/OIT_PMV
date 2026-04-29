@@ -98,6 +98,7 @@ PERMISOS_ROL = {
         ("dashboard", "ver"),
         ("consultas", "ver"),
         ("consultas", "editar"),
+        ("seguimiento", "ver"),
     ],
     "instructor": [
         ("fichas", "ver"),

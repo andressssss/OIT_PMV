@@ -1,4 +1,4 @@
-from commons.models import T_perfil
+from commons.models import T_perfil, T_permi
 from datetime import datetime
 from django.utils.timezone import now
 from django.contrib import messages
@@ -11,6 +11,20 @@ def perfil(request):
         except T_perfil.DoesNotExist:
             return {'perfil': None}
     return {'perfil': None}
+
+
+def permisos_modulos(request):
+    """Expone {modulo: {accion: True}} para todos los permisos del usuario."""
+    if not request.user.is_authenticated:
+        return {'permisos': {}}
+    try:
+        perfil_obj = T_perfil.objects.get(user=request.user)
+    except T_perfil.DoesNotExist:
+        return {'permisos': {}}
+    acciones_por_modulo = {}
+    for p in T_permi.objects.filter(perfil=perfil_obj):
+        acciones_por_modulo.setdefault(p.modu, {})[p.acci] = True
+    return {'permisos': acciones_por_modulo}
 
 def expiracion_sesion_context(request):
     if request.user.is_authenticated:

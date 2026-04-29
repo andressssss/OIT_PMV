@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  {% if not puede_ver %}
+    <div class="d-flex justify-content-center align-items-center" style="height: 60vh;">
+      <div class="alert alert-danger d-flex align-items-center shadow-lg rounded-3 p-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div class="fw-semibold fs-5">No tiene permisos para acceder a este contenido</div>
+      </div>
+    </div>
+  {% else %}
+    <div class="container-fluid py-4">
+      <div class="card card-body p-4 shadow-sm">
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-instructores" type="button"><i class="bi bi-people-fill me-1"></i> Instructores</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mayoria" type="button"><i class="bi bi-person-vcard me-1"></i> Mayoría de edad</button></li>
+        </ul>
+
+        <div class="tab-content">
+        <div class="tab-pane fade show active" id="tab-instructores" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center pb-3">
+          <div>
+            <h2 class="mb-0">Seguimiento de instructores</h2>
+            <small class="text-muted">Último acceso, evidencias, semáforo y alertas</small>
+          </div>
+          <div class="d-flex gap-2">
+            <input type="text" id="filtro-buscar" class="form-control form-control-sm" placeholder="Buscar nombre o DNI..." style="min-width: 220px;">
+            <select id="filtro-semaforo" class="form-select form-select-sm" style="max-width: 160px;">
+              <option value="">Todos los estados</option>
+              <option value="verde">Verde</option>
+              <option value="amarillo">Amarillo</option>
+              <option value="rojo">Rojo</option>
+            </select>
+            <a id="btn-exportar" class="btn btn-sm btn-outline-primary" href="/api/dashboard/instructores/exportar/" title="Descargar Excel">
+              <i class="bi bi-file-earmark-excel"></i> Exportar
+            </a>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3" id="kpi-row">
+          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center"><small class="text-muted">Total instructores</small><h3 id="kpi-total" class="mb-0">--</h3></div></div>
+          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center bg-success-subtle"><small class="text-success">Verde</small><h3 id="kpi-verde" class="mb-0 text-success">--</h3></div></div>
+          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center bg-warning-subtle"><small class="text-warning">Amarillo</small><h3 id="kpi-amarillo" class="mb-0 text-warning">--</h3></div></div>
+          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center bg-danger-subtle"><small class="text-danger">Rojo</small><h3 id="kpi-rojo" class="mb-0 text-danger">--</h3></div></div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover table-sm align-middle" id="tabla-instructores">
+            <thead class="table-light">
+              <tr>
+                <th></th>
+                <th>Instructor</th>
+                <th>DNI</th>
+                <th>Último acceso</th>
+                <th>Días sin actividad</th>
+                <th>Evidencias</th>
+                <th>%</th>
+                <th>Fichas</th>
+                <th>Aprendices (act/total)</th>
+                <th>Alertas</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body">
+              <tr><td colspan="11" class="text-center text-muted py-4">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-mayoria" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center pb-3">
+            <div>
+              <h2 class="mb-0">Aprendices y mayoría de edad</h2>
+              <small class="text-muted">Próximos a cumplir 18, cumplen hoy, y los que ya cumplieron sin CC actualizado</small>
+            </div>
+            <div class="d-flex gap-2">
+              <input type="text" id="me-buscar" class="form-control form-control-sm" placeholder="Buscar nombre o DNI..." style="min-width: 220px;">
+              <select id="me-estado" class="form-select form-select-sm" style="max-width: 180px;">
+                <option value="">Todos los estados</option>
+                <option value="proximo">Próximos a cumplir</option>
+                <option value="cumple_hoy">Cumplen hoy</option>
+                <option value="riesgo">Riesgo (CC pendiente)</option>
+                <option value="al_dia">Al día</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Aprendiz</th>
+                  <th>DNI</th>
+                  <th>Tipo</th>
+                  <th>Cumple 18</th>
+                  <th>Días</th>
+                  <th>CC actualizado</th>
+                  <th>Ficha</th>
+                  <th>Instructor</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="me-body">
+                <tr><td colspan="9" class="text-center text-muted py-4">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Detalle del instructor</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body" id="detalle-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const SEMAFORO_BADGE = {
+          verde: '<span class="badge bg-success">Verde</span>',
+          amarillo: '<span class="badge bg-warning text-dark">Amarillo</span>',
+          rojo: '<span class="badge bg-danger">Rojo</span>',
+        };
+        const SEMAFORO_DOT = {
+          verde: '<span class="d-inline-block rounded-circle bg-success" style="width:12px;height:12px;"></span>',
+          amarillo: '<span class="d-inline-block rounded-circle bg-warning" style="width:12px;height:12px;"></span>',
+          rojo: '<span class="d-inline-block rounded-circle bg-danger" style="width:12px;height:12px;"></span>',
+        };
+
+        let datos = [];
+
+        function fmtFecha(iso) {
+          if (!iso) return '<span class="text-muted">Nunca</span>';
+          return new Date(iso).toLocaleDateString();
+        }
+
+        function aplicarFiltros() {
+          const q = (document.getElementById('filtro-buscar').value || '').toLowerCase().trim();
+          const sem = document.getElementById('filtro-semaforo').value;
+          return datos.filter(r => {
+            if (sem && r.semaforo !== sem) return false;
+            if (q && !(r.nombre || '').toLowerCase().includes(q) && String(r.dni || '').indexOf(q) === -1) return false;
+            return true;
+          });
+        }
+
+        function render() {
+          const filtrados = aplicarFiltros();
+          const $body = document.getElementById('tabla-body');
+
+          document.getElementById('kpi-total').textContent = datos.length;
+          document.getElementById('kpi-verde').textContent = datos.filter(r => r.semaforo === 'verde').length;
+          document.getElementById('kpi-amarillo').textContent = datos.filter(r => r.semaforo === 'amarillo').length;
+          document.getElementById('kpi-rojo').textContent = datos.filter(r => r.semaforo === 'rojo').length;
+
+          if (!filtrados.length) {
+            $body.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4">Sin resultados</td></tr>';
+            return;
+          }
+          $body.innerHTML = filtrados.map(r => `
+            <tr style="cursor:pointer;" data-id="${r.instructor_id}">
+              <td>${SEMAFORO_DOT[r.semaforo] || ''}</td>
+              <td><strong>${r.nombre}</strong><br><small class="text-muted">${r.mail || ''}</small></td>
+              <td>${r.dni || '—'}</td>
+              <td>${fmtFecha(r.ultimo_acceso)}</td>
+              <td>${r.dias_sin_actividad === null ? '<span class="text-muted">—</span>' : r.dias_sin_actividad}</td>
+              <td>${r.evidencias_cargadas} / ${r.evidencias_esperadas}</td>
+              <td>${r.porcentaje_evidencias}%</td>
+              <td>${r.fichas}</td>
+              <td>${r.aprendices_activos} / ${r.aprendices_matriculados}</td>
+              <td>${r.alertas_abiertas > 0 ? `<span class="badge bg-danger">${r.alertas_abiertas}</span>` : '—'}</td>
+              <td>${SEMAFORO_BADGE[r.semaforo] || r.semaforo}</td>
+            </tr>
+          `).join('');
+
+          $body.querySelectorAll('tr[data-id]').forEach(tr => {
+            tr.addEventListener('click', () => abrirDetalle(tr.dataset.id));
+          });
+        }
+
+        function abrirDetalle(id) {
+          const $modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+          const $body = document.getElementById('detalle-body');
+          $body.innerHTML = '<div class="text-center py-4 text-muted">Cargando...</div>';
+          $modal.show();
+          fetch(`/api/dashboard/instructores/${id}/`, { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(d => {
+              const fichas = (d.fichas || []).map(f => `
+                <tr>
+                  <td>${f.numero || '—'}</td>
+                  <td>${f.programa || '—'}</td>
+                  <td>${f.estado || '—'}</td>
+                  <td>${f.evidencias_cargadas} / ${f.evidencias_esperadas}</td>
+                  <td>${f.porcentaje_evidencias}%</td>
+                  <td>${f.aprendices_activos} / ${f.aprendices}</td>
+                </tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Sin fichas asignadas</td></tr>';
+
+              $body.innerHTML = `
+                <h5 class="mb-1">${d.nombre}</h5>
+                <small class="text-muted">DNI ${d.dni} · ${d.mail || ''}</small>
+                <hr>
+                <div class="row mb-3">
+                  <div class="col"><small class="text-muted">Estado:</small> <strong>${d.estado || '—'}</strong></div>
+                  <div class="col"><small class="text-muted">Último acceso:</small> <strong>${fmtFecha(d.ultimo_acceso)}</strong></div>
+                  <div class="col"><small class="text-muted">Días sin actividad:</small> <strong>${d.dias_sin_actividad ?? '—'}</strong></div>
+                </div>
+                <h6>Fichas asignadas</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead><tr><th>Número</th><th>Programa</th><th>Estado</th><th>Evidencias</th><th>%</th><th>Aprendices (act/tot)</th></tr></thead>
+                    <tbody>${fichas}</tbody>
+                  </table>
+                </div>
+              `;
+            })
+            .catch(() => { $body.innerHTML = '<div class="text-danger">Error cargando detalle</div>'; });
+        }
+
+        function cargar() {
+          fetch('/api/dashboard/instructores/', { credentials: 'same-origin' })
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(d => { datos = d.results || []; render(); })
+            .catch(err => {
+              document.getElementById('tabla-body').innerHTML = '<tr><td colspan="11" class="text-center text-danger py-4">Error cargando datos (' + err + ')</td></tr>';
+            });
+        }
+
+        document.getElementById('filtro-buscar').addEventListener('input', render);
+        document.getElementById('filtro-semaforo').addEventListener('change', render);
+        document.addEventListener('DOMContentLoaded', cargar);
+
+        // ====== Pestaña Mayoría de edad ======
+        const ESTADO_BADGE_ME = {
+          proximo: '<span class="badge bg-info text-dark">Próximo</span>',
+          cumple_hoy: '<span class="badge bg-warning text-dark">Cumple hoy</span>',
+          riesgo: '<span class="badge bg-danger">Riesgo</span>',
+          al_dia: '<span class="badge bg-success">Al día</span>',
+        };
+        let datosME = [];
+
+        function aplicarFiltrosME() {
+          const q = (document.getElementById('me-buscar').value || '').toLowerCase().trim();
+          const est = document.getElementById('me-estado').value;
+          return datosME.filter(r => {
+            if (est && r.estado !== est) return false;
+            if (q && !(r.nombre || '').toLowerCase().includes(q) && String(r.dni || '').indexOf(q) === -1) return false;
+            return true;
+          });
+        }
+
+        function renderME() {
+          const filtrados = aplicarFiltrosME();
+          const $body = document.getElementById('me-body');
+          if (!filtrados.length) {
+            $body.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Sin resultados</td></tr>';
+            return;
+          }
+          $body.innerHTML = filtrados.map(r => `
+            <tr>
+              <td><strong>${r.nombre}</strong></td>
+              <td>${r.dni || '—'}</td>
+              <td>${(r.tipo_dni || '').toUpperCase()}</td>
+              <td>${r.fecha_18 ? new Date(r.fecha_18).toLocaleDateString() : '—'}</td>
+              <td>${r.dias_para_18}</td>
+              <td>${r.cc_actualizado ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Sí</span>' : '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> No</span>'}</td>
+              <td>${r.ficha || '—'}</td>
+              <td>${r.instructor || '—'}</td>
+              <td>${ESTADO_BADGE_ME[r.estado] || r.estado}</td>
+            </tr>
+          `).join('');
+        }
+
+        function cargarME() {
+          fetch('/api/dashboard/aprendices-mayoria-edad/', { credentials: 'same-origin' })
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(d => { datosME = d.results || []; renderME(); })
+            .catch(err => {
+              document.getElementById('me-body').innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Error cargando datos (' + err + ')</td></tr>';
+            });
+        }
+
+        document.getElementById('me-buscar').addEventListener('input', renderME);
+        document.getElementById('me-estado').addEventListener('change', renderME);
+        document.addEventListener('DOMContentLoaded', cargarME);
+      })();
+    </script>
+  {% endif %}
+{% endblock %}

@@ -11,6 +11,10 @@ channels-redis==4.2.1
 # Redis (capa de cache y pub/sub)
 redis==5.2.1
 
+# Celery (tareas asíncronas y programadas)
+celery==5.4.0
+django-celery-beat==2.7.0
+
 # Configuración por entorno
 python-dotenv==1.1.0
 
