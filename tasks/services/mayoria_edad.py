@@ -7,13 +7,17 @@ from django.utils import timezone
 from commons.models import T_apre, T_DocumentFolderAprendiz
 
 
-def _siguiente_cumpleanios_18(fecha_naci: date) -> date:
-    """Fecha en que el aprendiz cumple/cumplió 18 años."""
+def _siguiente_cumpleanios_18(fecha_naci: date) -> Optional[date]:
+    """Fecha en que el aprendiz cumple/cumplió 18 años. None si la fecha de
+    nacimiento es inválida (p.ej. año fuera de rango por dato sucio)."""
     try:
         return fecha_naci.replace(year=fecha_naci.year + 18)
     except ValueError:
-        # 29 de febrero -> 28 de febrero del año +18
-        return fecha_naci.replace(year=fecha_naci.year + 18, day=28)
+        try:
+            # 29 de febrero -> 28 de febrero del año +18
+            return fecha_naci.replace(year=fecha_naci.year + 18, day=28)
+        except ValueError:
+            return None
 
 
 def fecha_18(aprendiz: T_apre) -> Optional[date]:
@@ -59,16 +63,19 @@ def tiene_cc_actualizado(aprendiz: T_apre) -> bool:
 
 def aprendices_para_alerta(dias_objetivo: int):
     """Aprendices cuyo conteo de días para 18 == dias_objetivo (puede ser
-    negativo). Filtra a los que tienen fecha_naci. Devuelve queryset evaluado."""
+    negativo). Filtra a los que tienen fecha_naci. Devuelve lista."""
     hoy = timezone.localdate()
     fecha_objetivo = hoy + timedelta(days=dias_objetivo)
     # Cumpleaños 18 = fecha_objetivo => fecha_naci = fecha_objetivo - 18 años
     try:
         fecha_naci_objetivo = fecha_objetivo.replace(year=fecha_objetivo.year - 18)
     except ValueError:
-        fecha_naci_objetivo = fecha_objetivo.replace(
-            year=fecha_objetivo.year - 18, day=28,
-        )
+        try:
+            fecha_naci_objetivo = fecha_objetivo.replace(
+                year=fecha_objetivo.year - 18, day=28,
+            )
+        except ValueError:
+            return []
 
     return list(
         T_apre.objects
