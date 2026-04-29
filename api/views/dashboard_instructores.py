@@ -71,23 +71,23 @@ def _build_rows():
 
     rows = []
     for ins in instructores:
-            user = ins.perfil.user if ins.perfil else None
-            cargados, esperados, pct = _porcentaje_evidencias(ins.id)
-            dias = dias_sin_actividad(ins)
-            ultima = ultima_actividad(ins)
+        user = ins.perfil.user if ins.perfil else None
+        cargados, esperados, pct = _porcentaje_evidencias(ins.id)
+        dias = dias_sin_actividad(ins)
+        ultima = ultima_actividad(ins)
 
-            fichas_qs = T_ficha.objects.filter(instru=ins)
-            fichas_count = fichas_qs.count()
-            apre_total = T_apre.objects.filter(ficha__instru=ins).count()
-            apre_activos = T_apre.objects.filter(
-                ficha__instru=ins, esta='activo'
-            ).count()
+        fichas_qs = T_ficha.objects.filter(instru=ins)
+        fichas_count = fichas_qs.count()
+        apre_total = T_apre.objects.filter(ficha__instru=ins).count()
+        apre_activos = T_apre.objects.filter(
+            ficha__instru=ins, esta='activo'
+        ).count()
 
-            alertas = T_notifi.objects.filter(
-                usuario=user,
-                origen_tipo__startswith='inactividad_',
-                leida=False,
-            ).count() if user else 0
+        alertas = T_notifi.objects.filter(
+            usuario=user,
+            origen_tipo__startswith='inactividad_',
+            leida=False,
+        ).count() if user else 0
 
         rows.append({
             'instructor_id': ins.id,
