@@ -881,6 +881,7 @@ def aprendices(request):
     perfil_form_data = request.session.pop('perfil_form_data', None)
     representante_form_data = request.session.pop(
         'representante_form_data', None)
+    crear_error = request.session.pop('crear_aprendiz_error', None)
 
     perfil_form = PerfilForm(
         perfil_form_data, prefix='perfil') if perfil_form_data else PerfilForm(prefix='perfil')
@@ -895,7 +896,8 @@ def aprendices(request):
         'perfil_form': perfil_form,
         'representante_form': representante_form,
         'can_edit': can_edit,
-        'can_view': can_view
+        'can_view': can_view,
+        'crear_error': crear_error,
     })
 
 ## Endpoint para editar aprendiz ##
@@ -1053,74 +1055,70 @@ def crear_aprendices(request):
 
         if perfil_form.is_valid() and representante_form.is_valid():
             try:
-                dni = perfil_form.cleaned_data['dni']
-                if T_perfil.objects.filter(dni=dni).exists():
-                    raise ValueError(
-                        "El número de documento ya está registrado en el sistema.")
-
-                fecha_nacimiento = perfil_form.cleaned_data['fecha_naci']
-                if fecha_nacimiento:
-                    edad = (timezone.now().date() -
-                            fecha_nacimiento).days // 365
-                    if edad < 14:
+                with transaction.atomic():
+                    dni = perfil_form.cleaned_data['dni']
+                    if T_perfil.objects.filter(dni=dni).exists():
                         raise ValueError(
-                            "El aprendiz debe tener al menos 14 años para registrarse.")
-                else:
-                    raise ValueError("La fecha de nacimiento es obligatoria.")
+                            "El número de documento ya está registrado en el sistema.")
 
-                nombre = perfil_form.cleaned_data['nom']
-                apellido = perfil_form.cleaned_data['apelli']
-                base_username = (nombre[:3] + apellido[:3]).lower()
-                username = base_username
-                i = 1
-                while User.objects.filter(username=username).exists():
-                    username = f"{base_username}{i}"
-                    i += 1
+                    fecha_nacimiento = perfil_form.cleaned_data['fecha_naci']
+                    if fecha_nacimiento:
+                        edad = (timezone.now().date() -
+                                fecha_nacimiento).days // 365
+                        if edad < 14:
+                            raise ValueError(
+                                "El aprendiz debe tener al menos 14 años para registrarse.")
+                    else:
+                        raise ValueError("La fecha de nacimiento es obligatoria.")
 
-                new_user = User.objects.create_user(
-                    username=username,
-                    password=str(dni),
-                    email=perfil_form.cleaned_data['mail']
-                )
+                    nombre = perfil_form.cleaned_data['nom']
+                    apellido = perfil_form.cleaned_data['apelli']
+                    base_username = (nombre[:3] + apellido[:3]).lower()
+                    username = base_username
+                    i = 1
+                    while User.objects.filter(username=username).exists():
+                        username = f"{base_username}{i}"
+                        i += 1
 
-                new_perfil = perfil_form.save(commit=False)
-                new_perfil.user = new_user
-                new_perfil.rol = 'aprendiz'
-                new_perfil.mail = new_user.email
-                new_perfil.save()
+                    new_user = User.objects.create_user(
+                        username=username,
+                        password=str(dni),
+                        email=perfil_form.cleaned_data['mail']
+                    )
 
-                nombre_repre = representante_form.cleaned_data['nom']
-                telefono_repre = representante_form.cleaned_data['tele']
-                new_repre_legal = T_repre_legal.objects.filter(
-                    nom=nombre_repre,
-                    tele=telefono_repre
-                ).first()
+                    new_perfil = perfil_form.save(commit=False)
+                    new_perfil.user = new_user
+                    new_perfil.rol = 'aprendiz'
+                    new_perfil.mail = new_user.email
+                    new_perfil.save()
 
-                if not new_repre_legal:
-                    new_repre_legal = representante_form.save()
+                    nombre_repre = representante_form.cleaned_data['nom']
+                    telefono_repre = representante_form.cleaned_data['tele']
+                    new_repre_legal = T_repre_legal.objects.filter(
+                        nom=nombre_repre,
+                        tele=telefono_repre
+                    ).first()
 
-                perfil = getattr(request.user, 't_perfil', None)
+                    if not new_repre_legal:
+                        new_repre_legal = representante_form.save()
 
-                T_apre.objects.create(
-                    cod="z",
-                    esta="Activo",
-                    perfil=new_perfil,
-                    repre_legal=new_repre_legal,
-                    usu_crea=perfil.user
-                )
+                    T_apre.objects.create(
+                        cod="z",
+                        esta="activo",
+                        perfil=new_perfil,
+                        repre_legal=new_repre_legal,
+                        usu_crea=request.user
+                    )
 
                 return redirect('aprendices')
 
             except ValueError as e:
-                messages.error(request, f'Ocurrió un error: {str(e)}')
+                request.session['crear_aprendiz_error'] = str(e)
         else:
-            messages.error(
-                request, 'Por favor, corrige los errores en el formulario.')
+            request.session['crear_aprendiz_error'] = 'Por favor, corrige los errores en el formulario.'
 
-        # Redirigir de nuevo a la vista principal con los errores y formularios
         aprendices_url = reverse('aprendices')
-        query_params = '?modal=open'  # Parámetro para abrir el modal automáticamente
-        response = redirect(f'{aprendices_url}{query_params}')
+        response = redirect(f'{aprendices_url}?modal=open')
         request.session['perfil_form_data'] = request.POST
         request.session['representante_form_data'] = request.POST
         return response

@@ -18,6 +18,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("formEditarAprendiz");
   let table;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("modal") === "open") {
+    const crearModal = new bootstrap.Modal(document.getElementById("crearAprendizModal"));
+    crearModal.show();
+    const errorMsg = document.getElementById("crear-aprendiz-error");
+    if (errorMsg && errorMsg.textContent.trim()) {
+      showErrorToast(errorMsg.textContent.trim());
+    }
+  }
+
   cargarDatosTabla();
 
   // ======== Funcion para llenar la tabla =========

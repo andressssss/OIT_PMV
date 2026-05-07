@@ -50,7 +50,10 @@
           </div>
           <div class="modal-body">
             <form id="formCrearAprendiz" action="/aprendices/crear/" method="POST">
-              {{ error }}
+              <span id="crear-aprendiz-error" class="d-none">{% if crear_error %}{{ crear_error }}{% endif %}</span>
+              {% if crear_error %}
+                <div class="alert alert-danger py-2">{{ crear_error }}</div>
+              {% endif %}
               {% csrf_token %}
               <h3>Datos del Perfil</h3>
               <div class="row">
