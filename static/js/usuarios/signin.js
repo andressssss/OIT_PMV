@@ -53,19 +53,4 @@ document.addEventListener('DOMContentLoaded', e => {
             hideSpinner(submitBtn, originalBtnContent);
         }
     });
-
-    const btnForget = document.getElementById('passForget');
-
-    btnForget.addEventListener('click', () => {
-        Toastify({
-            text: "Si no puede ingresar con su documento de identidad, por favor contacte al equipo de soporte: mesadeayuda@senatic.com.co",
-            duration: 15000,
-            close: true,
-            gravity: "bottom",
-            position: "center",
-            backgroundColor: "#1E2DBE",
-            stopOnFocus: true,
-            className: "custom-toast"
-        }).showToast();
-    });
 });;
