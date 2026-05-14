@@ -47,3 +47,5 @@ logs/
 /static/mptt/
 
 export_fichas/
+# Worktrees de Claude Code
+.claude/worktrees/
