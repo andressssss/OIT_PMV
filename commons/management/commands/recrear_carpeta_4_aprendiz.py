@@ -22,8 +22,10 @@ def recrear_carpeta_evidencias(aprendiz):
     )
 
     # Mover contenido actual a BACKUP para preservarlo
-    hijos_actuales = T_DocumentFolderAprendiz.objects.filter(parent=carpeta)
-    if hijos_actuales.exists():
+    ids_hijos = list(
+        T_DocumentFolderAprendiz.objects.filter(parent=carpeta).values_list("id", flat=True)
+    )
+    if ids_hijos:
         fecha = timezone.now().strftime("%Y-%m-%d %H:%M")
         carpeta_backup = T_DocumentFolderAprendiz.objects.create(
             name=f"BACKUP {fecha}",
@@ -31,7 +33,7 @@ def recrear_carpeta_evidencias(aprendiz):
             aprendiz=aprendiz,
             parent=carpeta
         )
-        hijos_actuales.update(parent=carpeta_backup)
+        T_DocumentFolderAprendiz.objects.filter(id__in=ids_hijos).update(parent=carpeta_backup)
 
     # Crear fases
     fases = T_fase.objects.filter(nom__in=FASES_LABELS.keys()).order_by("id")
