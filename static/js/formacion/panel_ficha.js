@@ -1733,6 +1733,36 @@ async function cargarArchivo(id) {
       }
     });
   }
+
+  const btnRecrearCarpeta4 = document.getElementById("btnRecrearCarpeta4");
+  if (btnRecrearCarpeta4) {
+    btnRecrearCarpeta4.addEventListener("click", async () => {
+      const modalEl = document.getElementById("portafolioAprendizModal");
+      const aprendizId = modalEl.dataset.aprendizId;
+      if (!aprendizId) return;
+
+      btnRecrearCarpeta4.disabled = true;
+      const textoOriginal = btnRecrearCarpeta4.innerHTML;
+      btnRecrearCarpeta4.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Regenerando...';
+
+      try {
+        const response = await fetch(`/api/tree/recrear_carpeta4_aprendiz/${aprendizId}/`, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken },
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "Error al regenerar");
+        toastSuccess(data.message);
+        cargarPortafolio(aprendizId);
+      } catch (error) {
+        toastError(error.message || "Error al regenerar la carpeta 4");
+      } finally {
+        btnRecrearCarpeta4.disabled = false;
+        btnRecrearCarpeta4.innerHTML = textoOriginal;
+      }
+    });
+  }
+
   const formEditarAprendiz = document.getElementById("formEditarAprendiz");
 
   async function fillDataAprendiz(aprendizId) {

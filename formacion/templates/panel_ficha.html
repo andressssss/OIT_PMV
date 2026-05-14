@@ -687,6 +687,13 @@
           <!-- Header -->
           <div class="modal-header">
             <h5 class="modal-title" id="portafolioAprendizModalLabel">Portafolio del Aprendiz</h5>
+            <div class="ms-auto d-flex align-items-center gap-2 me-2">
+              {% if perfil.rol == 'admin' %}
+              <button type="button" id="btnRecrearCarpeta4" class="btn btn-sm btn-warning" title="Recrea la estructura de Carpeta 4 según las competencias y RAPs actuales. El contenido existente se mueve a BACKUP.">
+                <i class="bi bi-arrow-clockwise"></i> Regenerar Carpeta 4
+              </button>
+              {% endif %}
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
 

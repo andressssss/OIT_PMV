@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from commons.models import T_apre, T_DocumentFolderAprendiz, T_fase, T_raps, T_ficha
 
 FASES_LABELS = {
@@ -10,7 +11,7 @@ FASES_LABELS = {
 
 
 def recrear_carpeta_evidencias(aprendiz):
-    """Elimina y recrea la carpeta 4. EVIDENCIAS DE APRENDIZAJE de un aprendiz"""
+    """Recrea la carpeta 4. EVIDENCIAS DE APRENDIZAJE de un aprendiz, preservando el contenido actual en BACKUP"""
 
     # Buscar la carpeta padre
     carpeta, _ = T_DocumentFolderAprendiz.objects.get_or_create(
@@ -20,8 +21,17 @@ def recrear_carpeta_evidencias(aprendiz):
         parent=None
     )
 
-    # Borrar todo lo que haya dentro
-    T_DocumentFolderAprendiz.objects.filter(parent=carpeta).delete()
+    # Mover contenido actual a BACKUP para preservarlo
+    hijos_actuales = T_DocumentFolderAprendiz.objects.filter(parent=carpeta)
+    if hijos_actuales.exists():
+        fecha = timezone.now().strftime("%Y-%m-%d %H:%M")
+        carpeta_backup = T_DocumentFolderAprendiz.objects.create(
+            name=f"BACKUP {fecha}",
+            tipo="carpeta",
+            aprendiz=aprendiz,
+            parent=carpeta
+        )
+        hijos_actuales.update(parent=carpeta_backup)
 
     # Crear fases
     fases = T_fase.objects.filter(nom__in=FASES_LABELS.keys()).order_by("id")

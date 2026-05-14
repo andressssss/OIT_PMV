@@ -158,6 +158,7 @@ urlpatterns = [
 
     # Tree aprendiz
     path("api/tree/obtener_carpetas_aprendiz/<int:aprendiz_id>/", formacion_views.obtener_carpetas_aprendiz, name="api_obtener_carpetas_aprendiz"),
+    path("api/tree/recrear_carpeta4_aprendiz/<int:aprendiz_id>/", formacion_views.recrear_carpeta4_aprendiz, name="api_recrear_carpeta4_aprendiz"),
     path('api/tree/obtener_hijos_carpeta_aprendiz/<int:carpeta_id>', formacion_views.obtener_hijos_carpeta_aprendiz, name='api_obtener_hijos_carpeta_aprendiz'),
     path('tree/descargar_portafolio_aprendiz/<int:aprendiz_id>', formacion_views.descargar_portafolio_aprendiz_zip, name='descargar_portafolio_aprendiz_zip'),
     path('tree/descargar_portafolios_ficha/<int:ficha_id>', formacion_views.descargar_portafolios_ficha_zip, name='descargar_portafolios_ficha_zip'),
