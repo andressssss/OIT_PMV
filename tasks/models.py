@@ -72,6 +72,12 @@ class T_alerta_regla(models.Model):
         related_name='alertas_destino',
         help_text="Perfiles que reciben la notificación/correo (admin, líder, gestor, etc.)",
     )
+    destinatarios_cc = models.ManyToManyField(
+        'commons.T_perfil',
+        blank=True,
+        related_name='alertas_destino_cc',
+        help_text="Perfiles que reciben copia (CC): enlaces territoriales, equipo de portafolio, apoyo administrativo.",
+    )
     incluir_instructor_ficha = models.BooleanField(
         default=False,
         help_text="Si está activo, también notifica al instructor de la ficha del aprendiz (sólo aplica a reglas de mayoría de edad)",

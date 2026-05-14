@@ -521,7 +521,7 @@ def documentos(instance, filename):
     nombre_base, extension = os.path.splitext(filename)
     nombre_base = nombre_base.replace(" ", "_")  # Reemplazar espacios
     nombre_base = "".join(c for c in nombre_base if c.isalnum() or c in [
-                          "_", "-"])  # Eliminar caracteres especiales
+                        "_", "-"])  # Eliminar caracteres especiales
     return f'documentos/{nombre_base}{extension}'
 
 
@@ -536,7 +536,7 @@ class T_docu(models.Model):
     nom = models.CharField(max_length=200)
     tipo = models.CharField(max_length=200)
     archi = models.FileField(upload_to='documentos',
-                             null=True, blank=True, max_length=500)
+                            null=True, blank=True, max_length=500)
     tama = models.CharField(max_length=200)
     priva = models.CharField(max_length=200)
     esta = models.CharField(
@@ -916,7 +916,16 @@ class T_permi(models.Model):
 
 
 class T_porta_archi(models.Model):
+    class Meta:
+        managed = True
+        db_table = 't_porta_archi'
 
+    TIPO_CHOICES = [
+        ('carpeta', 'Carpeta'),
+        ('documento', 'Documento'),
+    ]
+
+    # --- Campos existentes ---
     ficha = models.ForeignKey(
         "T_ficha", on_delete=models.DO_NOTHING, related_name="archivos_eliminados")
     docu = models.ForeignKey(
@@ -927,11 +936,37 @@ class T_porta_archi(models.Model):
     obser = models.CharField(max_length=500)
     ubi = models.CharField(max_length=500)
 
-    class Meta:
-        db_table = "t_porta_archi"
+    # --- Campos NUEVOS para soportar restauración ---
+    aprendiz = models.ForeignKey(
+        T_apre, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='papelera',
+        help_text='Si se elimino del portafolio del aprendiz, se guarda aqui'
+    )
+    nombre = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text='Nombre original del nodo eliminado'
+    )
+    tipo = models.CharField(
+        max_length=20, choices=TIPO_CHOICES, default='documento',
+        help_text='Si era carpeta o documento'
+    )
+    parent_id = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='ID del nodo padre original (None si era raiz)'
+    )
+    restaurado = models.BooleanField(
+        default=False,
+        help_text='Si ya fue restaurado, no se puede restaurar de nuevo'
+    )
+    restaurado_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='papelera_restaurada'
+    )
+    restaurado_en = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.docu.nom} (Archivo eliminado)"
+        nombre_mostrar = self.nombre or (self.docu.nom if self.docu else 'Sin nombre')
+        return f"{nombre_mostrar} (Archivo eliminado)"
 
 
 class T_nove(models.Model):
@@ -978,7 +1013,7 @@ class T_nove(models.Model):
     fecha_venci = models.DateTimeField(null=True, blank=True)
     fecha_ulti_acci = models.DateTimeField(null=True, blank=True)
     respo = models.ForeignKey(User, on_delete=models.SET_NULL,
-                              related_name="novedades_responsable", blank=True, null=True)
+    related_name="novedades_responsable", blank=True, null=True)
     respo_group = models.ForeignKey(
         Group, on_delete=models.SET_NULL, related_name="novedades_group", blank=True, null=True)
     cie_ace_por_soli = models.BooleanField(default=False)

@@ -261,13 +261,19 @@ class PortaArchiSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = T_porta_archi
-        fields = ['eli_en', 'obser', 'ubi', 'docu', 'eli_por', 'url']
+        fields = ['id', 'eli_en', 'obser', 'ubi', 'docu', 'eli_por', 'url',
+            'nombre', 'tipo', 'aprendiz', 'parent_id',
+            'restaurado', 'restaurado_por', 'restaurado_en',
+            ]
         
     def get_eli_por(self, obj):
         return f"{obj.eli_por.perfil.nom} {obj.eli_por.perfil.apelli} - {obj.eli_por.perfil.dni}"
     
     def get_url(self, obj):
-        return obj.docu.archi.url
+        try:
+            return obj.docu.archi.url
+        except (ValueError, AttributeError):
+            return None
 
     def get_eli_en(self, obj):
         fecha_local = localtime(obj.eli_en)

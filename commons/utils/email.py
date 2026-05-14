@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 
-def enviar_correo(destinatarios, asunto, mensaje, mensaje_html=None):
+def enviar_correo(destinatarios, asunto, mensaje, mensaje_html=None, cc=None):
     """
     Envía un correo con soporte HTML y texto plano.
     """
@@ -47,7 +47,8 @@ def enviar_correo(destinatarios, asunto, mensaje, mensaje_html=None):
         subject=asunto,
         body=mensaje,
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply-senatic@formacionprofesional-oit.org'),
-        to=destinatarios
+        to=destinatarios,
+        cc=cc or []
     )
     email.attach_alternative(mensaje_html, "text/html")
     email.send()

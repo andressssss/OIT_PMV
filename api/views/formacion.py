@@ -623,13 +623,16 @@ class FichasViewSet(ModelViewSet):
         else:
             return Response({"detail": "Contexto no válido"}, status=status.HTTP_400_BAD_REQUEST)
 
-        
         archivo_eliminado = T_porta_archi.objects.create(
-          ficha = ficha,
-          docu = documento.documento,
-          eli_por = request.user,
-          obser = observacion,
-          ubi = ubicacion
+          ficha=ficha,
+          docu=documento.documento,
+          eli_por=request.user,
+          obser=observacion,
+          ubi=ubicacion,
+          aprendiz=documento.aprendiz if contexto == "aprendiz" else None,
+          nombre=documento.name,
+          tipo="documento" if documento.documento else "carpeta",
+          parent_id=documento.parent_id,
         )
         
         if documento.documento:
@@ -986,8 +989,89 @@ class PortaArchiViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        queryset = T_porta_archi.objects.all()
-        ficha_id = self.request.query_params.get("id")
+        # Solo archivos NO restaurados (los que están realmente en la papelera)
+        queryset = T_porta_archi.objects.filter(restaurado=False)
+
+        # Filtrar por ficha si se pasa el parametro "id" (o "ficha_id")
+        ficha_id = self.request.query_params.get("id") or self.request.query_params.get("ficha_id")
         if ficha_id:
             queryset = queryset.filter(ficha_id=ficha_id)
-        return queryset
+
+        # Filtrar por aprendiz si se pasa "aprendiz_id"
+        aprendiz_id = self.request.query_params.get("aprendiz_id")
+        if aprendiz_id:
+            queryset = queryset.filter(aprendiz_id=aprendiz_id)
+
+        return queryset.order_by('-eli_en')
+
+    @action(detail=True, methods=['post'], url_path='restaurar')
+    def restaurar(self, request, pk=None):
+        """Restaura un archivo desde la papelera a su ubicacion original.
+
+        Flujo:
+        1. Valida permisos (rol diferente de 'consulta').
+        2. Trae el registro de papelera por su ID (pk de la URL).
+        3. Valida que no este ya restaurado.
+        4. Valida que la carpeta padre original aun exista.
+        5. Recrea el nodo en el arbol (T_DocumentFolderAprendiz o T_DocumentFolder).
+        6. Marca el registro con restaurado=True, restaurado_por, restaurado_en.
+        """
+        # 1. Validar permisos
+        perfil = T_perfil.objects.get(user=request.user)
+        if perfil.rol == "consulta":
+            return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
+
+        # 2. Traer el registro
+        archivo_papelera = self.get_object()
+
+        # 3. Validar que no este ya restaurado
+        if archivo_papelera.restaurado:
+            return Response(
+                {"error": "Este archivo ya fue restaurado"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 4. Validar que la carpeta padre original aun exista
+        padre = None
+        if archivo_papelera.parent_id:
+            if archivo_papelera.aprendiz:
+                padre = T_DocumentFolderAprendiz.objects.filter(id=archivo_papelera.parent_id).first()
+            else:
+                padre = T_DocumentFolder.objects.filter(id=archivo_papelera.parent_id).first()
+
+            if padre is None:
+                return Response(
+                    {"error": "No se puede restaurar: la carpeta original ya no existe."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 5. Recrear el nodo en el arbol
+        if archivo_papelera.aprendiz:
+            nuevo_nodo = T_DocumentFolderAprendiz.objects.create(
+                name=archivo_papelera.nombre,
+                aprendiz=archivo_papelera.aprendiz,
+                parent=padre,
+                documento=archivo_papelera.docu if archivo_papelera.tipo == "documento" else None,
+                tipo=archivo_papelera.tipo,
+            )
+        else:
+            nuevo_nodo = T_DocumentFolder.objects.create(
+                name=archivo_papelera.nombre,
+                ficha=archivo_papelera.ficha,
+                parent=padre,
+                documento=archivo_papelera.docu if archivo_papelera.tipo == "documento" else None,
+                tipo=archivo_papelera.tipo,
+            )
+
+        # 6. Marcar el registro como restaurado
+        archivo_papelera.restaurado = True
+        archivo_papelera.restaurado_por = request.user
+        archivo_papelera.restaurado_en = timezone.now()
+        archivo_papelera.save()
+
+        return Response({
+            "status": "success",
+            "message": f"Archivo '{archivo_papelera.nombre}' restaurado correctamente.",
+            "nuevo_id": nuevo_nodo.id
+        }, status=status.HTTP_200_OK)
+
