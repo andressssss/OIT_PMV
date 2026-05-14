@@ -8,12 +8,12 @@ from commons.models import (
     T_acci_nove_docu)
 from commons.utils.documentos import guardar_documento
 from commons.utils.email import enviar_correo
-from datetime import timedelta
+from datetime import timedelta, date
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group,  User
 from django.core.exceptions import ValidationError
 from django.db import transaction, models
-from django.db.models import Exists, OuterRef, Count, Q, DateField, Max, IntegerField
+from django.db.models import Exists, OuterRef, Count, Q, DateField, Max, IntegerField, Case, When
 from django.db.models.functions import Cast
 from django.utils import timezone
 from rest_framework import status
@@ -28,61 +28,57 @@ from rest_framework.viewsets import ViewSet, ModelViewSet
 User = get_user_model()
 
 
+def _parse_date_range(request):
+    desde_str = request.GET.get("desde", "")
+    hasta_str = request.GET.get("hasta", "")
+    try:
+        desde = date.fromisoformat(desde_str) if desde_str else None
+        hasta = date.fromisoformat(hasta_str) if hasta_str else None
+        return desde, hasta
+    except ValueError:
+        return None, None
+
+
 class DashboardKpisView(APIView):
     def get(self, request):
-        documentos_ficha = T_DocumentFolder.objects.filter(
-            tipo="documento").count()
-        documentos_aprendices = T_DocumentFolderAprendiz.objects.filter(
-            tipo="documento").count()
+        desde, hasta = _parse_date_range(request)
 
-        # --- Carpetas vacías en fichas ---
+        # Documentos y carpetas no tienen campo de fecha en el modelo, siempre totales
+        documentos_ficha = T_DocumentFolder.objects.filter(tipo="documento").count()
+        documentos_aprendices = T_DocumentFolderAprendiz.objects.filter(tipo="documento").count()
+
         carpetas_ficha = T_DocumentFolder.objects.filter(tipo="carpeta").annotate(
             tiene_subcarpeta=Exists(
-                T_DocumentFolder.objects.filter(
-                    parent=OuterRef('pk'),
-                    tipo="carpeta"
-                )
+                T_DocumentFolder.objects.filter(parent=OuterRef('pk'), tipo="carpeta")
             ),
             tiene_documento=Exists(
-                T_DocumentFolder.objects.filter(
-                    parent=OuterRef('pk'),
-                    tipo="documento"
-                )
+                T_DocumentFolder.objects.filter(parent=OuterRef('pk'), tipo="documento")
             )
-        ).filter(
-            tiene_subcarpeta=False,
-            tiene_documento=False
-        )
+        ).filter(tiene_subcarpeta=False, tiene_documento=False)
         total_carpetas_ficha = carpetas_ficha.count()
 
-        # --- Carpetas vacías en aprendices ---
         carpetas_apre = T_DocumentFolderAprendiz.objects.filter(tipo="carpeta").annotate(
             tiene_subcarpeta=Exists(
-                T_DocumentFolderAprendiz.objects.filter(
-                    parent=OuterRef('pk'),
-                    tipo="carpeta"
-                )
+                T_DocumentFolderAprendiz.objects.filter(parent=OuterRef('pk'), tipo="carpeta")
             ),
             tiene_documento=Exists(
-                T_DocumentFolderAprendiz.objects.filter(
-                    parent=OuterRef('pk'),
-                    tipo="documento"
-                )
+                T_DocumentFolderAprendiz.objects.filter(parent=OuterRef('pk'), tipo="documento")
             )
-        ).filter(
-            tiene_subcarpeta=False,
-            tiene_documento=False
-        )
+        ).filter(tiene_subcarpeta=False, tiene_documento=False)
         total_carpetas_apre = carpetas_apre.count()
 
-        # Total de fichas
-        total_fichas = T_ficha.objects.count()
+        # Fichas y juicios filtrados por rango de fecha
+        fichas_qs = T_ficha.objects.all()
+        jui_qs = T_jui_eva_actu.objects.all()
+        if desde:
+            fichas_qs = fichas_qs.filter(fecha_aper__date__gte=desde)
+            jui_qs = jui_qs.filter(fecha_repor__gte=desde)
+        if hasta:
+            fichas_qs = fichas_qs.filter(fecha_aper__date__lte=hasta)
+            jui_qs = jui_qs.filter(fecha_repor__lte=hasta)
 
-        # Fichas que tienen juicios (distintas en la tabla de evaluaciones)
-        fichas_con_juicios = T_jui_eva_actu.objects.values(
-            "ficha").distinct().count()
-
-        # Fichas que no tienen juicios
+        total_fichas = fichas_qs.count()
+        fichas_con_juicios = jui_qs.values("ficha").distinct().count()
         fichas_sin_juicios = total_fichas - fichas_con_juicios
 
         data = {
@@ -105,10 +101,13 @@ class DashboardKpisView(APIView):
 
 class DashboardFichasView(APIView):
     def get(self, request):
-        fichas = (
-            T_ficha.objects.values("progra__nom")
-            .annotate(total=Count("id"))
-        )
+        desde, hasta = _parse_date_range(request)
+        fichas_qs = T_ficha.objects.all()
+        if desde:
+            fichas_qs = fichas_qs.filter(fecha_aper__date__gte=desde)
+        if hasta:
+            fichas_qs = fichas_qs.filter(fecha_aper__date__lte=hasta)
+        fichas = fichas_qs.values("progra__nom").annotate(total=Count("id"))
 
         # Diccionario de apodos
         aliases = {
@@ -157,12 +156,21 @@ class UsuariosPorRolView(APIView):
 
 class DashboardRapsView(APIView):
     def get(self, request):
-        evaluados = T_jui_eva_actu.objects.filter(eva="APROBADO").count()
-        por_evaluar = T_jui_eva_actu.objects.filter(eva="POR EVALUAR").count()
+        desde, hasta = _parse_date_range(request)
+        qs = T_jui_eva_actu.objects.all()
+        if desde:
+            qs = qs.filter(fecha_repor__gte=desde)
+        if hasta:
+            qs = qs.filter(fecha_repor__lte=hasta)
+
+        totals = qs.aggregate(
+            evaluados=Count(Case(When(eva="APROBADO", then=1), output_field=IntegerField())),
+            por_evaluar=Count(Case(When(eva="POR EVALUAR", then=1), output_field=IntegerField())),
+        )
 
         resultado = [
-            {"alias": "Evaluados", "nombre": "evaluados", "total": evaluados},
-            {"alias": "Por Evaluar", "nombre": "por_evaluar", "total": por_evaluar},
+            {"alias": "Evaluados", "nombre": "evaluados", "total": totals["evaluados"]},
+            {"alias": "Por Evaluar", "nombre": "por_evaluar", "total": totals["por_evaluar"]},
         ]
 
         return Response(resultado, status=status.HTTP_200_OK)

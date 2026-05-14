@@ -4,7 +4,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     fichasChart: "/api/dashboard/fichas/",
     usuariosChart: "/api/dashboard/usuarios-rol/",
     rapsChart: "/api/dashboard/juicios/",
-  }; no 
+  };
+
+  const chartInstances = {};
+  let filtroDesde = "";
+  let filtroHasta = "";
+
+  function buildUrl(base) {
+    const params = new URLSearchParams();
+    if (filtroDesde) params.set("desde", filtroDesde);
+    if (filtroHasta) params.set("hasta", filtroHasta);
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  }
+
   async function fetchData(url) {
     try {
       const response = await fetch(url);
@@ -21,48 +34,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (el) el.textContent = value;
   }
 
-  // ========= KPIs =========
   async function loadKpis() {
-    const data = await fetchData(ENDPOINTS.kpis);
+    const data = await fetchData(buildUrl(ENDPOINTS.kpis));
     if (!data) return;
-    setText("kpi-total-fichas", data.total_fichas || "--");
-    setText("kpi-fichas-sin-juicios", data.fichas_sin_juicios || "--");
-    setText("kpi-fichas-con-juicios", data.fichas_con_juicios || "--");
-    setText("kpi-total-usuarios", data.usuarios_total || "--");
-    setText("kpi-usuarios-activos", data.usuarios_activos || "--");
-    setText("kpi-usuarios-inactivos", data.usuarios_inactivos || "--");
-    setText("kpi-documentos-total", data.documentos_total || "--");
-    setText("kpi-documentos-fichas", data.documentos_fichas || "--");
-    setText("kpi-documentos-aprendices", data.documentos_aprendices || "--");
-    setText("kpi-carpetas-vacias-total", data.carpetas_vacias_total || "--");
-    setText("kpi-carpetas-vacias-fichas", data.carpetas_vacias_fichas || "--");
-    setText(
-      "kpi-carpetas-vacias-aprendices",
-      data.carpetas_vacias_aprendices || "--"
-    );
+    setText("kpi-total-fichas", data.total_fichas ?? "--");
+    setText("kpi-fichas-sin-juicios", data.fichas_sin_juicios ?? "--");
+    setText("kpi-fichas-con-juicios", data.fichas_con_juicios ?? "--");
+    setText("kpi-total-usuarios", data.usuarios_total ?? "--");
+    setText("kpi-usuarios-activos", data.usuarios_activos ?? "--");
+    setText("kpi-usuarios-inactivos", data.usuarios_inactivos ?? "--");
+    setText("kpi-documentos-total", data.documentos_total ?? "--");
+    setText("kpi-documentos-fichas", data.documentos_fichas ?? "--");
+    setText("kpi-documentos-aprendices", data.documentos_aprendices ?? "--");
+    setText("kpi-carpetas-vacias-total", data.carpetas_vacias_total ?? "--");
+    setText("kpi-carpetas-vacias-fichas", data.carpetas_vacias_fichas ?? "--");
+    setText("kpi-carpetas-vacias-aprendices", data.carpetas_vacias_aprendices ?? "--");
   }
 
   const CHART_COLORS = [
-    "#01B8AA",
-    "#374649",
-    "#FD625E",
-    "#F2C80F",
-    "#5F6B6D",
-    "#8AD4EB",
-    "#FE9666",
-    "#A66999",
-    "#3599B8",
-    "#DFBFBF",
+    "#01B8AA", "#374649", "#FD625E", "#F2C80F", "#5F6B6D",
+    "#8AD4EB", "#FE9666", "#A66999", "#3599B8", "#DFBFBF",
   ];
 
-  // ========= Render ECharts Donut =========
   function renderDonutChart(elId, title, dataset) {
     const el = document.getElementById(elId);
     if (!el) return;
 
-    const chart = echarts.init(el);
+    if (!chartInstances[elId]) {
+      chartInstances[elId] = echarts.init(el);
+      window.addEventListener("resize", () => chartInstances[elId].resize());
+    }
 
-    chart.setOption({
+    chartInstances[elId].setOption({
       baseOption: {
         title: {
           text: title,
@@ -73,22 +76,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         tooltip: {
           show: true,
           trigger: "item",
-          confine: true, // 👈 evita que se salga de la pantalla
-          formatter: function (params) {
-            return `${params.data.fullName}<br/>${params.value} (${params.percent}%)`;
-          },
+          confine: true,
+          formatter: (params) =>
+            `${params.data.fullName}<br/>${params.value} (${params.percent}%)`,
         },
         legend: {
           orient: "vertical",
           right: 10,
           top: "middle",
           type: "scroll",
-          formatter: function (name) {
-            const maxLength = 10;
-            return name.length > maxLength
-              ? name.substring(0, maxLength) + "..."
-              : name;
-          },
+          formatter: (name) =>
+            name.length > 10 ? name.substring(0, 10) + "..." : name,
         },
         series: [
           {
@@ -99,12 +97,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             avoidLabelOverlap: true,
             label: { show: false, position: "center" },
             emphasis: {
-              label: {
-                show: true,
-                fontSize: 16,
-                fontWeight: "bold",
-                formatter: "{b}\n{d}%",
-              },
+              label: { show: true, fontSize: 16, fontWeight: "bold", formatter: "{b}\n{d}%" },
             },
             labelLine: { show: false },
             data: dataset.map((item, i) => ({
@@ -133,31 +126,59 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       ],
     });
-
-    window.addEventListener("resize", () => chart.resize());
   }
 
-  // ========= Load Charts =========
   async function loadCharts() {
-    // Fichas
-    const fichas = await fetchData(ENDPOINTS.fichasChart);
-    if (fichas) {
-      renderDonutChart("chart-fichas", "Fichas", fichas);
-    }
+    const [fichas, usuarios, raps] = await Promise.all([
+      fetchData(buildUrl(ENDPOINTS.fichasChart)),
+      fetchData(buildUrl(ENDPOINTS.usuariosChart)),
+      fetchData(buildUrl(ENDPOINTS.rapsChart)),
+    ]);
+    if (fichas) renderDonutChart("chart-fichas", "Fichas", fichas);
+    if (usuarios) renderDonutChart("chart-usuarios", "Usuarios", usuarios);
+    if (raps) renderDonutChart("chart-raps", "RAPS", raps);
+  }
 
-    // Usuarios
-    const usuarios = await fetchData(ENDPOINTS.usuariosChart);
-    if (usuarios) {
-      renderDonutChart("chart-usuarios", "Usuarios", usuarios);
-    }
+  function toISODate(d) {
+    return d.toISOString().split("T")[0];
+  }
 
-    // RAPS
-    const raps = await fetchData(ENDPOINTS.rapsChart);
-    if (raps) {
-      renderDonutChart("chart-raps", "RAPS", raps);
+  function aplicarPreset(preset) {
+    const hoy = new Date();
+    const desdeInput = document.getElementById("filtro-desde");
+    const hastaInput = document.getElementById("filtro-hasta");
+
+    if (preset === "mes_actual") {
+      desdeInput.value = toISODate(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+      hastaInput.value = toISODate(hoy);
+    } else if (preset === "mes_anterior") {
+      desdeInput.value = toISODate(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1));
+      hastaInput.value = toISODate(new Date(hoy.getFullYear(), hoy.getMonth(), 0));
+    } else if (preset === "ultimos_30") {
+      const d = new Date(hoy);
+      d.setDate(d.getDate() - 30);
+      desdeInput.value = toISODate(d);
+      hastaInput.value = toISODate(hoy);
+    } else if (preset === "todo") {
+      desdeInput.value = "";
+      hastaInput.value = "";
     }
   }
 
-  await loadKpis();
-  await loadCharts();
+  async function recargarDashboard() {
+    filtroDesde = document.getElementById("filtro-desde")?.value || "";
+    filtroHasta = document.getElementById("filtro-hasta")?.value || "";
+    await Promise.all([loadKpis(), loadCharts()]);
+  }
+
+  document.querySelectorAll("[data-preset]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      aplicarPreset(btn.dataset.preset);
+      recargarDashboard();
+    });
+  });
+
+  document.getElementById("btn-aplicar-filtro")?.addEventListener("click", recargarDashboard);
+
+  await Promise.all([loadKpis(), loadCharts()]);
 });

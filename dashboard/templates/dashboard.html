@@ -18,6 +18,34 @@
           <h1 class="display-5">Dashboard de indicadores</h1>
         </div>
 
+        <!-- ====== Filtro por rango de tiempo ====== -->
+        <div class="d-flex gap-3 align-items-end flex-wrap pb-3">
+          <div>
+            <label class="form-label small mb-1 text-muted">Desde</label>
+            <input type="date" class="form-control form-control-sm" id="filtro-desde">
+          </div>
+          <div>
+            <label class="form-label small mb-1 text-muted">Hasta</label>
+            <input type="date" class="form-control form-control-sm" id="filtro-hasta">
+          </div>
+          <div class="d-flex gap-1 flex-wrap align-items-end">
+            <button class="btn btn-sm btn-outline-secondary" data-preset="mes_actual">Este mes</button>
+            <button class="btn btn-sm btn-outline-secondary" data-preset="mes_anterior">Mes anterior</button>
+            <button class="btn btn-sm btn-outline-secondary" data-preset="ultimos_30">Últimos 30 días</button>
+            <button class="btn btn-sm btn-outline-secondary" data-preset="todo">Todo</button>
+          </div>
+          <div class="align-self-end">
+            <button class="btn btn-sm btn-primary" id="btn-aplicar-filtro">
+              <i class="bi bi-funnel me-1"></i>Aplicar filtro
+            </button>
+          </div>
+        </div>
+        <p class="text-muted small mb-4">
+          <i class="bi bi-info-circle me-1"></i>
+          El filtro aplica a fichas (por fecha de apertura) y evaluaciones (por fecha de reporte).
+          Usuarios, documentos y carpetas muestran totales globales.
+        </p>
+
         <!-- ====== KPIs / Métricas rápidas ====== -->
         <div class="row g-4 mb-5" id="kpi-cards">
           <div class="col-md-3">
