@@ -82,11 +82,26 @@ document.addEventListener("DOMContentLoaded", function () {
       container.innerHTML = "<p>Error al cargar el árbol</p>";
     }
   }
+  async function recargarArbol() {
+    // Version simplificada de verTree que SOLO recarga el arbol de carpetas.
+    // No vuelve a inicializar el DataTable de papelera ni recarga alertas/historial.
+    const container = document.getElementById("folderTree");
+    if (!container) return;
+    try {
+      const apiUrl = `/api/tree/obtener_carpetas/${fichaId}/`;
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      container.innerHTML = "";
+      container.appendChild(renderTree(data.nodos, data.can_edit));
+      addEventListeners(data.can_edit);
+    } catch (error) {
+      console.error("Error al recargar el árbol:", error);
+    }
+  }
 
   let tablaArchivo;
-  async function cargarArchivo(id) {
+async function cargarArchivo(id) {
     const tablaArchivoEl = document.getElementById("tabla-archivo");
-
     tablaArchivo = new DataTable(tablaArchivoEl, {
       serverSide: false,
       processing: true,
@@ -112,14 +127,69 @@ document.addEventListener("DOMContentLoaded", function () {
           `;
           },
         },
+        {
+          data: null,
+          title: "Acciones",
+          orderable: false,
+          render: function (data, type, row) {
+            return `
+            <button class="btn btn-sm btn-success btn-restaurar" data-id="${row.id}">
+              <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+            </button>
+          `;
+          },
+        },
       ],
       order: [[3, "desc"]],
       language: {
         url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
       },
     });
+    // Listener para botón Restaurar (delegación de eventos)
+    tablaArchivoEl.addEventListener("click", function (e) {
+      const btn = e.target.closest(".btn-restaurar");
+      if (!btn) return;
+      const archivoId = btn.dataset.id;
+      restaurarArchivo(archivoId);
+    });
   }
-
+  async function restaurarArchivo(archivoId) {
+    // 1. Pedir confirmacion
+    const confirma = await confirmAction({
+      message: "¿Desea restaurar este archivo a su ubicación original?",
+      title: "Restaurar archivo",
+      icon: "question",
+    });
+    if (!confirma) return;
+    // 2. Llamar al endpoint POST /api/formacion/parchivo/<id>/restaurar/
+    try {
+      const response = await fetch(
+        `/api/formacion/parchivo/${archivoId}/restaurar/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+        }
+      );
+      const data = await response.json();
+      if (response.ok) {
+        // 3. Mostrar toast de exito
+        toastSuccess(data.message || "Archivo restaurado correctamente.");
+        // 4. Recargar la tabla para que el archivo desaparezca
+        tablaArchivo.ajax.reload();
+        // 5. Recargar el arbol para que el documento restaurado aparezca
+        recargarArbol();
+      } else {
+        // Error desde el backend
+        toastError(data.error || "No se pudo restaurar el archivo.");
+      }
+    } catch (error) {
+      console.error("Error al restaurar archivo:", error);
+      toastError("Error de conexión al restaurar el archivo.");
+    }
+  }
   async function cargarHistorial(contexto, id) {
     let containerId =
       contexto === "ficha"

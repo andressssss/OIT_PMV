@@ -91,14 +91,22 @@ def emitir_alerta(
             if mail:
                 correos_pendientes.append(mail)
 
+    # Resolver los correos en copia (CC) desde la regla
+    correos_cc = []
+    for perfil in regla.destinatarios_cc.select_related('user').all():
+        if perfil.user:
+            mail_cc = getattr(perfil, 'mail', None) or perfil.user.email
+            if mail_cc and mail_cc not in correos_pendientes:
+                correos_cc.append(mail_cc)
+
     if correos_pendientes:
         try:
             enviar_correo(
                 destinatarios=correos_pendientes,
                 asunto=asunto,
                 mensaje=mensaje,
+                cc=correos_cc,
             )
         except Exception:
             logger.exception('Error enviando correo de regla %s', regla.tipo)
-
     return emitidas
