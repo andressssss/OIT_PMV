@@ -68,12 +68,14 @@ def panel_ficha(request, ficha_id):
     acciones = mixin.get_permission_actions(request)
     puede_ver = acciones.get("ver", False)
     puede_editar = acciones.get("editar", False)
+    perfil = T_perfil.objects.filter(user=request.user).first()
 
     return render(request, 'panel_ficha.html', {
         'ficha': ficha,
         'fase': fase,
         'puede_ver': puede_ver,
-        'puede_editar': puede_editar
+        'puede_editar': puede_editar,
+        'perfil': perfil,
     })
 
 @login_required
@@ -490,6 +492,23 @@ def obtener_carpetas_aprendiz(request, aprendiz_id):
         'nodos': root_nodes,
         'can_edit': can_edit
     }, safe=False)
+
+
+@login_required
+@require_POST
+def recrear_carpeta4_aprendiz(request, aprendiz_id):
+    perfil = get_object_or_404(T_perfil, user=request.user)
+    if perfil.rol != 'admin':
+        return JsonResponse({"detail": "Sin permisos"}, status=403)
+
+    aprendiz = get_object_or_404(T_apre, id=aprendiz_id)
+    if not aprendiz.ficha or not aprendiz.ficha.progra:
+        return JsonResponse({"detail": "El aprendiz no tiene ficha o programa asociado"}, status=400)
+
+    from commons.management.commands.recrear_carpeta_4_aprendiz import recrear_carpeta_evidencias
+    recrear_carpeta_evidencias(aprendiz)
+
+    return JsonResponse({"message": "Carpeta 4 regenerada correctamente"})
 
 
 @login_required
