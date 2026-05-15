@@ -1,10 +1,9 @@
 from datetime import date, timedelta
 from typing import Optional
 
-from django.db.models import Q
 from django.utils import timezone
 
-from commons.models import T_apre, T_DocumentFolderAprendiz
+from commons.models import T_apre
 
 
 def _siguiente_cumpleanios_18(fecha_naci: date) -> Optional[date]:
@@ -41,24 +40,19 @@ def es_mayor_edad(aprendiz: T_apre) -> bool:
     return dias is not None and dias <= 0
 
 
-PALABRAS_CC = ('cc', 'cedula', 'cédula', 'ciudadan')
-
-
 def tiene_cc_actualizado(aprendiz: T_apre) -> bool:
-    """Heurística: tipo_dni del perfil es 'cc' y existe en su portafolio un
-    nodo documento cuyo nombre contiene "cc"/"cedula"/"ciudadan" con archivo
-    cargado. La actualización del tipo_dni la hace manualmente el equipo."""
-    perfil = getattr(aprendiz, 'perfil', None)
-    if not perfil or perfil.tipo_dni != 'cc':
-        return False
-
-    cond = Q()
-    for p in PALABRAS_CC:
-        cond |= Q(name__icontains=p)
-
-    return T_DocumentFolderAprendiz.objects.filter(
-        aprendiz=aprendiz, tipo='documento', documento__isnull=False,
-    ).filter(cond).exists()
+    """Verifica si el instructor marcó como resuelta la alerta de CC del
+    aprendiz. Como en este proyecto las cédulas se consolidan en un PDF de
+    la ficha (no hay carpeta individual por aprendiz), no es posible validar
+    automáticamente el archivo. En su lugar, el instructor debe marcar la
+    alerta como resuelta desde el panel de la ficha."""
+    from tasks.models import T_notifi
+    return T_notifi.objects.filter(
+        origen_tipo='mayoria_edad',
+        origen_id=aprendiz.id,
+        nivel='riesgo',
+        resuelta=True,
+    ).exists()
 
 
 def aprendices_para_alerta(dias_objetivo: int):
@@ -76,7 +70,6 @@ def aprendices_para_alerta(dias_objetivo: int):
             )
         except ValueError:
             return []
-
     return list(
         T_apre.objects
         .select_related('perfil', 'ficha__instru__perfil__user')

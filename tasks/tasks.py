@@ -3,10 +3,9 @@ import logging
 from celery import shared_task
 
 from commons.models import T_DocumentFolderAprendiz
-from tasks.models import T_alerta_regla
-from tasks.services.inactividad import instructores_inactivos
+from tasks.models import T_alerta_regla, T_notifi
 from tasks.services.mayoria_edad import (
-    aprendices_para_alerta, dias_para_18, tiene_cc_actualizado,
+    aprendices_para_alerta, dias_para_18,
 )
 from tasks.services.notificaciones import emitir_alerta
 
@@ -159,8 +158,21 @@ def seguimiento_mayoria_edad():
             d = dias_para_18(apre)
             if d is None or d > -regla_riesgo.dias_umbral:
                 continue
-            if tiene_cc_actualizado(apre):
+            # Re-envío cada 7 dias: si ya hay alerta no resuelta reciente, saltar
+            existe_alerta_reciente = T_notifi.objects.filter(
+                origen_tipo='mayoria_edad',
+                origen_id=apre.id,
+                resuelta=False,
+                nivel='riesgo',
+                creada_en__gte=timezone.now() - timedelta(days=7),
+            ).exists()
+            if existe_alerta_reciente:
                 continue
+            extras = []
+            if regla_riesgo.incluir_instructor_ficha:
+                u = _instructor_user(apre)
+                if u:
+                    extras.append(u)
             ctx = {
                 'nombre': f'{apre.perfil.nom} {apre.perfil.apelli}'.strip(),
                 'dni': apre.perfil.dni,
@@ -168,6 +180,7 @@ def seguimiento_mayoria_edad():
             }
             total += emitir_alerta(
                 regla=regla_riesgo, origen_id=apre.id, contexto=ctx,
+                destinatarios_extra=extras,
             )
 
     logger.info('seguimiento_mayoria_edad: %s notificaciones emitidas', total)

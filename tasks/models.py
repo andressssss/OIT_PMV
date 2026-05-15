@@ -22,6 +22,12 @@ class T_notifi(models.Model):
     url = models.CharField(max_length=500, blank=True, null=True)
     leida = models.BooleanField(default=False)
     leida_en = models.DateTimeField(null=True, blank=True)
+    resuelta = models.BooleanField(default=False)
+    resuelta_en = models.DateTimeField(null=True, blank=True)
+    resuelta_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='notificaciones_resueltas'
+    )
     creada_en = models.DateTimeField(auto_now_add=True)
 
     # Origen genérico (qué proceso la generó)
@@ -44,6 +50,13 @@ class T_notifi(models.Model):
             self.leida = True
             self.leida_en = timezone.now()
             self.save(update_fields=['leida', 'leida_en'])
+
+    def marcar_resuelta(self, usuario=None):
+        if not self.resuelta:
+            self.resuelta = True
+            self.resuelta_en = timezone.now()
+            self.resuelta_por = usuario
+            self.save(update_fields=['resuelta', 'resuelta_en', 'resuelta_por'])
 
 
 class T_alerta_regla(models.Model):

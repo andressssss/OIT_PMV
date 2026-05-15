@@ -37,6 +37,19 @@ class NotificacionesViewSet(ViewSet):
             return Response(status=status.HTTP_404_NOT_FOUND)
         n.marcar_leida()
         return Response({'ok': True})
+    
+    @action(detail=True, methods=['post'], url_path='marcar-resuelta')
+    def marcar_resuelta(self, request, pk=None):
+        try:
+            n = T_notifi.objects.get(pk=pk, usuario=request.user)
+        except T_notifi.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        n.marcar_resuelta(usuario=request.user)
+        return Response({'ok': True}) 
+    
+    
+    
+
 
     @action(detail=False, methods=['post'], url_path='marcar-todas-leidas')
     def marcar_todas_leidas(self, request):
