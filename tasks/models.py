@@ -56,8 +56,13 @@ class T_notifi(models.Model):
             self.resuelta = True
             self.resuelta_en = timezone.now()
             self.resuelta_por = usuario
-            self.save(update_fields=['resuelta', 'resuelta_en', 'resuelta_por'])
-
+            # Resolver implica leer: si no estaba leída, marcarla también
+            update_fields = ['resuelta', 'resuelta_en', 'resuelta_por']
+            if not self.leida:
+                self.leida = True
+                self.leida_en = timezone.now()
+                update_fields += ['leida', 'leida_en']
+            self.save(update_fields=update_fields)
 
 class T_alerta_regla(models.Model):
     TIPO_CHOICES = [

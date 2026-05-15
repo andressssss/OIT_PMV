@@ -2553,6 +2553,9 @@ async function cargarArchivo(id) {
   if (novedadesTab) {
     novedadesTab.addEventListener("shown.bs.tab", function () {
       cargarNovedades();
+      if (typeof fetchResumen === 'function') {
+                    fetchResumen();
+                }
     });
   }
 });

@@ -48,7 +48,7 @@ def tiene_cc_actualizado(aprendiz: T_apre) -> bool:
     alerta como resuelta desde el panel de la ficha."""
     from tasks.models import T_notifi
     return T_notifi.objects.filter(
-        origen_tipo='mayoria_edad',
+        origen_tipo__startswith='mayoria_edad',
         origen_id=aprendiz.id,
         nivel='riesgo',
         resuelta=True,

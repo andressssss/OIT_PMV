@@ -160,7 +160,7 @@ def seguimiento_mayoria_edad():
                 continue
             # Re-envío cada 7 dias: si ya hay alerta no resuelta reciente, saltar
             existe_alerta_reciente = T_notifi.objects.filter(
-                origen_tipo='mayoria_edad',
+                origen_tipo__startswith='mayoria_edad',
                 origen_id=apre.id,
                 resuelta=False,
                 nivel='riesgo',
