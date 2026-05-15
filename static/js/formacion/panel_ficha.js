@@ -2449,4 +2449,110 @@ async function cargarArchivo(id) {
       emptyTable: "Sin historial",
     },
   });
+
+// ============================================================
+  // NOVEDADES (Alertas de mayoría de edad pendientes)
+  // ============================================================
+
+  async function cargarNovedades() {
+    const container = document.getElementById("novedadesContainer");
+    if (!container) return;
+    container.innerHTML = `<p class="text-center text-muted">Cargando alertas...</p>`;
+    try {
+      const response = await fetch(`/api/notificaciones/ficha/${fichaId}/`);
+      if (!response.ok) {
+        container.innerHTML = `<p class="text-center text-danger">Error al cargar las alertas.</p>`;
+        return;
+      }
+      const alertas = await response.json();
+      renderNovedades(alertas);
+    } catch (error) {
+      console.error("Error al cargar novedades:", error);
+      container.innerHTML = `<p class="text-center text-danger">Error de conexión.</p>`;
+    }
+  }
+
+  function renderNovedades(alertas) {
+    const container = document.getElementById("novedadesContainer");
+    if (!container) return;
+    if (!alertas || alertas.length === 0) {
+      container.innerHTML = `<p class="text-center text-muted">No hay alertas pendientes en esta ficha.</p>`;
+      return;
+    }
+    const items = alertas.map(function (a) {
+      const nivelBadge = a.nivel === "riesgo"
+        ? `<span class="badge bg-danger">Riesgo</span>`
+        : a.nivel === "seguimiento"
+          ? `<span class="badge bg-warning text-dark">Seguimiento</span>`
+          : `<span class="badge bg-info text-dark">Preventiva</span>`;
+      const fecha = new Date(a.creada_en).toLocaleString("es-CO");
+      return `
+        <div class="card mb-3 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h6 class="card-title mb-0">${a.titulo}</h6>
+              ${nivelBadge}
+            </div>
+            <p class="card-text text-muted small mb-2">${a.mensaje}</p>
+            <p class="card-text text-muted small mb-3">
+              <i class="bi bi-clock me-1"></i> ${fecha}
+            </p>
+            <button class="btn btn-sm btn-success btn-marcar-resuelta" data-id="${a.id}">
+              <i class="bi bi-check-lg me-1"></i> Marcar como hecha
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+    container.innerHTML = items;
+  }
+
+  async function marcarResuelta(notifId) {
+    const confirma = await confirmAction({
+      message: "¿Confirma que ya gestionó esta alerta y desea marcarla como hecha?",
+      title: "Marcar alerta como hecha",
+      icon: "question",
+    });
+    if (!confirma) return;
+    try {
+      const response = await fetch(
+        `/api/notificaciones/${notifId}/marcar-resuelta/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+        }
+      );
+      if (response.ok) {
+        toastSuccess("Alerta marcada como hecha.");
+        cargarNovedades();
+      } else {
+        toastError("No se pudo marcar la alerta.");
+      }
+    } catch (error) {
+      console.error("Error al marcar resuelta:", error);
+      toastError("Error de conexión al marcar la alerta.");
+    }
+  }
+
+  // Listener para los clicks en botón "Marcar como hecha"
+  const novedadesContainerEl = document.getElementById("novedadesContainer");
+  if (novedadesContainerEl) {
+    novedadesContainerEl.addEventListener("click", function (e) {
+      const btn = e.target.closest(".btn-marcar-resuelta");
+      if (!btn) return;
+      const notifId = btn.dataset.id;
+      marcarResuelta(notifId);
+    });
+  }
+
+  // Cargar novedades al hacer click en la tab "Novedades"
+  const novedadesTab = document.getElementById("novedades-tab");
+  if (novedadesTab) {
+    novedadesTab.addEventListener("shown.bs.tab", function () {
+      cargarNovedades();
+    });
+  }
 });
