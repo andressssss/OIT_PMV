@@ -1740,6 +1740,14 @@ async function cargarArchivo(id) {
       const modalEl = document.getElementById("portafolioAprendizModal");
       const aprendizId = modalEl.dataset.aprendizId;
       if (!aprendizId) return;
+      const confirma = await confirmAction({
+        title: "¿Regenerar la Carpeta 4?",
+        message: "Esta acción recreará la estructura de la Carpeta 4 según las competencias y RAPs actuales. El contenido existente se moverá a una carpeta llamada BACKUP y no se eliminará. ¿Desea continuar?",
+        icon: "warning",
+        confirmText: "Sí, regenerar",
+        cancelText: "Cancelar",
+      });
+      if (!confirma) return;
 
       btnRecrearCarpeta4.disabled = true;
       const textoOriginal = btnRecrearCarpeta4.innerHTML;
@@ -2449,4 +2457,110 @@ async function cargarArchivo(id) {
       emptyTable: "Sin historial",
     },
   });
+// ============================================================
+  // PAPELERA del APRENDIZ (replica el patron de cargarArchivo de ficha)
+  // ============================================================
+  let tablaArchivoAprendiz;
+  async function cargarArchivoAprendiz(aprendizId) {
+    const tablaEl = document.getElementById("tabla-archivo-aprendiz");
+    if (!tablaEl) return;
+    // Si ya existe una instancia previa, destruirla para evitar duplicados
+    if (tablaArchivoAprendiz) {
+      tablaArchivoAprendiz.destroy();
+      tablaEl.innerHTML = "";
+    }
+    tablaArchivoAprendiz = new DataTable(tablaEl, {
+      serverSide: false,
+      processing: true,
+      ajax: {
+        url: `/api/formacion/parchivo/?aprendiz_id=${aprendizId}`,
+        type: "GET",
+        dataSrc: "",
+      },
+      columns: [
+        { data: "docu", title: "Documento" },
+        { data: "ubi", title: "Ubicación original" },
+        { data: "obser", title: "Observación" },
+        { data: "eli_en", title: "Fecha eliminación" },
+        { data: "eli_por", title: "Eliminado por" },
+        {
+          data: "url",
+          render: function (data, type, row) {
+            if (!data) return "";
+            return `
+              <a href="${data}" target="_blank" class="btn btn-sm btn-primary">
+                Ver documento
+              </a>
+            `;
+          },
+        },
+        {
+          data: null,
+          title: "Acciones",
+          orderable: false,
+          render: function (data, type, row) {
+            return `
+              <button class="btn btn-sm btn-success btn-restaurar-apre" data-id="${row.id}">
+                <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+              </button>
+            `;
+          },
+        },
+      ],
+      order: [[3, "desc"]],
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+      },
+    });
+    // Listener para boton Restaurar (delegacion)
+    tablaEl.addEventListener("click", function (e) {
+      const btn = e.target.closest(".btn-restaurar-apre");
+      if (!btn) return;
+      const archivoId = btn.dataset.id;
+      restaurarArchivoAprendiz(archivoId, aprendizId);
+    });
+  }
+  async function restaurarArchivoAprendiz(archivoId, aprendizId) {
+    const confirma = await confirmAction({
+      message: "¿Desea restaurar este archivo a su ubicación original en el portafolio del aprendiz?",
+      title: "Restaurar archivo",
+      icon: "question",
+    });
+    if (!confirma) return;
+    try {
+      const response = await fetch(
+        `/api/formacion/parchivo/${archivoId}/restaurar/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+        }
+      );
+      const data = await response.json();
+      if (response.ok) {
+        toastSuccess(data.message || "Archivo restaurado correctamente.");
+        tablaArchivoAprendiz.ajax.reload();
+        // Recargar el arbol del aprendiz para que el documento restaurado aparezca
+        if (typeof cargarPortafolio === 'function') {
+          cargarPortafolio(aprendizId);
+        }
+      } else {
+        toastError(data.detail || data.error || "No se pudo restaurar el archivo.");
+      }
+    } catch (error) {
+      console.error("Error al restaurar archivo del aprendiz:", error);
+      toastError("Error de conexión al restaurar.");
+    }
+  }
+  // Cargar la papelera cuando se active la tab "Papelera" del modal aprendiz
+  const papeleraApreTab = document.getElementById("papelera-apre-tab");
+  if (papeleraApreTab) {
+    papeleraApreTab.addEventListener("shown.bs.tab", function () {
+      const modalEl = document.getElementById("portafolioAprendizModal");
+      const aprendizId = modalEl ? modalEl.dataset.aprendizId : null;
+      if (aprendizId) cargarArchivoAprendiz(aprendizId);
+    });
+  }
 });
