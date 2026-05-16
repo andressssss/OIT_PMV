@@ -687,20 +687,29 @@
           <!-- Header -->
           <div class="modal-header">
             <h5 class="modal-title" id="portafolioAprendizModalLabel">Portafolio del Aprendiz</h5>
-            <div class="ms-auto d-flex align-items-center gap-2 me-2">
-              {% if perfil.rol == 'admin' %}
-              <button type="button" id="btnRecrearCarpeta4" class="btn btn-sm btn-warning" title="Recrea la estructura de Carpeta 4 según las competencias y RAPs actuales. El contenido existente se mueve a BACKUP.">
-                <i class="bi bi-arrow-clockwise"></i> Regenerar Carpeta 4
-              </button>
-              {% endif %}
-            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
 
           <!-- Body -->
           <div class="modal-body">
             <!-- Árbol de carpetas -->
-            <div id="folderTreeAprendiz"></div>
+            {% if perfil.rol == 'admin' %}
+            <div class="alert alert-warning d-flex align-items-center justify-content-between mb-3" role="alert">
+              <div class="d-flex align-items-start gap-2 me-3">
+                <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+                <div>
+                  <strong>Acción de administrador</strong>
+                  <p class="mb-0 small">
+                    Si la estructura de la <b>Carpeta 4</b> no refleja las competencias y RAPs actuales, puede regenerarla.
+                    El contenido existente se moverá a una carpeta de <b>BACKUP</b>.
+                  </p>
+                </div>
+              </div>
+              <button type="button" id="btnRecrearCarpeta4" class="btn btn-warning text-nowrap">
+                <i class="bi bi-arrow-clockwise me-1"></i> Regenerar Carpeta 4
+              </button>
+            </div>
+            {% endif %}<div id="folderTreeAprendiz"></div>
             <hr />
             <ul class="nav nav-tabs" id="portafolioApreAnexTab" role="tablist">
               <li class="nav-item" role="presentation">
@@ -731,6 +740,22 @@
                   Carpetas sin documentación
                 </button>
               </li>
+              {% if perfil.rol == 'admin' %}
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link"
+                  id="papelera-apre-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#papelera-apre-tab-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="papelera-apre-tab-pane"
+                  aria-selected="false"
+                >
+                  Papelera
+                </button>
+              </li>
+              {% endif %}
             </ul>
             <div class="tab-content" id="portafolioApreAnexTabContent">
               <div 
@@ -752,6 +777,16 @@
               >
                 <ul id="alertasApreList" class="list-group"></ul>
               </div>
+              {% if perfil.rol == 'admin' %}
+              <div
+                class="tab-pane fade"
+                id="papelera-apre-tab-pane"
+                role="tabpanel"
+                aria-labelledby="papelera-apre-tab"
+                tabindex="0"
+                <table id="tabla-archivo-aprendiz" class="table table-striped table-hover" style="width:100%"></table>
+              </div>
+              >{% endif %}
             </div>
           </div>
           <!-- Footer -->
