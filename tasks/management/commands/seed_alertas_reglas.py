@@ -50,10 +50,13 @@ REGLAS = [
         'tipo': 'mayoria_edad_riesgo',
         'nivel': 'riesgo',
         'dias_umbral': 30,
+        'incluir_instructor_ficha': True,
         'asunto_correo': 'Riesgo: aprendiz {nombre} sin actualizar CC ({dias} días)',
         'plantilla_mensaje': (
             'El aprendiz {nombre} (DNI {dni}) cumplió 18 años hace {dias} días '
-            'y aún no se ha cargado la cédula de ciudadanía actualizada en el portafolio.'
+            'y aún no se ha confirmado la actualización de su cédula de ciudadanía. '
+            'Por favor revise el documento consolidado de la ficha y, si ya está '
+            'cargado, marque esta alerta como resuelta desde el panel.'
         ),
     },
 ]
