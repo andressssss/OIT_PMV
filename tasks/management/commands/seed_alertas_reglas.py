@@ -7,7 +7,7 @@ REGLAS = [
     {
         'tipo': 'inactividad_preventiva',
         'nivel': 'preventiva',
-        'dias_umbral': 3,
+        'dias_umbral': 7,
         'asunto_correo': 'Alerta preventiva: instructor {nombre} sin actividad ({dias} días)',
         'plantilla_mensaje': (
             'El instructor {nombre} (DNI {dni}) no registra actividad en la '
@@ -17,7 +17,7 @@ REGLAS = [
     {
         'tipo': 'inactividad_seguimiento',
         'nivel': 'seguimiento',
-        'dias_umbral': 6,
+        'dias_umbral': 14,
         'asunto_correo': 'Alerta de seguimiento: instructor {nombre} inactivo ({dias} días)',
         'plantilla_mensaje': (
             'El instructor {nombre} (DNI {dni}) no registra actividad en la '
