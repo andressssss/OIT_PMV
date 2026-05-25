@@ -19,14 +19,14 @@ from tasks.services.mayoria_edad import (
 
 
 def _semaforo(porcentaje: float, dias: int | None) -> str:
-    """verde / amarillo / rojo según %evidencias y días sin actividad."""
-    dias_efectivo = dias if dias is not None else 999
-    if porcentaje >= 80 and dias_efectivo < 3:
+    """verde / amarillo / rojo según días sin actividad (umbrales 3 / 6)."""
+    if dias is None:
         return 'verde'
-    if porcentaje >= 50 and dias_efectivo < 6:
+    if dias < 3:
+        return 'verde'
+    if dias < 6:
         return 'amarillo'
     return 'rojo'
-
 
 from commons.mixins import PermisosMixin
 

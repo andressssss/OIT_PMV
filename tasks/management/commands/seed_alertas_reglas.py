@@ -7,7 +7,7 @@ REGLAS = [
     {
         'tipo': 'inactividad_preventiva',
         'nivel': 'preventiva',
-        'dias_umbral': 7,
+        'dias_umbral': 3,
         'asunto_correo': 'Alerta preventiva: instructor {nombre} sin actividad ({dias} días)',
         'plantilla_mensaje': (
             'El instructor {nombre} (DNI {dni}) no registra actividad en la '
@@ -17,7 +17,7 @@ REGLAS = [
     {
         'tipo': 'inactividad_seguimiento',
         'nivel': 'seguimiento',
-        'dias_umbral': 14,
+        'dias_umbral': 6,
         'asunto_correo': 'Alerta de seguimiento: instructor {nombre} inactivo ({dias} días)',
         'plantilla_mensaje': (
             'El instructor {nombre} (DNI {dni}) no registra actividad en la '
@@ -69,7 +69,7 @@ class Command(BaseCommand):
         creadas = 0
         existentes = 0
         for cfg in REGLAS:
-            obj, created = T_alerta_regla.objects.get_or_create(
+            obj, created = T_alerta_regla.objects.update_or_create(
                 tipo=cfg['tipo'],
                 defaults={k: v for k, v in cfg.items() if k != 'tipo'},
             )
@@ -78,7 +78,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f'Creada: {obj.tipo}'))
             else:
                 existentes += 1
-                self.stdout.write(f'Ya existe: {obj.tipo}')
+                self.stdout.write(self.style.WARNING(f'Actualizada: {obj.tipo}'))
         self.stdout.write(self.style.SUCCESS(
-            f'Resumen: {creadas} creadas, {existentes} existentes.'
+            f'Resumen: {creadas} creadas, {existentes} actualizadas.'
         ))
