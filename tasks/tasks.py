@@ -7,6 +7,7 @@ from tasks.models import T_alerta_regla, T_notifi
 from tasks.services.mayoria_edad import (
     aprendices_para_alerta, dias_para_18,
 )
+from tasks.services.inactividad import instructores_inactivos
 from tasks.services.notificaciones import emitir_alerta
 
 
@@ -51,10 +52,16 @@ def evaluar_inactividad_instructores():
                 'dni': perfil.dni,
                 'dias': dias,
             }
+            # Pasar al instructor mismo como destinatario_extra para que reciba
+            # la notificación/correo de su propia inactividad (sobre todo en preventiva).
+            user_instructor = getattr(perfil, 'user', None)
+            destinatarios_extra = [user_instructor] if user_instructor else None
             total += emitir_alerta(
                 regla=regla,
                 origen_id=instructor.id,
                 contexto=contexto,
+                destinatarios_extra=destinatarios_extra,
+                url='/dashboard/instructores/',
             )
 
     logger.info('evaluar_inactividad_instructores: %s notificaciones emitidas', total)
