@@ -87,7 +87,7 @@
             </div>
           </div>
           <div class="table-responsive">
-            <table class="table table-hover table-sm align-middle">
+            <table id="tabla-mayoria-edad" class="table table-hover table-sm align-middle">
               <thead class="table-light">
                 <tr>
                   <th>Aprendiz</th>
@@ -124,175 +124,238 @@
     </div>
 
     <script>
-      (function () {
-        const SEMAFORO_BADGE = {
-          verde: '<span class="badge bg-success">Verde</span>',
-          amarillo: '<span class="badge bg-warning text-dark">Amarillo</span>',
-          rojo: '<span class="badge bg-danger">Rojo</span>',
-        };
-        const SEMAFORO_DOT = {
-          verde: '<span class="d-inline-block rounded-circle bg-success" style="width:12px;height:12px;"></span>',
-          amarillo: '<span class="d-inline-block rounded-circle bg-warning" style="width:12px;height:12px;"></span>',
-          rojo: '<span class="d-inline-block rounded-circle bg-danger" style="width:12px;height:12px;"></span>',
-        };
+(function () {
+  // Maps de visualización (semáforo y estado de mayoría de edad)
+  const SEMAFORO_BADGE = {
+    verde: '<span class="badge bg-success">Verde</span>',
+    amarillo: '<span class="badge bg-warning text-dark">Amarillo</span>',
+    rojo: '<span class="badge bg-danger">Rojo</span>',
+  };
+  const SEMAFORO_DOT = {
+    verde: '<span class="d-inline-block rounded-circle bg-success" style="width:12px;height:12px;"></span>',
+    amarillo: '<span class="d-inline-block rounded-circle bg-warning" style="width:12px;height:12px;"></span>',
+    rojo: '<span class="d-inline-block rounded-circle bg-danger" style="width:12px;height:12px;"></span>',
+  };
+  const ESTADO_BADGE_ME = {
+    proximo: '<span class="badge bg-info text-dark">Próximo</span>',
+    cumple_hoy: '<span class="badge bg-warning text-dark">Cumple hoy</span>',
+    riesgo: '<span class="badge bg-danger">Riesgo</span>',
+    al_dia: '<span class="badge bg-success">Al día</span>',
+  };
 
-        let datos = [];
+  function fmtFecha(iso) {
+    if (!iso) return '<span class="text-muted">Nunca</span>';
+    return new Date(iso).toLocaleDateString();
+  }
 
-        function fmtFecha(iso) {
-          if (!iso) return '<span class="text-muted">Nunca</span>';
-          return new Date(iso).toLocaleDateString();
-        }
+  let tableInstr;
+  let tableME;
+  let datosInstr = [];
 
-        function aplicarFiltros() {
-          const q = (document.getElementById('filtro-buscar').value || '').toLowerCase().trim();
-          const sem = document.getElementById('filtro-semaforo').value;
-          return datos.filter(r => {
-            if (sem && r.semaforo !== sem) return false;
-            if (q && !(r.nombre || '').toLowerCase().includes(q) && String(r.dni || '').indexOf(q) === -1) return false;
-            return true;
-          });
-        }
+  // ====== Filtros custom registrados en DataTables ======
+  // Conectan los <select> de semáforo/estado al motor de filtrado de DataTables
+  DataTable.ext.search.push(function (settings, searchData, dataIndex, rowData) {
+    if (settings.nTable.id === 'tabla-instructores') {
+      const sem = document.getElementById('filtro-semaforo').value;
+      if (sem && rowData.semaforo !== sem) return false;
+    }
+    if (settings.nTable.id === 'tabla-mayoria-edad') {
+      const est = document.getElementById('me-estado').value;
+      if (est && rowData.estado !== est) return false;
+    }
+    return true;
+  });
 
-        function render() {
-          const filtrados = aplicarFiltros();
-          const $body = document.getElementById('tabla-body');
+  // ====== Tab Instructores ======
+  function inicializarTablaInstructores() {
+    tableInstr = new DataTable('#tabla-instructores', {
+      ajax: {
+        url: '/api/dashboard/instructores/',
+        dataSrc: function (json) {
+          datosInstr = json.results || [];
+          actualizarKpis();
+          return datosInstr;
+        },
+      },
+      columns: [
+        {
+          data: 'semaforo',
+          title: '',
+          orderable: false,
+          render: (data) => SEMAFORO_DOT[data] || '',
+        },
+        {
+          data: null,
+          title: 'Instructor',
+          render: (data, type, row) =>
+            `<strong>${row.nombre}</strong><br><small class="text-muted">${row.mail || ''}</small>`,
+        },
+        { data: 'dni', title: 'DNI', render: (d) => d || '—' },
+        {
+          data: 'ultimo_acceso',
+          title: 'Último acceso',
+          render: (d, type) => (type === 'sort' || type === 'type' ? (d || '') : fmtFecha(d)),
+        },
+        {
+          data: 'dias_sin_actividad',
+          title: 'Días sin actividad',
+          render: (d, type) => {
+            if (type === 'sort' || type === 'type') return d ?? -1;
+            return d === null ? '<span class="text-muted">—</span>' : d;
+          },
+        },
+        {
+          data: null,
+          title: 'Evidencias',
+          orderable: false,
+          render: (data, type, row) => `${row.evidencias_cargadas} / ${row.evidencias_esperadas}`,
+        },
+        { data: 'porcentaje_evidencias', title: '%', render: (d) => `${d}%` },
+        { data: 'fichas', title: 'Fichas' },
+        {
+          data: null,
+          title: 'Aprendices (act/total)',
+          orderable: false,
+          render: (data, type, row) => `${row.aprendices_activos} / ${row.aprendices_matriculados}`,
+        },
+        {
+          data: 'alertas_abiertas',
+          title: 'Alertas',
+          render: (d) => (d > 0 ? `<span class="badge bg-danger">${d}</span>` : '—'),
+        },
+        {
+          data: 'semaforo',
+          title: 'Estado',
+          render: (d) => SEMAFORO_BADGE[d] || d,
+        },
+      ],
+      language: {
+        url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+      },
+      // Layout sin el buscador propio de DataTables (usamos el custom de arriba)
+      dom: '<"top d-flex justify-content-between align-items-center mb-2"l>rt<"bottom d-flex justify-content-between align-items-center mt-2"ip>',
+      pageLength: 10,
+      order: [[4, 'desc']], // ordenar por "Días sin actividad" descendente
+    });
 
-          document.getElementById('kpi-total').textContent = datos.length;
-          document.getElementById('kpi-verde').textContent = datos.filter(r => r.semaforo === 'verde').length;
-          document.getElementById('kpi-amarillo').textContent = datos.filter(r => r.semaforo === 'amarillo').length;
-          document.getElementById('kpi-rojo').textContent = datos.filter(r => r.semaforo === 'rojo').length;
+    // Click en fila → abrir modal de detalle
+    document
+      .querySelector('#tabla-instructores tbody')
+      .addEventListener('click', function (e) {
+        const tr = e.target.closest('tr');
+        if (!tr) return;
+        const data = tableInstr.row(tr).data();
+        if (data && data.instructor_id) abrirDetalle(data.instructor_id);
+      });
 
-          if (!filtrados.length) {
-            $body.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4">Sin resultados</td></tr>';
-            return;
-          }
-          $body.innerHTML = filtrados.map(r => `
-            <tr style="cursor:pointer;" data-id="${r.instructor_id}">
-              <td>${SEMAFORO_DOT[r.semaforo] || ''}</td>
-              <td><strong>${r.nombre}</strong><br><small class="text-muted">${r.mail || ''}</small></td>
-              <td>${r.dni || '—'}</td>
-              <td>${fmtFecha(r.ultimo_acceso)}</td>
-              <td>${r.dias_sin_actividad === null ? '<span class="text-muted">—</span>' : r.dias_sin_actividad}</td>
-              <td>${r.evidencias_cargadas} / ${r.evidencias_esperadas}</td>
-              <td>${r.porcentaje_evidencias}%</td>
-              <td>${r.fichas}</td>
-              <td>${r.aprendices_activos} / ${r.aprendices_matriculados}</td>
-              <td>${r.alertas_abiertas > 0 ? `<span class="badge bg-danger">${r.alertas_abiertas}</span>` : '—'}</td>
-              <td>${SEMAFORO_BADGE[r.semaforo] || r.semaforo}</td>
-            </tr>
-          `).join('');
+    // Conectar buscador y filtro custom
+    document.getElementById('filtro-buscar').addEventListener('input', function () {
+      tableInstr.search(this.value).draw();
+    });
+    document
+      .getElementById('filtro-semaforo')
+      .addEventListener('change', () => tableInstr.draw());
+  }
 
-          $body.querySelectorAll('tr[data-id]').forEach(tr => {
-            tr.addEventListener('click', () => abrirDetalle(tr.dataset.id));
-          });
-        }
+  function actualizarKpis() {
+    document.getElementById('kpi-total').textContent = datosInstr.length;
+    document.getElementById('kpi-verde').textContent = datosInstr.filter(r => r.semaforo === 'verde').length;
+    document.getElementById('kpi-amarillo').textContent = datosInstr.filter(r => r.semaforo === 'amarillo').length;
+    document.getElementById('kpi-rojo').textContent = datosInstr.filter(r => r.semaforo === 'rojo').length;
+  }
 
-        function abrirDetalle(id) {
-          const $modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
-          const $body = document.getElementById('detalle-body');
-          $body.innerHTML = '<div class="text-center py-4 text-muted">Cargando...</div>';
-          $modal.show();
-          fetch(`/api/dashboard/instructores/${id}/`, { credentials: 'same-origin' })
-            .then(r => r.json())
-            .then(d => {
-              const fichas = (d.fichas || []).map(f => `
-                <tr>
-                  <td>${f.numero || '—'}</td>
-                  <td>${f.programa || '—'}</td>
-                  <td>${f.estado || '—'}</td>
-                  <td>${f.evidencias_cargadas} / ${f.evidencias_esperadas}</td>
-                  <td>${f.porcentaje_evidencias}%</td>
-                  <td>${f.aprendices_activos} / ${f.aprendices}</td>
-                </tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Sin fichas asignadas</td></tr>';
+  function abrirDetalle(id) {
+    const $modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+    const $body = document.getElementById('detalle-body');
+    $body.innerHTML = '<div class="text-center py-4 text-muted">Cargando...</div>';
+    $modal.show();
+    fetch(`/api/dashboard/instructores/${id}/`, { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => {
+        const fichas = (d.fichas || []).map(f => `
+          <tr>
+            <td>${f.numero || '—'}</td>
+            <td>${f.programa || '—'}</td>
+            <td>${f.estado || '—'}</td>
+            <td>${f.evidencias_cargadas} / ${f.evidencias_esperadas}</td>
+            <td>${f.porcentaje_evidencias}%</td>
+            <td>${f.aprendices_activos} / ${f.aprendices}</td>
+          </tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Sin fichas asignadas</td></tr>';
 
-              $body.innerHTML = `
-                <h5 class="mb-1">${d.nombre}</h5>
-                <small class="text-muted">DNI ${d.dni} · ${d.mail || ''}</small>
-                <hr>
-                <div class="row mb-3">
-                  <div class="col"><small class="text-muted">Estado:</small> <strong>${d.estado || '—'}</strong></div>
-                  <div class="col"><small class="text-muted">Último acceso:</small> <strong>${fmtFecha(d.ultimo_acceso)}</strong></div>
-                  <div class="col"><small class="text-muted">Días sin actividad:</small> <strong>${d.dias_sin_actividad ?? '—'}</strong></div>
-                </div>
-                <h6>Fichas asignadas</h6>
-                <div class="table-responsive">
-                  <table class="table table-sm">
-                    <thead><tr><th>Número</th><th>Programa</th><th>Estado</th><th>Evidencias</th><th>%</th><th>Aprendices (act/tot)</th></tr></thead>
-                    <tbody>${fichas}</tbody>
-                  </table>
-                </div>
-              `;
-            })
-            .catch(() => { $body.innerHTML = '<div class="text-danger">Error cargando detalle</div>'; });
-        }
+        $body.innerHTML = `
+          <h5 class="mb-1">${d.nombre}</h5>
+          <small class="text-muted">DNI ${d.dni} · ${d.mail || ''}</small>
+          <hr>
+          <div class="row mb-3">
+            <div class="col"><small class="text-muted">Estado:</small> <strong>${d.estado || '—'}</strong></div>
+            <div class="col"><small class="text-muted">Último acceso:</small> <strong>${fmtFecha(d.ultimo_acceso)}</strong></div>
+            <div class="col"><small class="text-muted">Días sin actividad:</small> <strong>${d.dias_sin_actividad ?? '—'}</strong></div>
+          </div>
+          <h6>Fichas asignadas</h6>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead><tr><th>Número</th><th>Programa</th><th>Estado</th><th>Evidencias</th><th>%</th><th>Aprendices (act/tot)</th></tr></thead>
+              <tbody>${fichas}</tbody>
+            </table>
+          </div>
+        `;
+      })
+      .catch(() => { $body.innerHTML = '<div class="text-danger">Error cargando detalle</div>'; });
+  }
 
-        function cargar() {
-          fetch('/api/dashboard/instructores/', { credentials: 'same-origin' })
-            .then(r => r.ok ? r.json() : Promise.reject(r.status))
-            .then(d => { datos = d.results || []; render(); })
-            .catch(err => {
-              document.getElementById('tabla-body').innerHTML = '<tr><td colspan="11" class="text-center text-danger py-4">Error cargando datos (' + err + ')</td></tr>';
-            });
-        }
+  // ====== Tab Mayoría de edad ======
+  function inicializarTablaMayoria() {
+    tableME = new DataTable('#tabla-mayoria-edad', {
+      ajax: {
+        url: '/api/dashboard/aprendices-mayoria-edad/',
+        dataSrc: 'results',
+      },
+      columns: [
+        { data: 'nombre', title: 'Aprendiz', render: (d) => `<strong>${d}</strong>` },
+        { data: 'dni', title: 'DNI', render: (d) => d || '—' },
+        { data: 'tipo_dni', title: 'Tipo', render: (d) => (d || '').toUpperCase() },
+        {
+          data: 'fecha_18',
+          title: 'Cumple 18',
+          render: (d, type) => {
+            if (type === 'sort' || type === 'type') return d || '';
+            return d ? new Date(d).toLocaleDateString() : '—';
+          },
+        },
+        { data: 'dias_para_18', title: 'Días' },
+        {
+          data: 'cc_actualizado',
+          title: 'CC actualizado',
+          render: (d) =>
+            d
+              ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Sí</span>'
+              : '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> No</span>',
+        },
+        { data: 'ficha', title: 'Ficha', render: (d) => d || '—' },
+        { data: 'instructor', title: 'Instructor', render: (d) => d || '—' },
+        { data: 'estado', title: 'Estado', render: (d) => ESTADO_BADGE_ME[d] || d },
+      ],
+      language: {
+        url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
+      },
+      dom: '<"top d-flex justify-content-between align-items-center mb-2"l>rt<"bottom d-flex justify-content-between align-items-center mt-2"ip>',
+      pageLength: 10,
+      order: [[4, 'asc']], // ordenar por "Días" ascendente (los más cercanos a 18 / con más riesgo primero)
+    });
 
-        document.getElementById('filtro-buscar').addEventListener('input', render);
-        document.getElementById('filtro-semaforo').addEventListener('change', render);
-        document.addEventListener('DOMContentLoaded', cargar);
+    // Conectar buscador y filtro custom
+    document.getElementById('me-buscar').addEventListener('input', function () {
+      tableME.search(this.value).draw();
+    });
+    document.getElementById('me-estado').addEventListener('change', () => tableME.draw());
+  }
 
-        // ====== Pestaña Mayoría de edad ======
-        const ESTADO_BADGE_ME = {
-          proximo: '<span class="badge bg-info text-dark">Próximo</span>',
-          cumple_hoy: '<span class="badge bg-warning text-dark">Cumple hoy</span>',
-          riesgo: '<span class="badge bg-danger">Riesgo</span>',
-          al_dia: '<span class="badge bg-success">Al día</span>',
-        };
-        let datosME = [];
-
-        function aplicarFiltrosME() {
-          const q = (document.getElementById('me-buscar').value || '').toLowerCase().trim();
-          const est = document.getElementById('me-estado').value;
-          return datosME.filter(r => {
-            if (est && r.estado !== est) return false;
-            if (q && !(r.nombre || '').toLowerCase().includes(q) && String(r.dni || '').indexOf(q) === -1) return false;
-            return true;
-          });
-        }
-
-        function renderME() {
-          const filtrados = aplicarFiltrosME();
-          const $body = document.getElementById('me-body');
-          if (!filtrados.length) {
-            $body.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Sin resultados</td></tr>';
-            return;
-          }
-          $body.innerHTML = filtrados.map(r => `
-            <tr>
-              <td><strong>${r.nombre}</strong></td>
-              <td>${r.dni || '—'}</td>
-              <td>${(r.tipo_dni || '').toUpperCase()}</td>
-              <td>${r.fecha_18 ? new Date(r.fecha_18).toLocaleDateString() : '—'}</td>
-              <td>${r.dias_para_18}</td>
-              <td>${r.cc_actualizado ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Sí</span>' : '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> No</span>'}</td>
-              <td>${r.ficha || '—'}</td>
-              <td>${r.instructor || '—'}</td>
-              <td>${ESTADO_BADGE_ME[r.estado] || r.estado}</td>
-            </tr>
-          `).join('');
-        }
-
-        function cargarME() {
-          fetch('/api/dashboard/aprendices-mayoria-edad/', { credentials: 'same-origin' })
-            .then(r => r.ok ? r.json() : Promise.reject(r.status))
-            .then(d => { datosME = d.results || []; renderME(); })
-            .catch(err => {
-              document.getElementById('me-body').innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">Error cargando datos (' + err + ')</td></tr>';
-            });
-        }
-
-        document.getElementById('me-buscar').addEventListener('input', renderME);
-        document.getElementById('me-estado').addEventListener('change', renderME);
-        document.addEventListener('DOMContentLoaded', cargarME);
-      })();
-    </script>
+  // ====== Inicialización ======
+  document.addEventListener('DOMContentLoaded', () => {
+    inicializarTablaInstructores();
+    inicializarTablaMayoria();
+  });
+})();
+</script>
   {% endif %}
 {% endblock %}
