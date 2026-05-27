@@ -120,12 +120,16 @@ PERMISOS_ROL = {
         ("instituciones", "editar"),
         ("centros", "ver"),
         ("centros", "editar")
+        ("seguimiento", "ver"),
     ],
     "gestor": [
         ("aprendices", "ver"),
         ("aprendices", "editar")
+        ("seguimiento", "ver"),
     ],
-    "cuentas": [],
+    "cuentas": [
+        ("seguimiento", "ver"),
+    ],
     "consulta": [
         ("usuarios", "ver"),
         ("instructores", "ver"),
