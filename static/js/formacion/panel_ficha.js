@@ -1574,9 +1574,8 @@ async function cargarArchivo(id) {
         ).textContent = `Portafolio de ${aprendizNombre}`;
 
         document.getElementById("folderTreeAprendiz").innerHTML = "";
-
         cargarPortafolio(aprendizId);
-
+        cargarArchivoAprendiz(aprendizId);
         const modalEl = document.getElementById("portafolioAprendizModal");
         modalEl.dataset.aprendizId = aprendizId;
         modalEl.removeAttribute("aria-hidden");
