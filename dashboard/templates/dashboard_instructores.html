@@ -10,85 +10,110 @@
       </div>
     </div>
   {% else %}
-    <div class="container-fluid py-4">
-      <div class="card card-body p-4 shadow-sm">
-        <ul class="nav nav-tabs mb-3" role="tablist">
-          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-instructores" type="button"><i class="bi bi-people-fill me-1"></i> Instructores</button></li>
-          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mayoria" type="button"><i class="bi bi-person-vcard me-1"></i> Mayoría de edad</button></li>
-        </ul>
+  <main class="container-fluid py-5">
+    <section class="card card-body shadow-sm p-4">
+      <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-instructores" type="button" role="tab">
+            <i class="bi bi-people-fill me-1"></i> Instructores
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mayoria" type="button" role="tab">
+            <i class="bi bi-person-vcard me-1"></i> Mayoría de edad
+          </button>
+        </li>
+      </ul>
 
-        <div class="tab-content">
+      <div class="tab-content">
+        <!-- ============ TAB INSTRUCTORES ============ -->
         <div class="tab-pane fade show active" id="tab-instructores" role="tabpanel">
-        <div class="d-flex justify-content-between align-items-center pb-3">
-          <div>
-            <h2 class="mb-0">Seguimiento de instructores</h2>
+          <div class="pb-4">
+            <h1 class="display-5 mb-0">Seguimiento de instructores</h1>
             <small class="text-muted">Último acceso, evidencias, semáforo y alertas</small>
           </div>
-          <div class="d-flex gap-2">
-            <input type="text" id="filtro-buscar" class="form-control form-control-sm" placeholder="Buscar nombre o DNI..." style="min-width: 220px;">
-            <select id="filtro-semaforo" class="form-select form-select-sm" style="max-width: 160px;">
-              <option value="">Todos los estados</option>
-              <option value="verde">Verde</option>
-              <option value="amarillo">Amarillo</option>
-              <option value="rojo">Rojo</option>
-            </select>
-            <a id="btn-exportar" class="btn btn-sm btn-outline-primary" href="/api/dashboard/instructores/exportar/" title="Descargar Excel">
-              <i class="bi bi-file-earmark-excel"></i> Exportar
-            </a>
-          </div>
-        </div>
 
-        <div class="row g-3 mb-3" id="kpi-row">
-          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center"><small class="text-muted">Total instructores</small><h3 id="kpi-total" class="mb-0">--</h3></div></div>
-          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center bg-success-subtle"><small class="text-success">Verde</small><h3 id="kpi-verde" class="mb-0 text-success">--</h3></div></div>
-          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center bg-warning-subtle"><small class="text-warning">Amarillo</small><h3 id="kpi-amarillo" class="mb-0 text-warning">--</h3></div></div>
-          <div class="col-md-3"><div class="card border-0 shadow-sm p-3 text-center bg-danger-subtle"><small class="text-danger">Rojo</small><h3 id="kpi-rojo" class="mb-0 text-danger">--</h3></div></div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-hover table-sm align-middle" id="tabla-instructores">
-            <thead class="table-light">
-              <tr>
-                <th></th>
-                <th>Instructor</th>
-                <th>DNI</th>
-                <th>Último acceso</th>
-                <th>Días sin actividad</th>
-                <th>Evidencias</th>
-                <th>%</th>
-                <th>Fichas</th>
-                <th>Aprendices (act/total)</th>
-                <th>Alertas</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-body">
-              <tr><td colspan="11" class="text-center text-muted py-4">Cargando...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        </div>
-
-        <div class="tab-pane fade" id="tab-mayoria" role="tabpanel">
-          <div class="d-flex justify-content-between align-items-center pb-3">
-            <div>
-              <h2 class="mb-0">Aprendices y mayoría de edad</h2>
-              <small class="text-muted">Próximos a cumplir 18, cumplen hoy, y los que ya cumplieron sin CC actualizado</small>
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="card border-0 shadow-sm p-3 text-center h-100">
+                <small class="text-muted">Total instructores</small>
+                <h3 id="kpi-total" class="mb-0 mt-1">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
             </div>
-            <div class="d-flex gap-2">
-              <input type="text" id="me-buscar" class="form-control form-control-sm" placeholder="Buscar nombre o DNI..." style="min-width: 220px;">
-              <select id="me-estado" class="form-select form-select-sm" style="max-width: 180px;">
-                <option value="">Todos los estados</option>
-                <option value="proximo">Próximos a cumplir</option>
-                <option value="cumple_hoy">Cumplen hoy</option>
-                <option value="riesgo">Riesgo (CC pendiente)</option>
-                <option value="al_dia">Al día</option>
-              </select>
+            <div class="col-6 col-md-3">
+              <div class="card border-0 shadow-sm p-3 text-center h-100 bg-success-subtle">
+                <small class="text-success">Verde</small>
+                <h3 id="kpi-verde" class="mb-0 mt-1 text-success">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card border-0 shadow-sm p-3 text-center h-100 bg-warning-subtle">
+                <small class="text-warning">Amarillo</small>
+                <h3 id="kpi-amarillo" class="mb-0 mt-1 text-warning">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card border-0 shadow-sm p-3 text-center h-100 bg-danger-subtle">
+                <small class="text-danger">Rojo</small>
+                <h3 id="kpi-rojo" class="mb-0 mt-1 text-danger">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
             </div>
           </div>
+
           <div class="table-responsive">
-            <table id="tabla-mayoria-edad" class="table table-hover table-sm align-middle">
-              <thead class="table-light">
+            <table id="tabla-instructores" class="table table-hover align-middle table-striped w-100">
+              <thead>
+                <tr>
+                  <th style="width: 30px;"></th>
+                  <th>Instructor</th>
+                  <th>DNI</th>
+                  <th>Último acceso</th>
+                  <th>Días sin actividad</th>
+                  <th>Evidencias</th>
+                  <th>%</th>
+                  <th>Fichas</th>
+                  <th>Aprendices (act/total)</th>
+                  <th>Alertas</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ============ TAB MAYORÍA DE EDAD ============ -->
+        <div class="tab-pane fade" id="tab-mayoria" role="tabpanel">
+          <div class="pb-4">
+            <h1 class="display-5 mb-0">Aprendices y mayoría de edad</h1>
+            <small class="text-muted">Próximos a cumplir 18, cumplen hoy, y los que ya cumplieron sin CC actualizado</small>
+          </div>
+
+          <div class="table-responsive">
+            <table id="tabla-mayoria" class="table table-hover align-middle table-striped w-100">
+              <thead>
                 <tr>
                   <th>Aprendiz</th>
                   <th>DNI</th>
@@ -101,261 +126,329 @@
                   <th>Estado</th>
                 </tr>
               </thead>
-              <tbody id="me-body">
-                <tr><td colspan="9" class="text-center text-muted py-4">Cargando...</td></tr>
+              <tbody>
+                <tr>
+                  <td><span class="placeholder col-10 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-8 placeholder-glow placeholder-wave rounded"></span></td>
+                  <td><span class="placeholder col-6 placeholder-glow placeholder-wave rounded"></span></td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalle del instructor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="detalle-body">
+          <div class="text-center py-4 text-muted">Cargando...</div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Detalle del instructor</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-          </div>
-          <div class="modal-body" id="detalle-body"></div>
-        </div>
-      </div>
-    </div>
+  <script>
+    (function () {
+      'use strict';
 
-    <script>
-(function () {
-  // Maps de visualización (semáforo y estado de mayoría de edad)
-  const SEMAFORO_BADGE = {
-    verde: '<span class="badge bg-success">Verde</span>',
-    amarillo: '<span class="badge bg-warning text-dark">Amarillo</span>',
-    rojo: '<span class="badge bg-danger">Rojo</span>',
-  };
-  const SEMAFORO_DOT = {
-    verde: '<span class="d-inline-block rounded-circle bg-success" style="width:12px;height:12px;"></span>',
-    amarillo: '<span class="d-inline-block rounded-circle bg-warning" style="width:12px;height:12px;"></span>',
-    rojo: '<span class="d-inline-block rounded-circle bg-danger" style="width:12px;height:12px;"></span>',
-  };
-  const ESTADO_BADGE_ME = {
-    proximo: '<span class="badge bg-info text-dark">Próximo</span>',
-    cumple_hoy: '<span class="badge bg-warning text-dark">Cumple hoy</span>',
-    riesgo: '<span class="badge bg-danger">Riesgo</span>',
-    al_dia: '<span class="badge bg-success">Al día</span>',
-  };
+      const SEMAFORO_BADGE = {
+        verde:    '<span class="badge bg-success">Verde</span>',
+        amarillo: '<span class="badge bg-warning text-dark">Amarillo</span>',
+        rojo:     '<span class="badge bg-danger">Rojo</span>',
+      };
+      const SEMAFORO_DOT = {
+        verde:    '<span class="d-inline-block rounded-circle bg-success" style="width:12px;height:12px;" title="Verde"></span>',
+        amarillo: '<span class="d-inline-block rounded-circle bg-warning" style="width:12px;height:12px;" title="Amarillo"></span>',
+        rojo:     '<span class="d-inline-block rounded-circle bg-danger"  style="width:12px;height:12px;" title="Rojo"></span>',
+      };
+      const ESTADO_BADGE_ME = {
+        proximo:    '<span class="badge bg-info text-dark">Próximo</span>',
+        cumple_hoy: '<span class="badge bg-warning text-dark">Cumple hoy</span>',
+        riesgo:     '<span class="badge bg-danger">Riesgo</span>',
+        al_dia:     '<span class="badge bg-success">Al día</span>',
+      };
 
-  function fmtFecha(iso) {
-    if (!iso) return '<span class="text-muted">Nunca</span>';
-    return new Date(iso).toLocaleDateString();
-  }
+      function fmtFecha(iso) {
+        if (!iso) return '<span class="text-muted">Nunca</span>';
+        return new Date(iso).toLocaleDateString();
+      }
 
-  let tableInstr;
-  let tableME;
-  let datosInstr = [];
+      // ============================================================
+      // dom de DataTables 1.13
+      // Usamos SOLO clases CSS (sin id) — la sintaxis <"#id"> no
+      // acepta clases adicionales en la misma cadena en esta versión.
+      // Después buscamos cada slot DENTRO del wrapper de su tabla.
+      // ============================================================
+      const DOM_INSTRUCTORES =
+        "<'row mb-3 align-items-center'" +
+          "<'col-md-4'l>" +
+          "<'col-md-8 d-flex justify-content-end align-items-center gap-2 flex-wrap'" +
+            "f" +
+            "<'extras-toolbar-ins d-flex gap-2 align-items-center'>" +
+          ">" +
+        ">" +
+        "rt" +
+        "<'row mt-3 align-items-center'" +
+          "<'col-md-6'i>" +
+          "<'col-md-6'p>" +
+        ">";
 
-  // ====== Filtros custom registrados en DataTables ======
-  // Conectan los <select> de semáforo/estado al motor de filtrado de DataTables
-  DataTable.ext.search.push(function (settings, searchData, dataIndex, rowData) {
-    if (settings.nTable.id === 'tabla-instructores') {
-      const sem = document.getElementById('filtro-semaforo').value;
-      if (sem && rowData.semaforo !== sem) return false;
-    }
-    if (settings.nTable.id === 'tabla-mayoria-edad') {
-      const est = document.getElementById('me-estado').value;
-      if (est && rowData.estado !== est) return false;
-    }
-    return true;
-  });
+      const DOM_MAYORIA =
+        "<'row mb-3 align-items-center'" +
+          "<'col-md-4'l>" +
+          "<'col-md-8 d-flex justify-content-end align-items-center gap-2 flex-wrap'" +
+            "f" +
+            "<'extras-toolbar-may d-flex gap-2 align-items-center'>" +
+          ">" +
+        ">" +
+        "rt" +
+        "<'row mt-3 align-items-center'" +
+          "<'col-md-6'i>" +
+          "<'col-md-6'p>" +
+        ">";
 
-  // ====== Tab Instructores ======
-  function inicializarTablaInstructores() {
-    tableInstr = new DataTable('#tabla-instructores', {
-      ajax: {
-        url: '/api/dashboard/instructores/',
-        dataSrc: function (json) {
-          datosInstr = json.results || [];
-          actualizarKpis();
-          return datosInstr;
-        },
-      },
-      columns: [
-        {
-          data: 'semaforo',
-          title: '',
-          orderable: false,
-          render: (data) => SEMAFORO_DOT[data] || '',
-        },
-        {
-          data: null,
-          title: 'Instructor',
-          render: (data, type, row) =>
-            `<strong>${row.nombre}</strong><br><small class="text-muted">${row.mail || ''}</small>`,
-        },
-        { data: 'dni', title: 'DNI', render: (d) => d || '—' },
-        {
-          data: 'ultimo_acceso',
-          title: 'Último acceso',
-          render: (d, type) => (type === 'sort' || type === 'type' ? (d || '') : fmtFecha(d)),
-        },
-        {
-          data: 'dias_sin_actividad',
-          title: 'Días sin actividad',
-          render: (d, type) => {
-            if (type === 'sort' || type === 'type') return d ?? -1;
-            return d === null ? '<span class="text-muted">—</span>' : d;
+      // ============================================================
+      // TABLA INSTRUCTORES — server-side
+      // ============================================================
+      const tablaInstructores = new DataTable('#tabla-instructores', {
+        serverSide: true,
+        processing: true,
+        ordering: false,
+        searching: true,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        pageLength: 10,
+        dom: DOM_INSTRUCTORES,
+        ajax: {
+          url: '/api/dashboard/instructores/',
+          type: 'GET',
+          data: function (d) {
+            const fSem = document.querySelector('#tabla-instructores_wrapper .filtro-semaforo');
+            d.semaforo = fSem ? fSem.value : '';
           },
         },
-        {
-          data: null,
-          title: 'Evidencias',
-          orderable: false,
-          render: (data, type, row) => `${row.evidencias_cargadas} / ${row.evidencias_esperadas}`,
+        columns: [
+          { data: 'semaforo', render: (data) => SEMAFORO_DOT[data] || '' },
+          {
+            data: null,
+            render: (data, type, row) =>
+              `<strong>${row.nombre}</strong><br><small class="text-muted">${row.mail || ''}</small>`,
+          },
+          { data: 'dni', defaultContent: '—' },
+          { data: 'ultimo_acceso', render: fmtFecha },
+          {
+            data: 'dias_sin_actividad',
+            render: (d) => d === null ? '<span class="text-muted">—</span>' : d,
+          },
+          {
+            data: null,
+            render: (data, type, row) => `${row.evidencias_cargadas} / ${row.evidencias_esperadas}`,
+          },
+          { data: 'porcentaje_evidencias', render: (d) => `${d}%` },
+          { data: 'fichas' },
+          {
+            data: null,
+            render: (data, type, row) => `${row.aprendices_activos} / ${row.aprendices_matriculados}`,
+          },
+          {
+            data: 'alertas_abiertas',
+            render: (d) => d > 0 ? `<span class="badge bg-danger">${d}</span>` : '—',
+          },
+          { data: 'semaforo', render: (data) => SEMAFORO_BADGE[data] || data },
+        ],
+        language: {
+          url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
         },
-        { data: 'porcentaje_evidencias', title: '%', render: (d) => `${d}%` },
-        { data: 'fichas', title: 'Fichas' },
-        {
-          data: null,
-          title: 'Aprendices (act/total)',
-          orderable: false,
-          render: (data, type, row) => `${row.aprendices_activos} / ${row.aprendices_matriculados}`,
+        rowCallback: function (row, data) {
+          row.style.cursor = 'pointer';
+          row.addEventListener('click', () => abrirDetalle(data.instructor_id));
         },
-        {
-          data: 'alertas_abiertas',
-          title: 'Alertas',
-          render: (d) => (d > 0 ? `<span class="badge bg-danger">${d}</span>` : '—'),
+        initComplete: function () {
+          // Buscar el slot DENTRO del wrapper de esta tabla (no global)
+          const wrapper = document.getElementById('tabla-instructores_wrapper');
+          if (!wrapper) {
+            console.warn('[dashboard] wrapper de instructores no encontrado');
+            return;
+          }
+          const slot = wrapper.querySelector('.extras-toolbar-ins');
+          if (!slot) {
+            console.warn('[dashboard] slot .extras-toolbar-ins no encontrado, dom no aplicó');
+            return;
+          }
+          slot.innerHTML = `
+            <select class="filtro-semaforo form-select form-select-sm" style="min-width: 170px;">
+              <option value="">Todos los estados</option>
+              <option value="verde">🟢 Verde</option>
+              <option value="amarillo">🟡 Amarillo</option>
+              <option value="rojo">🔴 Rojo</option>
+            </select>
+            <a class="btn btn-sm btn-outline-primary" href="/api/dashboard/instructores/exportar/" title="Descargar Excel">
+              <i class="bi bi-file-earmark-excel"></i> Exportar
+            </a>
+          `;
+          slot.querySelector('.filtro-semaforo').addEventListener('change', () => {
+            tablaInstructores.ajax.reload();
+          });
         },
-        {
-          data: 'semaforo',
-          title: 'Estado',
-          render: (d) => SEMAFORO_BADGE[d] || d,
-        },
-      ],
-      language: {
-        url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-      },
-      // Layout sin el buscador propio de DataTables (usamos el custom de arriba)
-      dom: '<"top d-flex justify-content-between align-items-center mb-2"l>rt<"bottom d-flex justify-content-between align-items-center mt-2"ip>',
-      pageLength: 10,
-      order: [[4, 'desc']], // ordenar por "Días sin actividad" descendente
-    });
-
-    // Click en fila → abrir modal de detalle
-    document
-      .querySelector('#tabla-instructores tbody')
-      .addEventListener('click', function (e) {
-        const tr = e.target.closest('tr');
-        if (!tr) return;
-        const data = tableInstr.row(tr).data();
-        if (data && data.instructor_id) abrirDetalle(data.instructor_id);
       });
 
-    // Conectar buscador y filtro custom
-    document.getElementById('filtro-buscar').addEventListener('input', function () {
-      tableInstr.search(this.value).draw();
-    });
-    document
-      .getElementById('filtro-semaforo')
-      .addEventListener('change', () => tableInstr.draw());
-  }
+      // ============================================================
+      // KPIs (una sola llamada inicial)
+      // ============================================================
+      function cargarKpis() {
+        fetch('/api/dashboard/instructores/kpis/', { credentials: 'same-origin' })
+          .then(r => r.ok ? r.json() : Promise.reject(r.status))
+          .then(d => {
+            document.getElementById('kpi-total').textContent    = d.total;
+            document.getElementById('kpi-verde').textContent    = d.verde;
+            document.getElementById('kpi-amarillo').textContent = d.amarillo;
+            document.getElementById('kpi-rojo').textContent     = d.rojo;
+          })
+          .catch(() => {
+            ['kpi-total', 'kpi-verde', 'kpi-amarillo', 'kpi-rojo'].forEach(id => {
+              document.getElementById(id).textContent = '—';
+            });
+          });
+      }
 
-  function actualizarKpis() {
-    document.getElementById('kpi-total').textContent = datosInstr.length;
-    document.getElementById('kpi-verde').textContent = datosInstr.filter(r => r.semaforo === 'verde').length;
-    document.getElementById('kpi-amarillo').textContent = datosInstr.filter(r => r.semaforo === 'amarillo').length;
-    document.getElementById('kpi-rojo').textContent = datosInstr.filter(r => r.semaforo === 'rojo').length;
-  }
+      // ============================================================
+      // Modal de detalle de instructor
+      // ============================================================
+      function abrirDetalle(id) {
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+        const body  = document.getElementById('detalle-body');
+        body.innerHTML = '<div class="text-center py-4 text-muted">Cargando...</div>';
+        modal.show();
 
-  function abrirDetalle(id) {
-    const $modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
-    const $body = document.getElementById('detalle-body');
-    $body.innerHTML = '<div class="text-center py-4 text-muted">Cargando...</div>';
-    $modal.show();
-    fetch(`/api/dashboard/instructores/${id}/`, { credentials: 'same-origin' })
-      .then(r => r.json())
-      .then(d => {
-        const fichas = (d.fichas || []).map(f => `
-          <tr>
-            <td>${f.numero || '—'}</td>
-            <td>${f.programa || '—'}</td>
-            <td>${f.estado || '—'}</td>
-            <td>${f.evidencias_cargadas} / ${f.evidencias_esperadas}</td>
-            <td>${f.porcentaje_evidencias}%</td>
-            <td>${f.aprendices_activos} / ${f.aprendices}</td>
-          </tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Sin fichas asignadas</td></tr>';
+        fetch(`/api/dashboard/instructores/${id}/`, { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(d => {
+            const fichas = (d.fichas || []).map(f => `
+              <tr>
+                <td>${f.numero || '—'}</td>
+                <td>${f.programa || '—'}</td>
+                <td>${f.estado || '—'}</td>
+                <td>${f.evidencias_cargadas} / ${f.evidencias_esperadas}</td>
+                <td>${f.porcentaje_evidencias}%</td>
+                <td>${f.aprendices_activos} / ${f.aprendices}</td>
+              </tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Sin fichas asignadas</td></tr>';
 
-        $body.innerHTML = `
-          <h5 class="mb-1">${d.nombre}</h5>
-          <small class="text-muted">DNI ${d.dni} · ${d.mail || ''}</small>
-          <hr>
-          <div class="row mb-3">
-            <div class="col"><small class="text-muted">Estado:</small> <strong>${d.estado || '—'}</strong></div>
-            <div class="col"><small class="text-muted">Último acceso:</small> <strong>${fmtFecha(d.ultimo_acceso)}</strong></div>
-            <div class="col"><small class="text-muted">Días sin actividad:</small> <strong>${d.dias_sin_actividad ?? '—'}</strong></div>
-          </div>
-          <h6>Fichas asignadas</h6>
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <thead><tr><th>Número</th><th>Programa</th><th>Estado</th><th>Evidencias</th><th>%</th><th>Aprendices (act/tot)</th></tr></thead>
-              <tbody>${fichas}</tbody>
-            </table>
-          </div>
-        `;
-      })
-      .catch(() => { $body.innerHTML = '<div class="text-danger">Error cargando detalle</div>'; });
-  }
+            body.innerHTML = `
+              <h5 class="mb-1">${d.nombre}</h5>
+              <small class="text-muted">DNI ${d.dni} · ${d.mail || ''}</small>
+              <hr>
+              <div class="row mb-3">
+                <div class="col"><small class="text-muted">Estado:</small> <strong>${d.estado || '—'}</strong></div>
+                <div class="col"><small class="text-muted">Último acceso:</small> <strong>${fmtFecha(d.ultimo_acceso)}</strong></div>
+                <div class="col"><small class="text-muted">Días sin actividad:</small> <strong>${d.dias_sin_actividad ?? '—'}</strong></div>
+              </div>
+              <h6>Fichas asignadas</h6>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Número</th><th>Programa</th><th>Estado</th>
+                      <th>Evidencias</th><th>%</th><th>Aprendices (act/tot)</th>
+                    </tr>
+                  </thead>
+                  <tbody>${fichas}</tbody>
+                </table>
+              </div>`;
+          })
+          .catch(() => {
+            body.innerHTML = '<div class="text-danger">Error cargando detalle</div>';
+          });
+      }
 
-  // ====== Tab Mayoría de edad ======
-  function inicializarTablaMayoria() {
-    tableME = new DataTable('#tabla-mayoria-edad', {
-      ajax: {
-        url: '/api/dashboard/aprendices-mayoria-edad/',
-        dataSrc: 'results',
-      },
-      columns: [
-        { data: 'nombre', title: 'Aprendiz', render: (d) => `<strong>${d}</strong>` },
-        { data: 'dni', title: 'DNI', render: (d) => d || '—' },
-        { data: 'tipo_dni', title: 'Tipo', render: (d) => (d || '').toUpperCase() },
-        {
-          data: 'fecha_18',
-          title: 'Cumple 18',
-          render: (d, type) => {
-            if (type === 'sort' || type === 'type') return d || '';
-            return d ? new Date(d).toLocaleDateString() : '—';
+      // ============================================================
+      // TABLA MAYORÍA DE EDAD — server-side
+      // ============================================================
+      const tablaMayoria = new DataTable('#tabla-mayoria', {
+        serverSide: true,
+        processing: true,
+        ordering: false,
+        searching: true,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        pageLength: 10,
+        dom: DOM_MAYORIA,
+        ajax: {
+          url: '/api/dashboard/aprendices-mayoria-edad/',
+          type: 'GET',
+          data: function (d) {
+            const eEst = document.querySelector('#tabla-mayoria_wrapper .filtro-me-estado');
+            d.estado = eEst ? eEst.value : '';
           },
         },
-        { data: 'dias_para_18', title: 'Días' },
-        {
-          data: 'cc_actualizado',
-          title: 'CC actualizado',
-          render: (d) =>
-            d
+        columns: [
+          { data: 'nombre', render: (data) => `<strong>${data}</strong>` },
+          { data: 'dni', defaultContent: '—' },
+          { data: 'tipo_dni', render: (d) => (d || '').toUpperCase() },
+          {
+            data: 'fecha_18',
+            render: (d) => d ? new Date(d).toLocaleDateString() : '—',
+          },
+          { data: 'dias_para_18' },
+          {
+            data: 'cc_actualizado',
+            render: (d) => d
               ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Sí</span>'
               : '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> No</span>',
+          },
+          { data: 'ficha', defaultContent: '—' },
+          { data: 'instructor', defaultContent: '—' },
+          { data: 'estado', render: (data) => ESTADO_BADGE_ME[data] || data },
+        ],
+        language: {
+          url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
         },
-        { data: 'ficha', title: 'Ficha', render: (d) => d || '—' },
-        { data: 'instructor', title: 'Instructor', render: (d) => d || '—' },
-        { data: 'estado', title: 'Estado', render: (d) => ESTADO_BADGE_ME[d] || d },
-      ],
-      language: {
-        url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
-      },
-      dom: '<"top d-flex justify-content-between align-items-center mb-2"l>rt<"bottom d-flex justify-content-between align-items-center mt-2"ip>',
-      pageLength: 10,
-      order: [[4, 'asc']], // ordenar por "Días" ascendente (los más cercanos a 18 / con más riesgo primero)
-    });
+        initComplete: function () {
+          const wrapper = document.getElementById('tabla-mayoria_wrapper');
+          if (!wrapper) return;
+          const slot = wrapper.querySelector('.extras-toolbar-may');
+          if (!slot) return;
+          slot.innerHTML = `
+            <select class="filtro-me-estado form-select form-select-sm" style="min-width: 180px;">
+              <option value="">Todos los estados</option>
+              <option value="proximo">Próximos</option>
+              <option value="cumple_hoy">Cumplen hoy</option>
+              <option value="riesgo">En riesgo</option>
+              <option value="al_dia">Al día</option>
+            </select>
+          `;
+          slot.querySelector('.filtro-me-estado').addEventListener('change', () => {
+            tablaMayoria.ajax.reload();
+          });
+        },
+      });
 
-    // Conectar buscador y filtro custom
-    document.getElementById('me-buscar').addEventListener('input', function () {
-      tableME.search(this.value).draw();
-    });
-    document.getElementById('me-estado').addEventListener('change', () => tableME.draw());
-  }
+      // ============================================================
+      // FIX: ajustar columnas al cambiar de pestaña
+      // ============================================================
+      document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', function (e) {
+          const target = e.target.getAttribute('data-bs-target');
+          if (target === '#tab-instructores') {
+            tablaInstructores.columns.adjust();
+          } else if (target === '#tab-mayoria') {
+            tablaMayoria.columns.adjust();
+          }
+        });
+      });
 
-  // ====== Inicialización ======
-  document.addEventListener('DOMContentLoaded', () => {
-    inicializarTablaInstructores();
-    inicializarTablaMayoria();
-  });
-})();
-</script>
+      document.addEventListener('DOMContentLoaded', cargarKpis);
+    })();
+  </script>
   {% endif %}
 {% endblock %}
