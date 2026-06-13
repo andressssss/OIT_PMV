@@ -7,7 +7,7 @@ from api.views.dashboard import (
 from api.views.dashboard_instructores import (
     DashboardInstructoresView, DashboardInstructoresExportView,
     InstructorDetalleView, AprendicesMayoriaEdadView,
-    KpiInstructoresView,
+    KpiInstructoresView, KpiMayoriaEdadView,
 )
 
 router = DefaultRouter()
@@ -23,4 +23,5 @@ urlpatterns = [
     path("instructores/exportar/", DashboardInstructoresExportView.as_view(), name="dashboard-instructores-export"),
     path("instructores/<int:instructor_id>/", InstructorDetalleView.as_view(), name="dashboard-instructor-detalle"),
     path("aprendices-mayoria-edad/", AprendicesMayoriaEdadView.as_view(), name="dashboard-aprendices-mayoria-edad"),
+    path("aprendices-mayoria-edad/kpis/", KpiMayoriaEdadView.as_view(), name="dashboard-mayoria-edad-kpis"),
 ] + router.urls
