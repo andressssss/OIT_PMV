@@ -488,8 +488,8 @@
       });
 
       document.addEventListener('DOMContentLoaded', () => {
-        cargarKpis();
-        cargarKpisMayoria();
+        setTimeout(cargarKpis, 500);
+        setTimeout(cargarKpisMayoria, 1000);
       });
       function cargarKpisMayoria() {
         fetch('/api/dashboard/aprendices-mayoria-edad/kpis/', { credentials: 'same-origin' })
