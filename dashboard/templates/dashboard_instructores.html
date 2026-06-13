@@ -44,7 +44,7 @@
             </div>
             <div class="col-6 col-md-3">
               <div class="card border-0 shadow-sm p-3 text-center h-100 bg-success-subtle">
-                <small class="text-success">Verde</small>
+                <small class="text-success">Al día</small>
                 <h3 id="kpi-verde" class="mb-0 mt-1 text-success">
                   <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
                 </h3>
@@ -52,7 +52,7 @@
             </div>
             <div class="col-6 col-md-3">
               <div class="card border-0 shadow-sm p-3 text-center h-100 bg-warning-subtle">
-                <small class="text-warning">Amarillo</small>
+                <small class="text-warning">En riesgo</small>
                 <h3 id="kpi-amarillo" class="mb-0 mt-1 text-warning">
                   <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
                 </h3>
@@ -60,7 +60,7 @@
             </div>
             <div class="col-6 col-md-3">
               <div class="card border-0 shadow-sm p-3 text-center h-100 bg-danger-subtle">
-                <small class="text-danger">Rojo</small>
+                <small class="text-danger">Inactivo</small>
                 <h3 id="kpi-rojo" class="mb-0 mt-1 text-danger">
                   <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
                 </h3>
@@ -110,8 +110,48 @@
             <h1 class="display-5 mb-0">Aprendices y mayoría de edad</h1>
             <small class="text-muted">Próximos a cumplir 18, cumplen hoy, y los que ya cumplieron sin CC actualizado</small>
           </div>
-
-          <div class="table-responsive">
+<div class="row g-3 mb-4">
+            <div class="col-6 col-md">
+              <div class="card border-0 shadow-sm p-3 text-center h-100">
+                <small class="text-muted">Total</small>
+                <h3 id="kpi-me-total" class="mb-0 mt-1">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
+            </div>
+            <div class="col-6 col-md">
+              <div class="card border-0 shadow-sm p-3 text-center h-100 bg-info-subtle">
+                <small class="text-info">Próximos</small>
+                <h3 id="kpi-me-proximo" class="mb-0 mt-1 text-info">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
+            </div>
+            <div class="col-6 col-md">
+              <div class="card border-0 shadow-sm p-3 text-center h-100 bg-warning-subtle">
+                <small class="text-warning">Cumple hoy</small>
+                <h3 id="kpi-me-cumple" class="mb-0 mt-1 text-warning">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
+            </div>
+            <div class="col-6 col-md">
+              <div class="card border-0 shadow-sm p-3 text-center h-100 bg-danger-subtle">
+                <small class="text-danger">En riesgo</small>
+                <h3 id="kpi-me-riesgo" class="mb-0 mt-1 text-danger">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
+            </div>
+            <div class="col-6 col-md">
+              <div class="card border-0 shadow-sm p-3 text-center h-100 bg-success-subtle">
+                <small class="text-success">Al día</small>
+                <h3 id="kpi-me-aldia" class="mb-0 mt-1 text-success">
+                  <span class="placeholder col-4 placeholder-glow placeholder-wave rounded"></span>
+                </h3>
+              </div>
+            </div>
+          </div>
             <table id="tabla-mayoria" class="table table-hover align-middle table-striped w-100">
               <thead>
                 <tr>
@@ -165,14 +205,14 @@
       'use strict';
 
       const SEMAFORO_BADGE = {
-        verde:    '<span class="badge bg-success">Verde</span>',
-        amarillo: '<span class="badge bg-warning text-dark">Amarillo</span>',
-        rojo:     '<span class="badge bg-danger">Rojo</span>',
+        verde:    '<span class="badge bg-success">Al día</span>',
+        amarillo: '<span class="badge bg-warning text-dark">En riesgo</span>',
+        rojo:     '<span class="badge bg-danger">Inactivo</span>',
       };
       const SEMAFORO_DOT = {
-        verde:    '<span class="d-inline-block rounded-circle bg-success" style="width:12px;height:12px;" title="Verde"></span>',
-        amarillo: '<span class="d-inline-block rounded-circle bg-warning" style="width:12px;height:12px;" title="Amarillo"></span>',
-        rojo:     '<span class="d-inline-block rounded-circle bg-danger"  style="width:12px;height:12px;" title="Rojo"></span>',
+        verde: '<span class="d-inline-block rounded-circle bg-success" style="width:12px;height:12px;" title="Al día"></span>',
+        amarillo: '<span class="d-inline-block rounded-circle bg-warning" style="width:12px;height:12px;" title="En riesgo"></span>',
+        rojo:     '<span class="d-inline-block rounded-circle bg-danger"  style="width:12px;height:12px;" title="Inactivo"></span>',
       };
       const ESTADO_BADGE_ME = {
         proximo:    '<span class="badge bg-info text-dark">Próximo</span>',
@@ -226,7 +266,7 @@
       const tablaInstructores = new DataTable('#tabla-instructores', {
         serverSide: true,
         processing: true,
-        ordering: false,
+        ordering: true,
         searching: true,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         pageLength: 10,
@@ -239,8 +279,8 @@
             d.semaforo = fSem ? fSem.value : '';
           },
         },
-        columns: [
-          { data: 'semaforo', render: (data) => SEMAFORO_DOT[data] || '' },
+       columns: [
+          { data: 'semaforo', orderable: false, render: (data) => SEMAFORO_DOT[data] || '' },
           {
             data: null,
             render: (data, type, row) =>
@@ -253,20 +293,20 @@
             render: (d) => d === null ? '<span class="text-muted">—</span>' : d,
           },
           {
-            data: null,
+            data: null, orderable: false,
             render: (data, type, row) => `${row.evidencias_cargadas} / ${row.evidencias_esperadas}`,
           },
-          { data: 'porcentaje_evidencias', render: (d) => `${d}%` },
+          { data: 'porcentaje_evidencias', orderable: false, render: (d) => `${d}%` },
           { data: 'fichas' },
           {
-            data: null,
+            data: null, orderable: false,
             render: (data, type, row) => `${row.aprendices_activos} / ${row.aprendices_matriculados}`,
           },
           {
-            data: 'alertas_abiertas',
+            data: 'alertas_abiertas', orderable: false,
             render: (d) => d > 0 ? `<span class="badge bg-danger">${d}</span>` : '—',
           },
-          { data: 'semaforo', render: (data) => SEMAFORO_BADGE[data] || data },
+          { data: 'semaforo', orderable: false, render: (data) => SEMAFORO_BADGE[data] || data },
         ],
         language: {
           url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json',
@@ -290,9 +330,9 @@
           slot.innerHTML = `
             <select class="filtro-semaforo form-select form-select-sm" style="min-width: 170px;">
               <option value="">Todos los estados</option>
-              <option value="verde">🟢 Verde</option>
-              <option value="amarillo">🟡 Amarillo</option>
-              <option value="rojo">🔴 Rojo</option>
+              <option value="verde">Al día</option>
+              <option value="amarillo">En riesgo</option>
+              <option value="rojo">Inactivo</option>
             </select>
             <a class="btn btn-sm btn-outline-primary" href="/api/dashboard/instructores/exportar/" title="Descargar Excel">
               <i class="bi bi-file-earmark-excel"></i> Exportar
@@ -378,7 +418,7 @@
       const tablaMayoria = new DataTable('#tabla-mayoria', {
         serverSide: true,
         processing: true,
-        ordering: false,
+        ordering: true,
         searching: true,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         pageLength: 10,
@@ -447,7 +487,26 @@
         });
       });
 
-      document.addEventListener('DOMContentLoaded', cargarKpis);
+      document.addEventListener('DOMContentLoaded', () => {
+        cargarKpis();
+        cargarKpisMayoria();
+      });
+      function cargarKpisMayoria() {
+        fetch('/api/dashboard/aprendices-mayoria-edad/kpis/', { credentials: 'same-origin' })
+          .then(r => r.ok ? r.json() : Promise.reject(r.status))
+          .then(d => {
+            document.getElementById('kpi-me-total').textContent   = d.total;
+            document.getElementById('kpi-me-proximo').textContent = d.proximo;
+            document.getElementById('kpi-me-cumple').textContent  = d.cumple_hoy;
+            document.getElementById('kpi-me-riesgo').textContent  = d.riesgo;
+            document.getElementById('kpi-me-aldia').textContent   = d.al_dia;
+          })
+          .catch(() => {
+            ['kpi-me-total','kpi-me-proximo','kpi-me-cumple','kpi-me-riesgo','kpi-me-aldia'].forEach(id => {
+              document.getElementById(id).textContent = '—';
+            });
+          });
+      }
     })();
   </script>
   {% endif %}
